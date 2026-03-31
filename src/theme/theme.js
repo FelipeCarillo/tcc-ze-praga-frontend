@@ -44,6 +44,18 @@ export function createAppTheme(mode) {
         user: isDark ? '#1A3A27' : '#E8F5E9',
         bot: isDark ? '#132218' : '#FFFFFF',
       },
+      surface: {
+        sunken: isDark ? '#0D1B12' : '#FAFDF7',
+        elevated: isDark ? '#132218' : '#FFFFFF',
+        muted: isDark ? '#1A3A27' : '#F8F9FA',
+      },
+      code: {
+        header: isDark ? '#132218' : '#1E293B',
+        body: isDark ? '#0D1B12' : '#0F172A',
+        text: isDark ? '#D1E7D4' : '#E2E8F0',
+        tabInactive: isDark ? '#9CA3AF' : 'rgba(255,255,255,0.6)',
+        tabActive: isDark ? '#E8F5E9' : '#FFFFFF',
+      },
     },
     typography: {
       fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
@@ -148,5 +160,3 @@ export function createAppTheme(mode) {
     },
   });
 }
-
-export default createAppTheme('light');
