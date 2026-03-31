@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import { Leaf, User } from 'lucide-react';
 import DiagnosisCard from './DiagnosisCard';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 function formatContent(text) {
   if (!text) return '';
@@ -23,6 +24,7 @@ function formatContent(text) {
 
 function ChatMessage({ message, onSaveDiagnosis }) {
   const isUser = message.role === 'user';
+  const isDark = useDarkMode();
 
   return (
     <Box
@@ -50,13 +52,15 @@ function ChatMessage({ message, onSaveDiagnosis }) {
         <Box
           sx={{
             p: 2,
-            backgroundColor: isUser ? '#E8F5E9' : '#FFFFFF',
-            color: 'text.primary',
+            backgroundColor: isUser
+              ? (isDark ? '#1A3A27' : '#E8F5E9')
+              : (isDark ? '#132218' : '#FFFFFF'),
+            color: isDark ? '#E8F5E9' : 'text.primary',
             borderRadius: isUser
               ? '18px 18px 4px 18px'
               : '18px 18px 18px 4px',
-            border: isUser ? 'none' : '1px solid #E5E7EB',
-            boxShadow: isUser ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+            border: isUser ? 'none' : `1px solid ${isDark ? '#2D3B35' : '#E5E7EB'}`,
+            boxShadow: isUser ? 'none' : (isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)'),
           }}
         >
           {message.imageUrl && (

@@ -3,8 +3,10 @@ import Box from '@mui/material/Box';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
 import QuickSuggestions from './QuickSuggestions';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 function ChatWindow({ messages, isLoading, onSend, onUploadClick, onSaveDiagnosis }) {
+  const isDark = useDarkMode();
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ function ChatWindow({ messages, isLoading, onSend, onUploadClick, onSaveDiagnosi
         flexGrow: 1,
         overflowY: 'auto',
         p: { xs: 2, md: 3 },
-        backgroundColor: '#FAFDF7',
+        backgroundColor: isDark ? '#0D1B12' : '#FAFDF7',
       }}
     >
       {messages.map((message) => (

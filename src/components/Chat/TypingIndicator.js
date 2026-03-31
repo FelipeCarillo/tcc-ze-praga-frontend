@@ -2,6 +2,7 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import { Leaf } from 'lucide-react';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 const dotStyle = {
   width: 8,
@@ -13,6 +14,8 @@ const dotStyle = {
 };
 
 function TypingIndicator() {
+  const isDark = useDarkMode();
+
   return (
     <Box sx={{ display: 'flex', gap: 1.5, mb: 2, alignItems: 'flex-end' }}>
       <Avatar
@@ -26,14 +29,14 @@ function TypingIndicator() {
       </Avatar>
       <Box
         sx={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: isDark ? '#132218' : '#FFFFFF',
           borderRadius: '18px 18px 18px 4px',
           px: 2.5,
           py: 2,
           display: 'flex',
           gap: 0.6,
           alignItems: 'center',
-          border: '1px solid #E5E7EB',
+          border: `1px solid ${isDark ? '#2D3B35' : '#E5E7EB'}`,
         }}
       >
         <Box

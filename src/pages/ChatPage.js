@@ -11,8 +11,10 @@ import ChatInput from '../components/Chat/ChatInput';
 import DragDropOverlay from '../components/Chat/DragDropOverlay';
 import useChat from '../hooks/useChat';
 import { saveDiagnosis } from '../services/historyService';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 function ChatPage() {
+  const isDark = useDarkMode();
   const { messages, isLoading, send, clearChat } = useChat();
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const [isDragging, setIsDragging] = useState(false);
@@ -83,8 +85,8 @@ function ChatPage() {
           gap: 1,
           px: 2,
           py: 1.5,
-          borderBottom: '1px solid #E5E7EB',
-          backgroundColor: '#FFFFFF',
+          borderBottom: `1px solid ${isDark ? '#2D3B35' : '#E5E7EB'}`,
+          backgroundColor: isDark ? '#132218' : '#FFFFFF',
         }}
       >
         <IconButton
