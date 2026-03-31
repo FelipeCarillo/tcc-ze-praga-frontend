@@ -18,7 +18,6 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import HistoryList from '../components/History/HistoryList';
 import useHistory from '../hooks/useHistory';
-import { useDarkMode } from '../hooks/useDarkMode';
 
 const severityFilters = [
   { key: 'all', label: 'Todos' },
@@ -29,7 +28,6 @@ const severityFilters = [
 ];
 
 function HistoryPage() {
-  const isDark = useDarkMode();
   const { diagnoses, loading, error, remove, clearAll } = useHistory();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSeverity, setActiveSeverity] = useState('all');
@@ -192,17 +190,17 @@ function HistoryPage() {
           mb: 2,
           '& .MuiOutlinedInput-root': {
             borderRadius: 3,
-            backgroundColor: isDark ? '#132218' : '#FFFFFF',
-            color: isDark ? '#E8F5E9' : 'inherit',
+            backgroundColor: 'background.paper',
+            color: 'text.primary',
             '& input::placeholder': {
-              color: isDark ? '#9CA3AF' : 'inherit',
+              color: 'text.secondary',
               opacity: 1,
             },
             '& fieldset': {
-              borderColor: isDark ? '#2D3B35' : '#E5E7EB',
+              borderColor: 'divider',
             },
             '&:hover fieldset': {
-              borderColor: isDark ? '#52B788' : '#2D6A4F',
+              borderColor: 'primary.light',
             },
             '&.Mui-focused fieldset': {
               borderColor: 'primary.main',
@@ -212,7 +210,7 @@ function HistoryPage() {
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <Search size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
+              <Search size={18} color="#6B7280" />
             </InputAdornment>
           ),
         }}
@@ -240,9 +238,9 @@ function HistoryPage() {
                     '&:hover': { backgroundColor: 'primary.dark' },
                   }
                 : {
-                    borderColor: isDark ? '#2D3B35' : '#E5E7EB',
-                    color: isDark ? '#E8F5E9' : 'text.primary',
-                    backgroundColor: isDark ? '#132218' : 'transparent',
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                    backgroundColor: 'background.paper',
                     '&:hover': { borderColor: 'primary.light' },
                   }),
             }}
