@@ -56,6 +56,9 @@ export function createAppTheme(mode) {
         tabInactive: isDark ? '#9CA3AF' : 'rgba(255,255,255,0.6)',
         tabActive: isDark ? '#E8F5E9' : '#FFFFFF',
       },
+      custom: {
+        chatPreview: isDark ? '#1E3025' : '#F8F9FA',
+      },
     },
     typography: {
       fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
