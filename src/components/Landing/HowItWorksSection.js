@@ -93,11 +93,12 @@ function HowItWorksSection() {
                         p: 4,
                         textAlign: 'center',
                         height: '100%',
-                        border: '1px solid #E5E7EB',
-                        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.28)' : '0 2px 12px rgba(0,0,0,0.04)',
                         transition: 'all 0.3s ease',
                         '&:hover': {
-                          boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+                          boxShadow: isDark ? '0 10px 28px rgba(0,0,0,0.35)' : '0 8px 30px rgba(0,0,0,0.08)',
                           transform: 'translateY(-4px)',
                         },
                       }}
@@ -151,3 +152,4 @@ function HowItWorksSection() {
 }
 
 export default HowItWorksSection;
+
