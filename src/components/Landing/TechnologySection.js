@@ -6,6 +6,8 @@ import Grid from '@mui/material/Grid';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
+import { useTheme } from '@mui/material/styles';
+import { useDarkMode } from '../../hooks/useDarkMode';
 import { motion } from 'framer-motion';
 import { ArrowRight, Brain, Cpu, BarChart3, Zap } from 'lucide-react';
 
@@ -24,12 +26,15 @@ const models = [
 ];
 
 function TechnologySection() {
+  const theme = useTheme();
+  const isDark = useDarkMode();
+
   return (
     <Box
       sx={{
         py: { xs: 8, md: 10 },
         px: { xs: 3, md: 6 },
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'background.paper',
       }}
     >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
@@ -38,7 +43,7 @@ function TechnologySection() {
           sx={{
             textAlign: 'center',
             fontWeight: 700,
-            color: 'primary.dark',
+            color: isDark ? 'text.primary' : 'primary.dark',
             mb: 1.5,
           }}
         >
@@ -73,7 +78,8 @@ function TechnologySection() {
                     sx={{
                       p: 3,
                       borderRadius: 3,
-                      border: '1px solid #E5E7EB',
+                      border: '1px solid',
+                      borderColor: 'divider',
                       height: '100%',
                       transition: 'all 0.3s ease',
                       '&:hover': {
@@ -106,10 +112,11 @@ function TechnologySection() {
         >
           <Box
             sx={{
-              backgroundColor: '#FAFDF7',
+              backgroundColor: 'background.default',
               borderRadius: 4,
               p: { xs: 3, md: 5 },
-              border: '1px solid #E5E7EB',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
@@ -136,7 +143,7 @@ function TechnologySection() {
                       sx={{
                         height: 8,
                         borderRadius: 4,
-                        backgroundColor: '#E5E7EB',
+                        backgroundColor: theme.palette.divider,
                         '& .MuiLinearProgress-bar': {
                           borderRadius: 4,
                           backgroundColor: metric.color,

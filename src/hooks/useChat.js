@@ -2,16 +2,19 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { sendMessage } from '../services/chatService';
 
+const INITIAL_ASSISTANT_MESSAGE = {
+  role: 'assistant',
+  content:
+    'Olá! Sou o Zé Praga, seu assistente de diagnóstico fitossanitário. Envie uma foto da folha de soja para que eu possa analisar, ou pergunte sobre pragas e doenças da cultura.',
+  diagnosis: null,
+};
+
+function createInitialMessages() {
+  return [{ ...INITIAL_ASSISTANT_MESSAGE, id: uuidv4() }];
+}
+
 function useChat() {
-  const [messages, setMessages] = useState([
-    {
-      id: uuidv4(),
-      role: 'assistant',
-      content:
-        'Olá! Sou o Zé Praga, seu assistente de diagnóstico fitossanitário. Envie uma foto da folha de soja para que eu possa analisar, ou pergunte sobre pragas e doenças da cultura.',
-      diagnosis: null,
-    },
-  ]);
+  const [messages, setMessages] = useState(createInitialMessages);
   const [isLoading, setIsLoading] = useState(false);
 
   const send = useCallback(async (text, imageFile = null, modelId = 'ensemble') => {
@@ -55,15 +58,7 @@ function useChat() {
   }, [messages]);
 
   const clearChat = useCallback(() => {
-    setMessages([
-      {
-        id: uuidv4(),
-        role: 'assistant',
-        content:
-          'Olá! Sou o Zé Praga, seu assistente de diagnóstico fitossanitário. Envie uma foto da folha de soja para que eu possa analisar, ou pergunte sobre pragas e doenças da cultura.',
-        diagnosis: null,
-      },
-    ]);
+    setMessages(createInitialMessages());
   }, []);
 
   return { messages, isLoading, send, clearChat };

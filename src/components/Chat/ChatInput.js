@@ -113,8 +113,9 @@ function ChatInput({ onSend, disabled = false }) {
       component="form"
       onSubmit={handleSubmit}
       sx={{
-        borderTop: '1px solid #E5E7EB',
-        backgroundColor: '#FFFFFF',
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
         p: 2,
       }}
     >
@@ -129,8 +130,9 @@ function ChatInput({ onSend, disabled = false }) {
             size="small"
             variant="outlined"
             sx={{
-              borderColor: 'primary.light',
-              color: 'primary.main',
+              borderColor: 'divider',
+              color: 'text.primary',
+              backgroundColor: 'surface.sunken',
               '& .MuiChip-icon': { color: 'primary.main' },
               '& .MuiChip-deleteIcon': { color: 'primary.main' },
               cursor: 'pointer',
@@ -143,13 +145,28 @@ function ChatInput({ onSend, disabled = false }) {
           onClose={() => setModelMenuAnchor(null)}
           anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
           transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          PaperProps={{
+            sx: {
+              backgroundColor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+            },
+          }}
         >
           {availableModels.map((model) => (
             <MenuItem
               key={model.id}
               selected={model.id === selectedModel}
               onClick={() => { setSelectedModel(model.id); setModelMenuAnchor(null); }}
-              sx={{ py: 1 }}
+              sx={{
+                py: 1,
+                '&.Mui-selected': {
+                  backgroundColor: 'action.selected',
+                },
+                '&.Mui-selected:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
             >
               <ListItemText
                 primary={<Typography variant="body2" sx={{ fontWeight: model.id === selectedModel ? 700 : 500 }}>{model.name}</Typography>}
@@ -168,7 +185,8 @@ function ChatInput({ onSend, disabled = false }) {
             sx={{
               height: 72,
               borderRadius: 2,
-              border: '1px solid #E5E7EB',
+              border: '1px solid',
+              borderColor: 'divider',
             }}
           />
           <IconButton
@@ -254,9 +272,14 @@ function ChatInput({ onSend, disabled = false }) {
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 3,
-              backgroundColor: '#F8F9FA',
+              backgroundColor: 'surface.sunken',
+              color: 'text.primary',
+              '& textarea::placeholder': {
+                color: 'text.secondary',
+                opacity: 1,
+              },
               '& fieldset': {
-                borderColor: '#E5E7EB',
+                borderColor: 'divider',
               },
               '&:hover fieldset': {
                 borderColor: 'primary.light',
@@ -271,16 +294,18 @@ function ChatInput({ onSend, disabled = false }) {
           type="submit"
           disabled={disabled || (!text.trim() && !imageFile)}
           sx={{
-            backgroundColor: (!text.trim() && !imageFile) ? '#E5E7EB' : 'primary.main',
-            color: (!text.trim() && !imageFile) ? '#9CA3AF' : 'white',
+            backgroundColor: (!text.trim() && !imageFile)
+              ? 'action.disabledBackground'
+              : 'primary.main',
+            color: (!text.trim() && !imageFile) ? 'text.disabled' : 'common.white',
             width: 40,
             height: 40,
             '&:hover': {
               backgroundColor: 'primary.dark',
             },
             '&.Mui-disabled': {
-              backgroundColor: '#E5E7EB',
-              color: '#9CA3AF',
+              backgroundColor: 'action.disabledBackground',
+              color: 'text.disabled',
             },
           }}
           aria-label="Enviar mensagem"

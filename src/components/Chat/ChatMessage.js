@@ -50,13 +50,14 @@ function ChatMessage({ message, onSaveDiagnosis }) {
         <Box
           sx={{
             p: 2,
-            backgroundColor: isUser ? '#E8F5E9' : '#FFFFFF',
+            backgroundColor: isUser ? 'chat.user' : 'chat.bot',
             color: 'text.primary',
             borderRadius: isUser
               ? '18px 18px 4px 18px'
               : '18px 18px 18px 4px',
-            border: isUser ? 'none' : '1px solid #E5E7EB',
-            boxShadow: isUser ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
+            border: isUser ? 'none' : '1px solid',
+            borderColor: isUser ? 'transparent' : 'divider',
+            boxShadow: isUser ? 'none' : '0 1px 3px rgba(0,0,0,0.08)',
           }}
         >
           {message.imageUrl && (

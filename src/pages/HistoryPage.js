@@ -190,7 +190,21 @@ function HistoryPage() {
           mb: 2,
           '& .MuiOutlinedInput-root': {
             borderRadius: 3,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: 'background.paper',
+            color: 'text.primary',
+            '& input::placeholder': {
+              color: 'text.secondary',
+              opacity: 1,
+            },
+            '& fieldset': {
+              borderColor: 'divider',
+            },
+            '&:hover fieldset': {
+              borderColor: 'primary.light',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: 'primary.main',
+            },
           },
         }}
         InputProps={{
@@ -224,7 +238,9 @@ function HistoryPage() {
                     '&:hover': { backgroundColor: 'primary.dark' },
                   }
                 : {
-                    borderColor: '#E5E7EB',
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                    backgroundColor: 'background.paper',
                     '&:hover': { borderColor: 'primary.light' },
                   }),
             }}

@@ -49,7 +49,17 @@ function ApiDocsPage() {
     <Box sx={{ display: 'flex', maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
       <ApiSidebar sections={SECTIONS} activeSection={activeSection} />
 
-      <Box sx={{ flex: 1, pl: { md: 4 }, maxWidth: '100%', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          flex: 1,
+          pl: { md: 4 },
+          ml: { md: 2 },
+          borderLeft: { md: '1px solid' },
+          borderColor: 'divider',
+          maxWidth: '100%',
+          overflow: 'hidden',
+        }}
+      >
         {/* Introducao */}
         <Box id="introducao" sx={{ scrollMarginTop: '100px', mb: 6 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
@@ -62,8 +72,35 @@ function ApiDocsPage() {
             API RESTful pública para classificação de doenças foliares em soja.
             Integre o poder do diagnóstico fitossanitário do Zé Praga em seus próprios sistemas.
           </Typography>
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            URL Base: <code style={{ fontWeight: 600 }}>{BASE_URL}</code>
+          <Alert
+            severity="info"
+            sx={{
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: 'surface.elevated',
+              color: 'text.primary',
+              '& .MuiAlert-icon': {
+                color: 'primary.main',
+              },
+            }}
+          >
+            URL Base:{' '}
+            <Box
+              component="code"
+              sx={{
+                fontWeight: 600,
+                color: 'text.primary',
+                backgroundColor: 'surface.sunken',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                px: 0.75,
+                py: 0.25,
+              }}
+            >
+              {BASE_URL}
+            </Box>
           </Alert>
         </Box>
 
@@ -433,12 +470,16 @@ puts JSON.parse(res.body)["status"]`,
                 textAlign: 'left',
                 py: 1.5,
                 px: 2,
-                borderBottom: '1px solid #E5E7EB',
+                borderBottom: '1px solid',
+                borderBottomColor: 'divider',
               },
               '& th': {
                 fontWeight: 600,
-                backgroundColor: '#F8F9FA',
+                backgroundColor: 'surface.elevated',
                 color: 'text.secondary',
+              },
+              '& td': {
+                backgroundColor: 'surface.sunken',
               },
             }}
           >
@@ -459,7 +500,18 @@ puts JSON.parse(res.body)["status"]`,
               ].map((err) => (
                 <tr key={err.code}>
                   <td>
-                    <Chip label={err.code} size="small" sx={{ fontFamily: 'monospace', fontWeight: 600 }} />
+                    <Chip
+                      label={err.code}
+                      size="small"
+                      sx={{
+                        fontFamily: 'monospace',
+                        fontWeight: 600,
+                        backgroundColor: 'surface.elevated',
+                        color: 'text.primary',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                    />
                   </td>
                   <td>{err.desc}</td>
                 </tr>

@@ -5,14 +5,15 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
+import { alpha, useTheme } from '@mui/material/styles';
 import { AlertTriangle, AlertCircle, Info, CheckCircle, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
 import ActionPlan from '../Diagnosis/ActionPlan';
 
 const severityConfig = {
-  alta: { label: 'Severa', color: '#E63946', icon: AlertTriangle, bg: '#FEE2E2' },
-  media: { label: 'Moderada', color: '#F4A261', icon: AlertCircle, bg: '#FEF3C7' },
-  baixa: { label: 'Leve', color: '#52B788', icon: Info, bg: '#D1FAE5' },
-  nenhuma: { label: 'Saudável', color: '#52B788', icon: CheckCircle, bg: '#D1FAE5' },
+  alta: { label: 'Severa', paletteKey: 'error', icon: AlertTriangle },
+  media: { label: 'Moderada', paletteKey: 'warning', icon: AlertCircle },
+  baixa: { label: 'Leve', paletteKey: 'success', icon: Info },
+  nenhuma: { label: 'Saudável', paletteKey: 'success', icon: CheckCircle },
 };
 
 const modelNames = {
@@ -22,25 +23,32 @@ const modelNames = {
   ensemble: 'Ensemble',
 };
 
-function getConfidenceColor(confidence) {
-  if (confidence >= 0.9) return '#52B788';
-  if (confidence >= 0.7) return '#F4A261';
-  return '#E63946';
+function getConfidencePaletteKey(confidence) {
+  if (confidence >= 0.9) return 'success';
+  if (confidence >= 0.7) return 'warning';
+  return 'error';
 }
 
 function DiagnosisCard({ diagnosis, onSave }) {
+  const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+
   const severity = severityConfig[diagnosis.severity] || severityConfig.nenhuma;
   const SevIcon = severity.icon;
   const confidencePercent = (diagnosis.confidence * 100).toFixed(1);
-  const confidenceColor = getConfidenceColor(diagnosis.confidence);
+
+  const confidencePaletteKey = getConfidencePaletteKey(diagnosis.confidence);
+  const confidenceColor = theme.palette[confidencePaletteKey].main;
+  const severityColor = theme.palette[severity.paletteKey].main;
+  const severityBg = alpha(severityColor, 0.18);
 
   return (
     <Box
       sx={{
-        backgroundColor: '#FAFDF7',
+        backgroundColor: 'background.paper',
         borderRadius: 3,
-        border: '1px solid #E5E7EB',
+        border: '1px solid',
+        borderColor: 'divider',
         overflow: 'hidden',
         mt: 1,
       }}
@@ -55,10 +63,10 @@ function DiagnosisCard({ diagnosis, onSave }) {
             label={severity.label}
             size="small"
             sx={{
-              backgroundColor: severity.bg,
-              color: severity.color,
+              backgroundColor: severityBg,
+              color: severityColor,
               fontWeight: 600,
-              '& .MuiChip-icon': { color: severity.color },
+              '& .MuiChip-icon': { color: severityColor },
             }}
           />
         </Box>
@@ -84,7 +92,7 @@ function DiagnosisCard({ diagnosis, onSave }) {
             sx={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: '#E5E7EB',
+              backgroundColor: 'action.disabledBackground',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 4,
                 backgroundColor: confidenceColor,
@@ -94,24 +102,24 @@ function DiagnosisCard({ diagnosis, onSave }) {
           />
         </Box>
 
-        {/* Model Used Badge */}
         {diagnosis.modelUsed && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
-            <Cpu size={12} color="#6B7280" />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2, color: 'text.secondary' }}>
+            <Cpu size={12} />
             <Typography variant="caption" color="text.secondary">
               Modelo: <strong>{modelNames[diagnosis.modelUsed] || diagnosis.modelUsed}</strong>
             </Typography>
           </Box>
         )}
 
-        {/* Top-3 Predictions */}
         {diagnosis.top3 && diagnosis.top3.length > 1 && (
-          <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#F8F9FA', borderRadius: 2, border: '1px solid #E5E7EB' }}>
+          <Box sx={{ mb: 2, p: 1.5, backgroundColor: 'surface.sunken', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 1 }}>
               Top-3 Classificações
             </Typography>
             {diagnosis.top3.map((pred, idx) => {
               const predSev = severityConfig[pred.severity] || severityConfig.nenhuma;
+              const predColor = theme.palette[predSev.paletteKey].main;
+
               return (
                 <Box key={pred.diseaseId} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: idx < 2 ? 0.8 : 0 }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', width: 16 }}>
@@ -129,15 +137,15 @@ function DiagnosisCard({ diagnosis, onSave }) {
                       sx={{
                         height: 4,
                         borderRadius: 2,
-                        backgroundColor: '#E5E7EB',
+                        backgroundColor: 'action.disabledBackground',
                         '& .MuiLinearProgress-bar': {
                           borderRadius: 2,
-                          backgroundColor: idx === 0 ? predSev.color : '#9CA3AF',
+                          backgroundColor: idx === 0 ? predColor : 'text.secondary',
                         },
                       }}
                     />
                   </Box>
-                  <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 42, textAlign: 'right', color: idx === 0 ? predSev.color : 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, minWidth: 42, textAlign: 'right', color: idx === 0 ? predColor : 'text.secondary' }}>
                     {(pred.confidence * 100).toFixed(1)}%
                   </Typography>
                 </Box>

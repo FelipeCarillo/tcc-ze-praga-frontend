@@ -1,6 +1,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { useDarkMode } from '../../hooks/useDarkMode';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
@@ -21,6 +22,7 @@ const cardVariants = {
 };
 
 function DiseasesSection() {
+  const isDark = useDarkMode();
   const displayDiseases = diseases.filter((d) => d.severity !== 'nenhuma');
 
   return (
@@ -28,7 +30,7 @@ function DiseasesSection() {
       sx={{
         py: { xs: 8, md: 10 },
         px: { xs: 3, md: 6 },
-        backgroundColor: '#F0FFF4',
+        backgroundColor: 'background.default',
       }}
     >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
@@ -37,7 +39,7 @@ function DiseasesSection() {
           sx={{
             textAlign: 'center',
             fontWeight: 700,
-            color: 'primary.dark',
+            color: isDark ? 'text.primary' : 'primary.dark',
             mb: 1.5,
           }}
         >
@@ -72,11 +74,12 @@ function DiseasesSection() {
                       sx={{
                         p: 3,
                         height: '100%',
-                        border: '1px solid #E5E7EB',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.28)' : '0 2px 8px rgba(0,0,0,0.04)',
                         transition: 'all 0.3s ease',
                         '&:hover': {
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                          boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(0,0,0,0.08)',
                           transform: 'translateY(-2px)',
                         },
                       }}
@@ -128,3 +131,4 @@ function DiseasesSection() {
 }
 
 export default DiseasesSection;
+

@@ -26,14 +26,15 @@ function TypingIndicator() {
       </Avatar>
       <Box
         sx={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'chat.bot',
           borderRadius: '18px 18px 18px 4px',
           px: 2.5,
           py: 2,
           display: 'flex',
           gap: 0.6,
           alignItems: 'center',
-          border: '1px solid #E5E7EB',
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Box

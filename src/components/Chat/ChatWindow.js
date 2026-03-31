@@ -21,7 +21,7 @@ function ChatWindow({ messages, isLoading, onSend, onUploadClick, onSaveDiagnosi
         flexGrow: 1,
         overflowY: 'auto',
         p: { xs: 2, md: 3 },
-        backgroundColor: '#FAFDF7',
+        backgroundColor: 'background.default',
       }}
     >
       {messages.map((message) => (

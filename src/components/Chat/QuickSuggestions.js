@@ -38,14 +38,15 @@ function QuickSuggestions({ onSend, onUploadClick }) {
             onClick={() => handleClick(suggestion)}
             variant="outlined"
             sx={{
-              borderColor: 'primary.light',
-              color: 'primary.main',
+              borderColor: 'divider',
+              color: 'text.primary',
+              backgroundColor: 'background.paper',
               fontWeight: 500,
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': {
-                backgroundColor: 'rgba(45, 106, 79, 0.08)',
-                borderColor: 'primary.main',
+                backgroundColor: 'action.hover',
+                borderColor: 'primary.light',
               },
               '& .MuiChip-icon': {
                 color: 'primary.main',

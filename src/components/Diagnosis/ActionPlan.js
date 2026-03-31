@@ -5,6 +5,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Collapse from '@mui/material/Collapse';
 import Button from '@mui/material/Button';
+import { alpha, useTheme } from '@mui/material/styles';
 import { CheckCircle2, AlertTriangle, Zap, Map, GraduationCap, BookOpen, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 const levels = [
@@ -14,6 +15,7 @@ const levels = [
 ];
 
 function ActionPlan({ actions }) {
+  const theme = useTheme();
   const [activeLevel, setActiveLevel] = useState('essencial');
   const [showSources, setShowSources] = useState(false);
 
@@ -44,8 +46,9 @@ function ActionPlan({ actions }) {
               gap: 1,
               flexWrap: 'wrap',
               '& .MuiToggleButtonGroup-grouped': {
-                border: '1px solid #E5E7EB !important',
-                borderRadius: '12px !important',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: '12px',
                 mx: 0,
               },
             }}
@@ -62,17 +65,17 @@ function ActionPlan({ actions }) {
                     px: 2,
                     py: 1,
                     gap: 1,
-                    backgroundColor: isActive ? 'rgba(45, 106, 79, 0.08)' : 'transparent',
-                    borderColor: isActive ? '#2D6A4F !important' : '#E5E7EB',
-                    color: isActive ? '#2D6A4F' : 'text.secondary',
+                    backgroundColor: isActive ? 'action.selected' : 'transparent',
+                    borderColor: isActive ? 'primary.main' : 'divider',
+                    color: isActive ? 'primary.main' : 'text.secondary',
                     '&:hover': {
-                      backgroundColor: 'rgba(45, 106, 79, 0.04)',
+                      backgroundColor: 'action.hover',
                     },
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(45, 106, 79, 0.08)',
-                      color: '#2D6A4F',
+                      backgroundColor: 'action.selected',
+                      color: 'primary.main',
                       '&:hover': {
-                        backgroundColor: 'rgba(45, 106, 79, 0.12)',
+                        backgroundColor: 'action.hover',
                       },
                     },
                   }}
@@ -82,7 +85,7 @@ function ActionPlan({ actions }) {
                     <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.78rem', display: 'block', lineHeight: 1.2 }}>
                       {level.label}
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isActive ? '#2D6A4F' : 'text.disabled', display: { xs: 'none', sm: 'block' }, lineHeight: 1.2 }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isActive ? 'primary.main' : 'text.disabled', display: { xs: 'none', sm: 'block' }, lineHeight: 1.2 }}>
                       {level.description}
                     </Typography>
                   </Box>
@@ -95,10 +98,10 @@ function ActionPlan({ actions }) {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {currentActions.map((action, index) => {
-          const isLongAction = action.includes(' — ') || action.length > 120;
+          const isLongAction = action.includes(' - ') || action.length > 120;
           return (
             <Box key={index} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-              <CheckCircle2 size={18} color="#52B788" style={{ marginTop: 3, flexShrink: 0 }} />
+              <CheckCircle2 size={18} color={theme.palette.success.main} style={{ marginTop: 3, flexShrink: 0 }} />
               <Typography
                 variant="body2"
                 sx={{
@@ -118,15 +121,16 @@ function ActionPlan({ actions }) {
         sx={{
           mt: 2.5,
           p: 2,
-          backgroundColor: '#FEF3C7',
+          backgroundColor: alpha(theme.palette.warning.main, 0.2),
           borderRadius: 2,
           display: 'flex',
           gap: 1,
           alignItems: 'flex-start',
+          color: 'warning.dark',
         }}
       >
-        <AlertTriangle size={16} color="#92400E" style={{ marginTop: 2, flexShrink: 0 }} />
-        <Typography variant="body2" sx={{ color: '#92400E', fontWeight: 500, fontSize: '0.8rem' }}>
+        <AlertTriangle size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
           Consulte sempre um engenheiro agrônomo para orientação profissional.
         </Typography>
       </Box>
@@ -143,7 +147,7 @@ function ActionPlan({ actions }) {
               fontWeight: 500,
               fontSize: '0.8rem',
               textTransform: 'none',
-              '&:hover': { color: 'primary.main', backgroundColor: 'rgba(45, 106, 79, 0.04)' },
+              '&:hover': { color: 'primary.main', backgroundColor: 'action.hover' },
             }}
           >
             Fontes e Referências ({sources.length})
@@ -153,9 +157,10 @@ function ActionPlan({ actions }) {
               sx={{
                 mt: 1,
                 p: 2,
-                backgroundColor: '#F8FAFC',
+                backgroundColor: 'surface.sunken',
                 borderRadius: 2,
-                border: '1px solid #E5E7EB',
+                border: '1px solid',
+                borderColor: 'divider',
               }}
             >
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -166,7 +171,7 @@ function ActionPlan({ actions }) {
                         width: 22,
                         height: 22,
                         borderRadius: '50%',
-                        backgroundColor: 'rgba(45, 106, 79, 0.1)',
+                        backgroundColor: alpha(theme.palette.primary.main, 0.12),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

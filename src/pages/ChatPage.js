@@ -83,8 +83,9 @@ function ChatPage() {
           gap: 1,
           px: 2,
           py: 1.5,
-          borderBottom: '1px solid #E5E7EB',
-          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
         }}
       >
         <IconButton
