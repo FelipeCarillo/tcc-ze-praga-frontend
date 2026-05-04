@@ -1,11 +1,14 @@
 import * as mockHistory from './mock/mockHistory';
+import { getCurrentUserId } from './authService';
 
-export const getDiagnoses = () => mockHistory.getAll();
+const userId = () => getCurrentUserId();
 
-export const getDiagnosisById = (id) => mockHistory.getById(id);
+export const getDiagnoses = () => mockHistory.getAll(userId());
 
-export const saveDiagnosis = (diagnosis) => mockHistory.save(diagnosis);
+export const getDiagnosisById = (id) => mockHistory.getById(id, userId());
 
-export const deleteDiagnosis = (id) => mockHistory.remove(id);
+export const saveDiagnosis = (diagnosis) => mockHistory.save(diagnosis, userId());
 
-export const clearAllDiagnoses = () => mockHistory.clearAll();
+export const deleteDiagnosis = (id) => mockHistory.remove(id, userId());
+
+export const clearAllDiagnoses = () => mockHistory.clearAll(userId());

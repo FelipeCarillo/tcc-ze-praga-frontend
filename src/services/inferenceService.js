@@ -1,14 +1,17 @@
+import api from './api';
 import { mockAnalyzeImage } from './mock/mockInference';
 
 export async function analyzeImage(imageFile, modelId = 'ensemble') {
-  // Quando o backend real existir:
-  // const formData = new FormData();
-  // formData.append('image', imageFile);
-  // formData.append('model', modelId);
-  // const response = await api.post('/inference', formData, {
-  //   headers: { 'Content-Type': 'multipart/form-data' },
-  // });
-  // return response.data;
+  const formData = new FormData();
+  formData.append('image', imageFile);
+  formData.append('model', modelId);
 
-  return mockAnalyzeImage(imageFile, modelId);
+  try {
+    const response = await api.post('/api/v1/inference', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch {
+    return mockAnalyzeImage(imageFile, modelId);
+  }
 }

@@ -7,9 +7,15 @@ import Chip from '@mui/material/Chip';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sprout, Camera, FileText, MessageCircle } from 'lucide-react';
 import { useDarkMode } from '../../hooks/useDarkMode';
+import { useAuth } from '../../hooks/useAuth';
 
 function HeroSection() {
   const isDark = useDarkMode();
+  const { user } = useAuth();
+  const firstName = user?.full_name?.split(' ')[0];
+  const greeting = firstName
+    ? `Olá, ${firstName}! Envie uma foto da folha para análise fitossanitária.`
+    : 'Olá! Envie uma foto da folha para análise fitossanitária.';
 
   return (
     <Box
@@ -135,7 +141,7 @@ function HeroSection() {
                 <Sprout size={16} color="white" />
               </Box>
               <Box sx={{ backgroundColor: 'custom.chatPreview', borderRadius: '12px 12px 12px 4px', p: 1.5, fontSize: '0.85rem', color: 'text.primary' }}>
-                Olá! Envie uma foto da folha para análise fitossanitária.
+                {greeting}
               </Box>
             </Box>
 
