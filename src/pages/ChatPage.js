@@ -3,9 +3,11 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
+import { alpha, useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Leaf, History, Plus } from 'lucide-react';
+import { History, Leaf, SquarePen } from 'lucide-react';
 import ChatWindow from '../components/Chat/ChatWindow';
 import ChatInput from '../components/Chat/ChatInput';
 import DragDropOverlay from '../components/Chat/DragDropOverlay';
@@ -13,49 +15,42 @@ import useChat from '../hooks/useChat';
 import { saveDiagnosis } from '../services/historyService';
 
 function ChatPage() {
+  const theme = useTheme();
   const { messages, isLoading, send, clearChat } = useChat();
-  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
+  const fileInputTrigger = useRef(null);
 
   const handleSaveDiagnosis = useCallback(async (diagnosis) => {
     try {
       await saveDiagnosis(diagnosis);
-      setSnackbar({ open: true, message: 'Diagnóstico salvo no histórico!' });
+      setSnackbar({ open: true, message: 'Diagnóstico salvo no histórico!', severity: 'success' });
     } catch {
-      setSnackbar({ open: true, message: 'Erro ao salvar.' });
+      setSnackbar({ open: true, message: 'Erro ao salvar o diagnóstico.', severity: 'error' });
     }
   }, []);
 
   const handleDragEnter = (e) => {
     e.preventDefault();
     dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDragging(true);
-    }
+    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
     dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setIsDragging(false);
-    }
+    if (dragCounter.current === 0) setIsDragging(false);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
+  const handleDragOver = (e) => e.preventDefault();
 
   const handleDrop = (e) => {
     e.preventDefault();
     dragCounter.current = 0;
     setIsDragging(false);
-
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      send('', file, 'ensemble');
-    }
+    if (file?.type.startsWith('image/')) send('', file, 'ensemble');
   };
 
   return (
@@ -65,7 +60,7 @@ function ChatPage() {
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        maxWidth: 900,
+        maxWidth: 860,
         mx: 'auto',
         width: '100%',
       }}
@@ -76,56 +71,114 @@ function ChatPage() {
     >
       <DragDropOverlay visible={isDragging} />
 
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          px: 2,
-          py: 1.5,
+          gap: 1.5,
+          px: { xs: 2, md: 3 },
+          py: 1.25,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          backgroundColor: alpha(theme.palette.background.paper, 0.88),
           borderBottom: '1px solid',
-          borderColor: 'divider',
-          backgroundColor: 'background.paper',
+          borderColor: alpha(theme.palette.divider, 0.6),
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
         }}
       >
-        <IconButton
-          component={Link}
-          to="/"
-          size="small"
-          sx={{ color: 'text.secondary' }}
-          aria-label="Voltar"
-        >
-          <ArrowLeft size={20} />
-        </IconButton>
-        <Leaf size={22} color="#2D6A4F" />
-        <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem', flex: 1 }}>
-          Zé Praga
-        </Typography>
-        <Tooltip title="Histórico">
-          <IconButton
-            component={Link}
-            to="/historico"
-            size="small"
-            sx={{ color: 'text.secondary' }}
+        {/* Brand */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              borderRadius: '9px',
+              background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
           >
-            <History size={20} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Novo chat">
-          <IconButton
-            onClick={clearChat}
-            size="small"
-            sx={{ color: 'text.secondary' }}
+            <Leaf size={15} color="white" strokeWidth={2} />
+          </Box>
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 700, letterSpacing: '-0.02em', fontSize: '0.95rem' }}
           >
-            <Plus size={20} />
-          </IconButton>
-        </Tooltip>
+            Zé Praga
+          </Typography>
+          <Box
+            sx={{
+              px: 1,
+              py: 0.2,
+              borderRadius: '6px',
+              backgroundColor: alpha(theme.palette.success.main, 0.1),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.success.main, 0.2),
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'success.main',
+                fontWeight: 700,
+                fontSize: '0.62rem',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              IA Agrícola
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Actions */}
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title="Histórico de diagnósticos">
+            <IconButton
+              component={Link}
+              to="/historico"
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                borderRadius: '8px',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              <History size={18} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Nova conversa">
+            <IconButton
+              onClick={clearChat}
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                borderRadius: '8px',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              <SquarePen size={18} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <ChatWindow
         messages={messages}
         isLoading={isLoading}
         onSend={send}
+        onUploadClick={() => fileInputTrigger.current?.click()}
         onSaveDiagnosis={handleSaveDiagnosis}
       />
 
@@ -133,11 +186,19 @@ function ChatPage() {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ open: false, message: '' })}
-        message={snackbar.message}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ borderRadius: '10px', fontWeight: 500 }}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -2,38 +2,40 @@ import React, { useState, useRef, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
-import Chip from '@mui/material/Chip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import Button from '@mui/material/Button';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import { alpha, useTheme } from '@mui/material/styles';
 import { Paperclip, Camera, Send, X, Cpu, ChevronDown, Video, CircleDot } from 'lucide-react';
 
-const availableModels = [
-  { id: 'ensemble', name: 'Ensemble', description: 'Combinação dos 3 modelos — maior precisão' },
-  { id: 'resnet50', name: 'ResNet-50', description: 'CNN clássica — rápida e confiável' },
-  { id: 'efficientnet', name: 'EfficientNet-B4', description: 'Melhor relação custo-benefício' },
-  { id: 'vit', name: 'ViT-B/16', description: 'Vision Transformer — captura padrões globais' },
+const MODELS = [
+  { id: 'ensemble', name: 'Ensemble', desc: 'Combinação dos 3 modelos — maior precisão' },
+  { id: 'resnet50', name: 'ResNet-50', desc: 'CNN clássica — rápida e confiável' },
+  { id: 'efficientnet', name: 'EfficientNet-B4', desc: 'Melhor relação custo-benefício' },
+  { id: 'vit', name: 'ViT-B/16', desc: 'Vision Transformer — captura padrões globais' },
 ];
 
 function ChatInput({ onSend, disabled = false }) {
+  const theme = useTheme();
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedModel, setSelectedModel] = useState('ensemble');
-  const [modelMenuAnchor, setModelMenuAnchor] = useState(null);
+  const [modelAnchor, setModelAnchor] = useState(null);
   const [webcamOpen, setWebcamOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const currentModel = availableModels.find((m) => m.id === selectedModel);
+  const currentModel = MODELS.find((m) => m.id === selectedModel);
+  const canSend = (text.trim() || imageFile) && !disabled;
 
   const startWebcam = useCallback(async () => {
     setWebcamOpen(true);
@@ -42,19 +44,15 @@ function ChatInput({ onSend, disabled = false }) {
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = stream;
     } catch {
       setWebcamOpen(false);
     }
   }, []);
 
   const stopWebcam = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
     setWebcamOpen(false);
   }, []);
 
@@ -77,8 +75,7 @@ function ChatInput({ onSend, disabled = false }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!text.trim() && !imageFile) return;
-
+    if (!canSend) return;
     onSend(text.trim(), imageFile, selectedModel);
     setText('');
     setImageFile(null);
@@ -94,11 +91,6 @@ function ChatInput({ onSend, disabled = false }) {
     e.target.value = '';
   };
 
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -106,265 +98,281 @@ function ChatInput({ onSend, disabled = false }) {
     }
   };
 
-  const triggerFileInput = () => fileInputRef.current?.click();
+  const borderColor = focused
+    ? theme.palette.primary.main
+    : alpha(theme.palette.divider, 1);
 
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
-        borderTop: '1px solid',
-        borderColor: 'divider',
-        backgroundColor: 'background.paper',
-        p: 2,
+        px: { xs: 2, md: 3 },
+        py: 2,
+        backgroundColor: 'background.default',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: imagePreview ? 0 : 1 }}>
-        <Tooltip title="Modelo de classificação">
-          <Chip
-            icon={<Cpu size={14} />}
-            label={currentModel?.name || 'Ensemble'}
-            deleteIcon={<ChevronDown size={14} />}
-            onDelete={(e) => setModelMenuAnchor(e.currentTarget.parentElement)}
-            onClick={(e) => setModelMenuAnchor(e.currentTarget)}
-            size="small"
-            variant="outlined"
-            sx={{
-              borderColor: 'divider',
-              color: 'text.primary',
-              backgroundColor: 'surface.sunken',
-              '& .MuiChip-icon': { color: 'primary.main' },
-              '& .MuiChip-deleteIcon': { color: 'primary.main' },
-              cursor: 'pointer',
-            }}
-          />
-        </Tooltip>
-        <Menu
-          anchorEl={modelMenuAnchor}
-          open={Boolean(modelMenuAnchor)}
-          onClose={() => setModelMenuAnchor(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          PaperProps={{
-            sx: {
-              backgroundColor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-            },
-          }}
-        >
-          {availableModels.map((model) => (
-            <MenuItem
-              key={model.id}
-              selected={model.id === selectedModel}
-              onClick={() => { setSelectedModel(model.id); setModelMenuAnchor(null); }}
-              sx={{
-                py: 1,
-                '&.Mui-selected': {
-                  backgroundColor: 'action.selected',
-                },
-                '&.Mui-selected:hover': {
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            >
-              <ListItemText
-                primary={<Typography variant="body2" sx={{ fontWeight: model.id === selectedModel ? 700 : 500 }}>{model.name}</Typography>}
-                secondary={<Typography variant="caption" color="text.secondary">{model.description}</Typography>}
-              />
-            </MenuItem>
-          ))}
-        </Menu>
-      </Box>
+      <input type="file" accept=".jpg,.jpeg,.png,.webp" ref={fileInputRef} onChange={handleFileSelect} style={{ display: 'none' }} />
+      <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileSelect} style={{ display: 'none' }} />
+
+      {/* Image preview */}
       {imagePreview && (
-        <Box sx={{ position: 'relative', display: 'inline-block', mb: 1.5 }}>
+        <Box sx={{ mb: 1.5, display: 'inline-flex', position: 'relative' }}>
           <Box
             component="img"
             src={imagePreview}
             alt="Preview"
             sx={{
-              height: 72,
-              borderRadius: 2,
+              height: 64,
+              borderRadius: '10px',
               border: '1px solid',
               borderColor: 'divider',
+              objectFit: 'cover',
+              display: 'block',
             }}
           />
           <IconButton
             size="small"
-            onClick={removeImage}
+            onClick={() => { setImageFile(null); setImagePreview(null); }}
             sx={{
               position: 'absolute',
-              top: -6,
-              right: -6,
-              bgcolor: '#E63946',
-              color: 'white',
+              top: -8,
+              right: -8,
               width: 20,
               height: 20,
-              '&:hover': { bgcolor: '#C1121F' },
+              backgroundColor: '#E63946',
+              color: 'white',
+              '&:hover': { backgroundColor: '#C1121F' },
             }}
           >
-            <X size={12} />
+            <X size={11} />
           </IconButton>
         </Box>
       )}
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-        <input
-          type="file"
-          accept=".jpg,.jpeg,.png,.webp"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          ref={cameraInputRef}
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-        <IconButton
-          onClick={triggerFileInput}
-          disabled={disabled}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': { color: 'primary.main' },
-          }}
-          aria-label="Anexar arquivo"
-        >
-          <Paperclip size={20} />
-        </IconButton>
-        <IconButton
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={disabled}
-          sx={{
-            color: 'text.secondary',
-            '&:hover': { color: 'primary.main' },
-          }}
-          aria-label="Abrir câmera"
-        >
-          <Camera size={20} />
-        </IconButton>
-        <Tooltip title="Capturar do vídeo">
-          <IconButton
-            onClick={startWebcam}
+
+      {/* Main input container */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          borderRadius: '16px',
+          border: '1.5px solid',
+          borderColor: borderColor,
+          backgroundColor: 'background.paper',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          boxShadow: focused
+            ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`
+            : `0 2px 12px ${alpha(theme.palette.common.black, 0.06)}`,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Text + actions row */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', px: 1.5, pt: 1, pb: 0.5 }}>
+          {/* Left: attachment icons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, pb: 0.75, flexShrink: 0 }}>
+            <Tooltip title="Anexar imagem">
+              <IconButton
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled}
+                size="small"
+                sx={{
+                  color: 'text.disabled',
+                  '&:hover': { color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.07) },
+                }}
+              >
+                <Paperclip size={17} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Câmera">
+              <IconButton
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={disabled}
+                size="small"
+                sx={{
+                  color: 'text.disabled',
+                  '&:hover': { color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.07) },
+                }}
+              >
+                <Camera size={17} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Capturar vídeo">
+              <IconButton
+                onClick={startWebcam}
+                disabled={disabled}
+                size="small"
+                sx={{
+                  color: 'text.disabled',
+                  '&:hover': { color: 'primary.main', backgroundColor: alpha(theme.palette.primary.main, 0.07) },
+                }}
+              >
+                <Video size={17} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Text field */}
+          <TextField
+            fullWidth
+            multiline
+            maxRows={5}
+            placeholder="Digite ou envie uma foto da folha..."
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             disabled={disabled}
+            variant="standard"
             sx={{
-              color: 'text.secondary',
-              '&:hover': { color: 'primary.main' },
+              mx: 0.5,
+              '& .MuiInput-root': {
+                fontSize: '0.9rem',
+                '&:before': { display: 'none' },
+                '&:after': { display: 'none' },
+              },
+              '& textarea': {
+                py: 1,
+                color: 'text.primary',
+                '&::placeholder': { color: 'text.disabled', opacity: 1 },
+              },
             }}
-            aria-label="Capturar do vídeo"
-          >
-            <Video size={20} />
-          </IconButton>
-        </Tooltip>
-        <TextField
-          fullWidth
-          multiline
-          maxRows={4}
-          placeholder="Digite sua mensagem ou envie uma foto..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          size="small"
-          variant="outlined"
+          />
+
+          {/* Send button */}
+          <Box sx={{ pb: 0.75, flexShrink: 0 }}>
+            <IconButton
+              type="submit"
+              disabled={!canSend}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                backgroundColor: canSend ? 'primary.main' : 'action.disabledBackground',
+                color: canSend ? 'white' : 'text.disabled',
+                transition: 'all 0.2s',
+                '&:hover': { backgroundColor: canSend ? 'primary.dark' : undefined },
+                '&.Mui-disabled': {
+                  backgroundColor: 'action.disabledBackground',
+                  color: 'text.disabled',
+                },
+              }}
+            >
+              <Send size={16} />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Model selector footer */}
+        <Box
           sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 3,
-              backgroundColor: 'surface.sunken',
-              color: 'text.primary',
-              '& textarea::placeholder': {
-                color: 'text.secondary',
-                opacity: 1,
-              },
-              '& fieldset': {
-                borderColor: 'divider',
-              },
-              '&:hover fieldset': {
-                borderColor: 'primary.light',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'primary.main',
-              },
-            },
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            pb: 1,
+            pt: 0,
           }}
-        />
-        <IconButton
-          type="submit"
-          disabled={disabled || (!text.trim() && !imageFile)}
-          sx={{
-            backgroundColor: (!text.trim() && !imageFile)
-              ? 'action.disabledBackground'
-              : 'primary.main',
-            color: (!text.trim() && !imageFile) ? 'text.disabled' : 'common.white',
-            width: 40,
-            height: 40,
-            '&:hover': {
-              backgroundColor: 'primary.dark',
-            },
-            '&.Mui-disabled': {
-              backgroundColor: 'action.disabledBackground',
-              color: 'text.disabled',
-            },
-          }}
-          aria-label="Enviar mensagem"
         >
-          <Send size={18} />
-        </IconButton>
+          <Box
+            onClick={(e) => !disabled && setModelAnchor(e.currentTarget)}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1,
+              py: 0.35,
+              borderRadius: '8px',
+              cursor: disabled ? 'default' : 'pointer',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.15s',
+              '&:hover': !disabled ? {
+                borderColor: alpha(theme.palette.primary.main, 0.4),
+                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+              } : {},
+            }}
+          >
+            <Cpu size={11} color={theme.palette.primary.main} />
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }}>
+              {currentModel?.name}
+            </Typography>
+            <ChevronDown size={10} color={theme.palette.text.disabled} />
+          </Box>
+          <Typography variant="caption" sx={{ ml: 'auto', color: 'text.disabled', fontSize: '0.68rem' }}>
+            Enter para enviar · Shift+Enter nova linha
+          </Typography>
+        </Box>
       </Box>
 
-      {/* Webcam Dialog */}
-      <Dialog
-        open={webcamOpen}
-        onClose={stopWebcam}
-        maxWidth="sm"
-        fullWidth
+      {/* Model menu */}
+      <Menu
+        anchorEl={modelAnchor}
+        open={Boolean(modelAnchor)}
+        onClose={() => setModelAnchor(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            border: '1px solid',
+            borderColor: 'divider',
+            boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.12)}`,
+            backgroundColor: 'background.paper',
+            minWidth: 240,
+            mt: -0.5,
+          },
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {MODELS.map((m) => (
+          <MenuItem
+            key={m.id}
+            selected={m.id === selectedModel}
+            onClick={() => { setSelectedModel(m.id); setModelAnchor(null); }}
+            sx={{
+              py: 1.25,
+              px: 2,
+              borderRadius: '8px',
+              mx: 0.5,
+              my: 0.25,
+              '&.Mui-selected': { backgroundColor: alpha(theme.palette.primary.main, 0.08) },
+              '&.Mui-selected:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.12) },
+            }}
+          >
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: m.id === selectedModel ? 700 : 500, fontSize: '0.85rem' }}>
+                {m.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                {m.desc}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Webcam dialog */}
+      <Dialog open={webcamOpen} onClose={stopWebcam} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { borderRadius: '16px' } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Video size={20} color="#2D6A4F" />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>Captura de Vídeo</Typography>
+            <Video size={18} color={theme.palette.primary.main} />
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>Captura de Vídeo</Typography>
           </Box>
-          <IconButton onClick={stopWebcam} size="small">
+          <IconButton onClick={stopWebcam} size="small" sx={{ color: 'text.secondary' }}>
             <X size={18} />
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Box
-            sx={{
-              position: 'relative',
-              borderRadius: 2,
-              overflow: 'hidden',
-              backgroundColor: '#000',
-              mb: 2,
-            }}
-          >
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              style={{ width: '100%', display: 'block', borderRadius: 8 }}
-            />
+          <Box sx={{ borderRadius: '12px', overflow: 'hidden', backgroundColor: '#000', mb: 2 }}>
+            <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', display: 'block' }} />
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, textAlign: 'center' }}>
             Posicione a folha de soja no centro da câmera e clique para capturar.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<CircleDot size={18} />}
-              onClick={captureFrame}
-              sx={{ px: 4 }}
-            >
+            <Button variant="contained" color="primary" startIcon={<CircleDot size={16} />} onClick={captureFrame} sx={{ px: 4, borderRadius: '10px' }}>
               Capturar Frame
             </Button>
-            <Button
-              variant="outlined"
-              onClick={stopWebcam}
-            >
+            <Button variant="outlined" onClick={stopWebcam} sx={{ borderRadius: '10px' }}>
               Cancelar
             </Button>
           </Box>
