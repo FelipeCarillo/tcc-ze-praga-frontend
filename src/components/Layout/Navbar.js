@@ -15,12 +15,29 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { alpha, useTheme } from '@mui/material/styles';
-import { Menu, Leaf, MessageCircle, History, BookOpen, Info, ArrowRight, Cpu, Moon, Sun } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpen,
+  Cpu,
+  Crown,
+  History,
+  Info,
+  Leaf,
+  LogIn,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Moon,
+  Sun,
+  UserRound,
+} from 'lucide-react';
 import { useColorMode } from '../../hooks/useColorMode';
+import { useAuth } from '../../hooks/useAuth';
 
 const navLinks = [
   { label: 'Como Funciona', path: '/#como-funciona' },
   { label: 'Modelos', path: '/modelos', icon: <Cpu size={18} /> },
+  { label: 'Planos', path: '/planos', icon: <Crown size={18} /> },
   { label: 'API', path: '/api-docs', icon: <BookOpen size={18} /> },
   { label: 'Sobre', path: '/sobre', icon: <Info size={18} /> },
 ];
@@ -30,6 +47,7 @@ const mobileNavItems = [
   { label: 'Chat', path: '/chat', icon: <MessageCircle size={20} /> },
   { label: 'Histórico', path: '/historico', icon: <History size={20} /> },
   { label: 'Modelos', path: '/modelos', icon: <Cpu size={20} /> },
+  { label: 'Planos', path: '/planos', icon: <Crown size={20} /> },
   { label: 'API Docs', path: '/api-docs', icon: <BookOpen size={20} /> },
   { label: 'Sobre', path: '/sobre', icon: <Info size={20} /> },
 ];
@@ -40,6 +58,7 @@ function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { toggleColorMode, mode } = useColorMode();
+  const { user, logout } = useAuth();
 
   const navigate = useNavigate();
 
@@ -54,6 +73,16 @@ function Navbar() {
       }
     }
   };
+
+  const handleLogout = () => {
+    logout();
+    setDrawerOpen(false);
+    navigate('/');
+  };
+
+  const authItem = user
+    ? { label: 'Perfil', path: '/perfil', icon: <UserRound size={20} /> }
+    : { label: 'Login', path: '/login', icon: <LogIn size={20} /> };
 
   return (
     <>
@@ -131,6 +160,23 @@ function Navbar() {
               >
                 Iniciar Diagnóstico
               </Button>
+              <Button
+                component={Link}
+                to={authItem.path}
+                variant="outlined"
+                color="primary"
+                startIcon={user ? <UserRound size={18} /> : <LogIn size={18} />}
+                sx={{ ml: 1, borderRadius: 24, px: 2.5 }}
+              >
+                {authItem.label}
+              </Button>
+              {user && (
+                <Tooltip title="Sair">
+                  <IconButton onClick={handleLogout} sx={{ color: 'text.primary' }}>
+                    <LogOut size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo escuro'}>
                 <IconButton
                   onClick={toggleColorMode}
@@ -208,6 +254,38 @@ function Navbar() {
                 </ListItemButton>
               </ListItem>
             ))}
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
+                to={authItem.path}
+                selected={location.pathname === authItem.path}
+                onClick={() => setDrawerOpen(false)}
+                sx={{
+                  borderRadius: 2,
+                  mx: 1,
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    color: 'text.primary',
+                  },
+                  '&.Mui-selected': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    borderLeft: '3px solid',
+                    borderLeftColor: 'primary.main',
+                  },
+                  '&.Mui-selected:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.16),
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  {authItem.icon}
+                </ListItemIcon>
+                <ListItemText primary={authItem.label} />
+              </ListItemButton>
+            </ListItem>
           </List>
           <Box sx={{ px: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', mt: 1 }}>
             <Button
@@ -221,6 +299,18 @@ function Navbar() {
             >
               Iniciar Diagnóstico
             </Button>
+            {user && (
+              <Button
+                color="error"
+                variant="outlined"
+                fullWidth
+                startIcon={<LogOut size={18} />}
+                onClick={handleLogout}
+                sx={{ mt: 1.5 }}
+              >
+                Sair
+              </Button>
+            )}
           </Box>
         </Box>
       </Drawer>
