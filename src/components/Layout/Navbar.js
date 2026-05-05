@@ -19,6 +19,7 @@ import {
   ArrowRight,
   BookOpen,
   Cpu,
+  Crown,
   History,
   Info,
   Leaf,
@@ -36,6 +37,7 @@ import { useAuth } from '../../hooks/useAuth';
 const navLinks = [
   { label: 'Como Funciona', path: '/#como-funciona' },
   { label: 'Modelos', path: '/modelos', icon: <Cpu size={18} /> },
+  { label: 'Planos', path: '/planos', icon: <Crown size={18} /> },
   { label: 'API', path: '/api-docs', icon: <BookOpen size={18} /> },
   { label: 'Sobre', path: '/sobre', icon: <Info size={18} /> },
 ];
@@ -45,6 +47,7 @@ const mobileNavItems = [
   { label: 'Chat', path: '/chat', icon: <MessageCircle size={20} /> },
   { label: 'Histórico', path: '/historico', icon: <History size={20} /> },
   { label: 'Modelos', path: '/modelos', icon: <Cpu size={20} /> },
+  { label: 'Planos', path: '/planos', icon: <Crown size={20} /> },
   { label: 'API Docs', path: '/api-docs', icon: <BookOpen size={20} /> },
   { label: 'Sobre', path: '/sobre', icon: <Info size={20} /> },
 ];

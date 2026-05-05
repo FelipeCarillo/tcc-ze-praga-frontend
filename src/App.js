@@ -10,6 +10,8 @@ import ApiDocsPage from './pages/ApiDocsPage';
 import AboutPage from './pages/AboutPage';
 import ModelsPage from './pages/ModelsPage';
 import LoginPage from './pages/LoginPage';
+import PlansPage from './pages/PlansPage';
+import PaymentPage from './pages/PaymentPage';
 import ProfilePage from './pages/ProfilePage';
 import * as authService from './services/authService';
 
@@ -40,14 +42,19 @@ function App() {
     setUser(session.user);
   }, []);
 
+  const syncUser = useCallback((nextUser) => {
+    const session = authService.saveCurrentUser(nextUser);
+    setUser(session.user);
+  }, []);
+
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
   }, []);
 
   const auth = useMemo(
-    () => ({ user, loading, login, register, updateProfile, logout }),
-    [loading, login, logout, register, updateProfile, user]
+    () => ({ user, loading, login, register, updateProfile, syncUser, logout }),
+    [loading, login, logout, register, syncUser, updateProfile, user]
   );
 
   return (
@@ -62,6 +69,8 @@ function App() {
           <Route path="/modelos" element={<Layout><ModelsPage /></Layout>} />
           <Route path="/sobre" element={<Layout><AboutPage /></Layout>} />
           <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+          <Route path="/planos" element={<Layout><PlansPage /></Layout>} />
+          <Route path="/planos/pagamento/:planName" element={<Layout><PaymentPage /></Layout>} />
           <Route path="/perfil" element={<Layout><ProfilePage /></Layout>} />
         </Routes>
       </BrowserRouter>

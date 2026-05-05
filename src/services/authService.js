@@ -8,16 +8,14 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const mockUser = {
   id: 'mock-user-1',
-  email: 'produtor@zepraga.com',
-  full_name: 'Produtor Ze Praga',
+  email: '',
+  full_name: 'Produtor',
   created_at: new Date().toISOString(),
-  subscription: {
-    status: 'inactive',
-    plan: 'Sem assinatura ativa',
-  },
+  subscription: null,
   usage: {
     chat: { used: 2, limit: 10 },
     inference: { used: 1, limit: 5 },
+    api: { used: 0, limit: 0 },
   },
 };
 
@@ -29,10 +27,12 @@ function saveSession(token, user) {
 }
 
 function createMockUser(values) {
-  const email = values.email.trim().toLowerCase();
+  const profile = { ...values };
+  delete profile.password;
+  const email = profile.email.trim().toLowerCase();
   return {
     ...mockUser,
-    ...values,
+    ...profile,
     email,
     id: `local-user-${email.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
   };
@@ -52,12 +52,24 @@ function apiHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export function getAuthHeaders() {
+  return apiHeaders();
+}
+
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getCurrentUser() {
+  return readUser();
+}
+
 export function getCurrentUserId() {
   return readUser()?.id || 'guest';
+}
+
+export function saveCurrentUser(user) {
+  return saveSession(getAuthToken(), user);
 }
 
 export async function getSession() {

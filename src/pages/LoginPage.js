@@ -17,8 +17,8 @@ function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [form, setForm] = useState({
     full_name: '',
-    email: 'produtor@zepraga.com',
-    password: '123456',
+    email: '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -107,7 +107,7 @@ function LoginPage() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {isRegistering
                 ? 'Preencha os dados para iniciar sua sessão.'
-                : 'Use os dados preenchidos ou informe outro e-mail.'}
+                : 'Informe seu e-mail e senha para acessar.'}
             </Typography>
 
             {error && (
