@@ -48,5 +48,15 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "lines": 0,
+        "statements": 0,
+        "branches": 0,
+        "functions": 0
+      }
+    }
   }
 }
