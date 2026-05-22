@@ -3,7 +3,7 @@ import api from './api';
 const TOKEN_KEY = 'ze-praga-auth-token';
 const USER_KEY = 'ze-praga-auth-user';
 const EXPIRES_KEY = 'ze-praga-auth-expires-at';
-const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'mock';
+const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'api';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const mockUser = {

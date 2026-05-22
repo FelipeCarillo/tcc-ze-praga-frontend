@@ -1,6 +1,8 @@
 import api from './api';
 import { mockAnalyzeImage } from './mock/mockInference';
 
+const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
+
 function mapApiResponse(data) {
   return {
     id: data.id,
@@ -25,16 +27,22 @@ function mapApiResponse(data) {
 }
 
 export async function analyzeImage(imageFile, modelId = 'ensemble') {
+  if (USE_MOCK) {
+    return mockAnalyzeImage(imageFile, modelId);
+  }
+
   const formData = new FormData();
   formData.append('image', imageFile);
   formData.append('model', modelId);
 
-  try {
-    const response = await api.post('/api/v1/inference', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return mapApiResponse(response.data);
-  } catch {
-    return mockAnalyzeImage(imageFile, modelId);
+  const response = await api.post('/api/v1/inference', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  const result = mapApiResponse(response.data);
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('quota-updated'));
   }
+
+  return result;
 }

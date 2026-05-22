@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useColorMode } from '../../hooks/useColorMode';
 import { useAuth } from '../../hooks/useAuth';
+import QuotaDisplay from './QuotaDisplay';
 
 const navLinks = [
   { label: 'Como Funciona', path: '/#como-funciona' },
@@ -123,6 +124,7 @@ function Navbar() {
           </Box>
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <QuotaDisplay />
               {navLinks.map((item) => (
                 <Button
                   key={item.path}
