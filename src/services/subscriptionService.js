@@ -2,7 +2,7 @@ import api from './api';
 import { getAuthHeaders, getCurrentUser, getCurrentUserId } from './authService';
 import * as mockSubscriptions from './mock/mockSubscriptions';
 
-const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'mock';
+const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'api';
 
 export const PLAN_DETAILS = mockSubscriptions.PLAN_DETAILS;
 export const usageFromPlan = mockSubscriptions.usageFromPlan;

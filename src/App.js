@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import Layout from './components/Layout/Layout';
 import LandingPage from './pages/LandingPage';
@@ -14,6 +14,21 @@ import PlansPage from './pages/PlansPage';
 import PaymentPage from './pages/PaymentPage';
 import ProfilePage from './pages/ProfilePage';
 import * as authService from './services/authService';
+
+function AuthExpiredListener({ onExpired }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = () => {
+      onExpired();
+      navigate('/login');
+    };
+    window.addEventListener('auth-expired', handler);
+    return () => window.removeEventListener('auth-expired', handler);
+  }, [navigate, onExpired]);
+
+  return null;
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -52,6 +67,8 @@ function App() {
     setUser(null);
   }, []);
 
+  const clearUserOnExpired = useCallback(() => setUser(null), []);
+
   const auth = useMemo(
     () => ({ user, loading, login, register, updateProfile, syncUser, logout }),
     [loading, login, logout, register, syncUser, updateProfile, user]
@@ -60,6 +77,7 @@ function App() {
   return (
     <AuthContext.Provider value={auth}>
       <BrowserRouter>
+        <AuthExpiredListener onExpired={clearUserOnExpired} />
         <Routes>
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
           <Route path="/chat" element={<Layout showFooter={false}><ChatPage /></Layout>} />
