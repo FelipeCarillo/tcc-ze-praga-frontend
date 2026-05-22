@@ -18,6 +18,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import HistoryList from '../components/History/HistoryList';
 import useHistory from '../hooks/useHistory';
+import { FeatureGate } from '../components/FeatureGate';
 
 const severityFilters = [
   { key: 'all', label: 'Todos' },
@@ -152,16 +153,19 @@ function HistoryPage() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           {diagnoses.length > 0 && (
-            <Button
-              size="small"
-              variant="outlined"
-              color="primary"
-              startIcon={<Download size={16} />}
-              onClick={handleExportPDF}
-              sx={{ fontWeight: 500 }}
-            >
-              Exportar PDF
-            </Button>
+            <FeatureGate feature="export_diagnoses">
+              <Button
+                size="small"
+                variant="outlined"
+                color="primary"
+                startIcon={<Download size={16} />}
+                onClick={handleExportPDF}
+                aria-label="Exportar diagnosticos em PDF"
+                sx={{ fontWeight: 500 }}
+              >
+                Exportar PDF
+              </Button>
+            </FeatureGate>
           )}
           {diagnoses.length > 0 && (
             <Button

@@ -4,6 +4,7 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
@@ -33,7 +34,15 @@ import {
 } from 'lucide-react';
 import { useColorMode } from '../../hooks/useColorMode';
 import { useAuth } from '../../hooks/useAuth';
+import { useTier } from '../../contexts/FeaturesContext';
+import { FeatureGate } from '../FeatureGate';
 import QuotaDisplay from './QuotaDisplay';
+
+const TIER_LABEL = {
+  free: { label: 'Free', color: 'default' },
+  pro: { label: 'Pro', color: 'primary' },
+  enterprise: { label: 'Enterprise', color: 'secondary' },
+};
 
 const navLinks = [
   { label: 'Como Funciona', path: '/#como-funciona' },
@@ -60,8 +69,11 @@ function Navbar() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { toggleColorMode, mode } = useColorMode();
   const { user, logout } = useAuth();
+  const tier = useTier();
 
   const navigate = useNavigate();
+
+  const tierMeta = tier ? TIER_LABEL[tier] : null;
 
   const handleNavClick = (path) => {
     if (path.startsWith('/#')) {
@@ -124,6 +136,17 @@ function Navbar() {
           </Box>
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {tierMeta && (
+                <Tooltip title={`Plano atual: ${tierMeta.label}`}>
+                  <Chip
+                    label={tierMeta.label}
+                    color={tierMeta.color}
+                    size="small"
+                    aria-label={`Plano ${tierMeta.label}`}
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Tooltip>
+              )}
               <QuotaDisplay />
               {navLinks.map((item) => (
                 <Button
@@ -148,6 +171,25 @@ function Navbar() {
                   {item.label}
                 </Button>
               ))}
+              <FeatureGate feature="api_access">
+                <Tooltip title="Gerenciar suas chaves de API (Enterprise)">
+                  <Button
+                    component={Link}
+                    to="/api-docs"
+                    variant="text"
+                    size="small"
+                    startIcon={<BookOpen size={16} />}
+                    aria-label="API Keys"
+                    sx={{
+                      color: 'text.secondary',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                    }}
+                  >
+                    API Keys
+                  </Button>
+                </Tooltip>
+              </FeatureGate>
               <Button
                 component={Link}
                 to="/chat"
