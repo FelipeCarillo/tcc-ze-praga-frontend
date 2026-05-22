@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { sendMessage } from '../services/chatService';
+import { sendMessage, sendMessageStream } from '../services/chatService';
 
 const INITIAL_ASSISTANT_MESSAGE = {
   role: 'assistant',
@@ -38,6 +38,9 @@ function describeChatError(error) {
 function useChat() {
   const [messages, setMessages] = useState(createInitialMessages);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const send = useCallback(async (text, imageFile = null, modelId = 'ensemble') => {
     const userMessage = {
@@ -51,7 +54,7 @@ function useChat() {
     setIsLoading(true);
 
     try {
-      const allMessages = [...messages, userMessage].map((m) => ({
+      const allMessages = [...messagesRef.current, userMessage].map((m) => ({
         role: m.role,
         content: m.content,
       }));
@@ -77,13 +80,102 @@ function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, []);
+
+  /**
+   * Streaming variant of `send`: opens an SSE connection and appends tokens
+   * incrementally to an assistant placeholder message. Resolves when the
+   * server emits `done` or rejects on transport error (placeholder is
+   * replaced by an error message in that case).
+   */
+  const sendStreaming = useCallback(
+    async (text, imageFile = null, modelId = 'ensemble') => {
+      const userMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: text || (imageFile ? 'Imagem enviada para análise' : ''),
+        imageUrl: imageFile ? URL.createObjectURL(imageFile) : null,
+      };
+
+      const placeholderId = uuidv4();
+      const placeholder = {
+        id: placeholderId,
+        role: 'assistant',
+        content: '',
+        diagnosis: null,
+        isStreaming: true,
+        toolCall: null,
+      };
+
+      setMessages((prev) => [...prev, userMessage, placeholder]);
+      setIsLoading(true);
+
+      const allMessages = [...messagesRef.current, userMessage].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const updatePlaceholder = (updater) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === placeholderId ? { ...m, ...updater(m) } : m))
+        );
+      };
+
+      try {
+        await sendMessageStream(
+          allMessages,
+          imageFile,
+          modelId,
+          sessionId,
+          {
+            onToken: (chunk) => {
+              updatePlaceholder((m) => ({ content: (m.content || '') + chunk }));
+            },
+            onToolCall: (name) => {
+              updatePlaceholder(() => ({ toolCall: name }));
+            },
+            onToolResult: () => {
+              // Clear tool badge once result arrives — token stream continues.
+              updatePlaceholder(() => ({ toolCall: null }));
+            },
+            onDiagnosis: (diag) => {
+              updatePlaceholder(() => ({ diagnosis: diag }));
+            },
+            onDone: (sid) => {
+              updatePlaceholder(() => ({ isStreaming: false, toolCall: null }));
+              if (sid) setSessionId(sid);
+            },
+          }
+        );
+      } catch (error) {
+        const message = describeChatError(error);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === placeholderId
+              ? {
+                  id: placeholderId,
+                  role: 'assistant',
+                  content: message,
+                  diagnosis: null,
+                  isStreaming: false,
+                  toolCall: null,
+                }
+              : m
+          )
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [sessionId]
+  );
 
   const clearChat = useCallback(() => {
     setMessages(createInitialMessages());
+    setSessionId(null);
   }, []);
 
-  return { messages, isLoading, send, clearChat };
+  return { messages, isLoading, sessionId, send, sendStreaming, clearChat };
 }
 
 export default useChat;
