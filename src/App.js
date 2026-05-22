@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage';
 import PlansPage from './pages/PlansPage';
 import PaymentPage from './pages/PaymentPage';
 import ProfilePage from './pages/ProfilePage';
+import QuotaExceededModal from './components/common/QuotaExceededModal';
 import * as authService from './services/authService';
 
 function AuthExpiredListener({ onExpired }) {
@@ -78,6 +79,7 @@ function App() {
     <AuthContext.Provider value={auth}>
       <BrowserRouter>
         <AuthExpiredListener onExpired={clearUserOnExpired} />
+        <QuotaExceededModal />
         <Routes>
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
           <Route path="/chat" element={<Layout showFooter={false}><ChatPage /></Layout>} />
