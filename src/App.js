@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
+import { FeaturesProvider } from './contexts/FeaturesContext';
 import Layout from './components/Layout/Layout';
 import LandingPage from './pages/LandingPage';
 import ChatPage from './pages/ChatPage';
@@ -77,23 +78,25 @@ function App() {
 
   return (
     <AuthContext.Provider value={auth}>
-      <BrowserRouter>
-        <AuthExpiredListener onExpired={clearUserOnExpired} />
-        <QuotaExceededModal />
-        <Routes>
-          <Route path="/" element={<Layout><LandingPage /></Layout>} />
-          <Route path="/chat" element={<Layout showFooter={false}><ChatPage /></Layout>} />
-          <Route path="/historico" element={<Layout><HistoryPage /></Layout>} />
-          <Route path="/historico/:id" element={<Layout><DiagnosisDetailPage /></Layout>} />
-          <Route path="/api-docs" element={<Layout><ApiDocsPage /></Layout>} />
-          <Route path="/modelos" element={<Layout><ModelsPage /></Layout>} />
-          <Route path="/sobre" element={<Layout><AboutPage /></Layout>} />
-          <Route path="/login" element={<Layout><LoginPage /></Layout>} />
-          <Route path="/planos" element={<Layout><PlansPage /></Layout>} />
-          <Route path="/planos/pagamento/:planName" element={<Layout><PaymentPage /></Layout>} />
-          <Route path="/perfil" element={<Layout><ProfilePage /></Layout>} />
-        </Routes>
-      </BrowserRouter>
+      <FeaturesProvider>
+        <BrowserRouter>
+          <AuthExpiredListener onExpired={clearUserOnExpired} />
+          <QuotaExceededModal />
+          <Routes>
+            <Route path="/" element={<Layout><LandingPage /></Layout>} />
+            <Route path="/chat" element={<Layout showFooter={false}><ChatPage /></Layout>} />
+            <Route path="/historico" element={<Layout><HistoryPage /></Layout>} />
+            <Route path="/historico/:id" element={<Layout><DiagnosisDetailPage /></Layout>} />
+            <Route path="/api-docs" element={<Layout><ApiDocsPage /></Layout>} />
+            <Route path="/modelos" element={<Layout><ModelsPage /></Layout>} />
+            <Route path="/sobre" element={<Layout><AboutPage /></Layout>} />
+            <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+            <Route path="/planos" element={<Layout><PlansPage /></Layout>} />
+            <Route path="/planos/pagamento/:planName" element={<Layout><PaymentPage /></Layout>} />
+            <Route path="/perfil" element={<Layout><ProfilePage /></Layout>} />
+          </Routes>
+        </BrowserRouter>
+      </FeaturesProvider>
     </AuthContext.Provider>
   );
 }
