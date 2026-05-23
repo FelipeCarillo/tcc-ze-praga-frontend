@@ -11,12 +11,21 @@ import { History, Leaf, SquarePen } from 'lucide-react';
 import ChatWindow from '../components/Chat/ChatWindow';
 import ChatInput from '../components/Chat/ChatInput';
 import DragDropOverlay from '../components/Chat/DragDropOverlay';
+import InterruptDialog from '../components/InterruptDialog';
 import useChat from '../hooks/useChat';
 import { saveDiagnosis } from '../services/historyService';
 
 function ChatPage() {
   const theme = useTheme();
-  const { messages, isLoading, send, clearChat } = useChat();
+  const {
+    messages,
+    isLoading,
+    send,
+    clearChat,
+    pendingInterrupt,
+    resumeInterrupt,
+    dismissInterrupt,
+  } = useChat();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
@@ -183,6 +192,15 @@ function ChatPage() {
       />
 
       <ChatInput onSend={send} disabled={isLoading} />
+
+      <InterruptDialog
+        open={!!pendingInterrupt}
+        interrupt={pendingInterrupt}
+        threadId={pendingInterrupt?.threadId}
+        busy={isLoading}
+        onSubmit={(response, threadId) => resumeInterrupt(response, threadId)}
+        onClose={dismissInterrupt}
+      />
 
       <Snackbar
         open={snackbar.open}

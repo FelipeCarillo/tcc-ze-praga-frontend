@@ -3,6 +3,9 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 jest.mock('../../services/chatService', () => ({
   sendMessage: jest.fn(),
   sendMessageStream: jest.fn(),
+  resumeChat: jest.fn(),
+  resumeChatStream: jest.fn(),
+  listPendingInterrupts: jest.fn(),
 }));
 
 jest.mock('uuid', () => {
@@ -15,7 +18,12 @@ if (typeof URL.createObjectURL === 'undefined') {
   Object.defineProperty(URL, 'createObjectURL', { value: () => 'blob:fake' });
 }
 
-const { sendMessage, sendMessageStream } = require('../../services/chatService');
+const {
+  sendMessage,
+  sendMessageStream,
+  resumeChat,
+  resumeChatStream,
+} = require('../../services/chatService');
 const useChat = require('../useChat').default;
 
 describe('useChat error handling', () => {
@@ -246,5 +254,230 @@ describe('useChat streaming (sendStreaming)', () => {
     });
 
     expect(result.current.sessionId).toBeNull();
+  });
+});
+
+describe('useChat HITL (interrupt + resume)', () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+    resumeChat.mockReset();
+    resumeChatStream.mockReset();
+  });
+
+  it('captures pendingInterrupt when sendStreaming emits onInterrupt', async () => {
+    sendMessageStream.mockImplementation((msgs, img, model, sid, callbacks) => {
+      callbacks.onInterrupt({
+        kind: 'ask_user',
+        question: 'Qual cultivo?',
+        response_kind: 'choice',
+        options: ['soja', 'milho'],
+      });
+      callbacks.onDone('sess-1');
+      return Promise.resolve();
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.sendStreaming('oi');
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.pendingInterrupt).toMatchObject({
+      question: 'Qual cultivo?',
+      response_kind: 'choice',
+      threadId: 'sess-1',
+    });
+  });
+
+  it('captures pendingInterrupt when sync send returns interrupt', async () => {
+    sendMessage.mockResolvedValueOnce({
+      role: 'assistant',
+      content: '',
+      diagnosis: null,
+      session_id: 'sess-2',
+      interrupt: {
+        kind: 'ask_user',
+        question: 'Confirma?',
+        response_kind: 'boolean',
+      },
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.send('confirma');
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.pendingInterrupt).toMatchObject({
+      question: 'Confirma?',
+      threadId: 'sess-2',
+    });
+    // Nao deve ter appendado mensagem assistant vazia
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.role).toBe('user');
+  });
+
+  it('resumeInterrupt drives resumeChatStream, appends user + assistant', async () => {
+    sendMessageStream.mockImplementation((msgs, img, model, sid, callbacks) => {
+      callbacks.onInterrupt({
+        kind: 'ask_user',
+        question: 'Qual cultivo?',
+        response_kind: 'choice',
+        options: ['soja'],
+      });
+      callbacks.onDone('sess-1');
+      return Promise.resolve();
+    });
+
+    resumeChatStream.mockImplementation((tid, response, callbacks) => {
+      expect(tid).toBe('sess-1');
+      expect(response).toBe('soja');
+      callbacks.onToken('Plano: ');
+      callbacks.onToken('aplicar fungicida.');
+      callbacks.onDone();
+      return Promise.resolve();
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.sendStreaming('analisa');
+    });
+    await waitFor(() => expect(result.current.pendingInterrupt).not.toBeNull());
+
+    await act(async () => {
+      await result.current.resumeInterrupt('soja');
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingInterrupt).toBeNull();
+
+    const msgs = result.current.messages;
+    // ... [user 'analisa', placeholder com interrupt, user 'soja', assistant final]
+    const assistantTexts = msgs
+      .filter((m) => m.role === 'assistant')
+      .map((m) => m.content);
+    expect(assistantTexts.some((c) => c.includes('Plano: aplicar fungicida.'))).toBe(true);
+    const userTexts = msgs.filter((m) => m.role === 'user').map((m) => m.content);
+    expect(userTexts).toContain('soja');
+  });
+
+  it('resumeInterrupt with stream=false uses resumeChat sync', async () => {
+    resumeChat.mockResolvedValueOnce({
+      role: 'assistant',
+      content: 'concluido',
+      diagnosis: null,
+      interrupt: null,
+      sessionId: 't-X',
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.resumeInterrupt('milho', 't-X', { stream: false });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(resumeChat).toHaveBeenCalledWith('t-X', 'milho');
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.content).toBe('concluido');
+  });
+
+  it('resumeInterrupt chains interrupts when backend returns another one', async () => {
+    resumeChat.mockResolvedValueOnce({
+      role: 'assistant',
+      content: '',
+      diagnosis: null,
+      interrupt: {
+        kind: 'ask_user',
+        question: 'E o nivel?',
+        response_kind: 'choice',
+        options: ['essencial', 'campo'],
+      },
+      sessionId: 't-X',
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.resumeInterrupt('soja', 't-X', { stream: false });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.pendingInterrupt).toMatchObject({
+      question: 'E o nivel?',
+      threadId: 't-X',
+    });
+  });
+
+  it('resumeInterrupt swallows error and surfaces friendly message', async () => {
+    resumeChat.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.resumeInterrupt('x', 't-Y', { stream: false });
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.content).toMatch(/instabilidade/i);
+  });
+
+  it('dismissInterrupt clears pendingInterrupt without resume call', async () => {
+    sendMessage.mockResolvedValueOnce({
+      role: 'assistant',
+      content: '',
+      diagnosis: null,
+      session_id: 'sess-d',
+      interrupt: {
+        kind: 'ask_user',
+        question: '?',
+        response_kind: 'text',
+      },
+    });
+
+    const { result } = renderHook(() => useChat());
+    await act(async () => {
+      await result.current.send('x');
+    });
+    await waitFor(() => expect(result.current.pendingInterrupt).not.toBeNull());
+
+    act(() => {
+      result.current.dismissInterrupt();
+    });
+    expect(result.current.pendingInterrupt).toBeNull();
+    expect(resumeChat).not.toHaveBeenCalled();
+    expect(resumeChatStream).not.toHaveBeenCalled();
+  });
+
+  it('clearChat also resets pendingInterrupt', async () => {
+    sendMessage.mockResolvedValueOnce({
+      role: 'assistant',
+      content: '',
+      diagnosis: null,
+      session_id: 'sess-d',
+      interrupt: {
+        kind: 'ask_user',
+        question: '?',
+        response_kind: 'text',
+      },
+    });
+
+    const { result } = renderHook(() => useChat());
+    await act(async () => {
+      await result.current.send('x');
+    });
+    await waitFor(() => expect(result.current.pendingInterrupt).not.toBeNull());
+
+    act(() => {
+      result.current.clearChat();
+    });
+    expect(result.current.pendingInterrupt).toBeNull();
   });
 });

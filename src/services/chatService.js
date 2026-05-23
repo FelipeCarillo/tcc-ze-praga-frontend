@@ -109,6 +109,7 @@ export async function sendMessageStream(
     onToolCall,
     onToolResult,
     onDiagnosis,
+    onInterrupt,
     onDone,
     onError,
   } = callbacks;
@@ -119,12 +120,101 @@ export async function sendMessageStream(
   if (imageFile) formData.append('image', imageFile);
   if (sessionId) formData.append('session_id', sessionId);
 
+  return runEventStream(
+    `${getApiBaseUrl()}/api/v1/chat/stream`,
+    { method: 'POST', body: formData, signal: options.signal },
+    {
+      onToken,
+      onToolCall,
+      onToolResult,
+      onDiagnosis,
+      onInterrupt,
+      onDone,
+      onError,
+    }
+  );
+}
+
+/**
+ * Sync version of resume — retoma uma sessao interrompida.
+ * POST /api/v1/chat/resume {thread_id, response}
+ */
+export async function resumeChat(threadId, response) {
+  if (USE_MOCK) {
+    return { role: 'assistant', content: 'Mock resume', diagnosis: null };
+  }
+  const res = await api.post('/api/v1/chat/resume', {
+    thread_id: threadId,
+    response,
+  });
+  const { role, content, diagnosis, interrupt, session_id } = res.data;
+  const result = {
+    role,
+    content,
+    diagnosis: mapDiagnosis(diagnosis),
+    interrupt: interrupt || null,
+    sessionId: session_id,
+  };
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('quota-updated'));
+  }
+  return result;
+}
+
+/**
+ * Streaming version of resume — same SSE contract as sendMessageStream.
+ * POST /api/v1/chat/resume/stream {thread_id, response}
+ */
+export async function resumeChatStream(threadId, response, callbacks = {}, options = {}) {
   const token = getAuthToken();
-  const headers = { Accept: 'text/event-stream' };
+  const headers = {
+    Accept: 'text/event-stream',
+    'Content-Type': 'application/json',
+  };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  // fetchEventSource throws inside onerror when we want to surface to the
-  // caller; we wrap it so callers can `await sendMessageStream(...)`.
+  return runEventStream(
+    `${getApiBaseUrl()}/api/v1/chat/resume/stream`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ thread_id: threadId, response }),
+      signal: options.signal,
+    },
+    callbacks
+  );
+}
+
+/**
+ * List threads with a pending interrupt for the current user.
+ * GET /api/v1/chat/interrupts
+ */
+export async function listPendingInterrupts() {
+  if (USE_MOCK) return [];
+  const res = await api.get('/api/v1/chat/interrupts');
+  return res.data || [];
+}
+
+/**
+ * Shared SSE runner used by sendMessageStream and resumeChatStream — emits
+ * the same set of callbacks (token / tool_call / tool_result / diagnosis /
+ * interrupt / done / error).
+ */
+function runEventStream(url, fetchOpts, callbacks) {
+  const {
+    onToken,
+    onToolCall,
+    onToolResult,
+    onDiagnosis,
+    onInterrupt,
+    onDone,
+    onError,
+  } = callbacks;
+
+  const token = getAuthToken();
+  const headers = { Accept: 'text/event-stream', ...(fetchOpts.headers || {}) };
+  if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
+
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (kind, value) => {
@@ -134,17 +224,16 @@ export async function sendMessageStream(
       else reject(value);
     };
 
-    fetchEventSource(`${getApiBaseUrl()}/api/v1/chat/stream`, {
-      method: 'POST',
+    fetchEventSource(url, {
+      ...fetchOpts,
       headers,
-      body: formData,
-      signal: options.signal,
-      // Don't auto-reconnect on tab visibility changes — chat streams are
-      // one-shot, not long-lived connections.
       openWhenHidden: true,
       async onopen(response) {
-        if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
-          return; // good
+        if (
+          response.ok &&
+          response.headers.get('content-type')?.includes('text/event-stream')
+        ) {
+          return;
         }
         const err = new Error(`Stream failed to open (status ${response.status})`);
         err.response = { status: response.status };
@@ -165,6 +254,9 @@ export async function sendMessageStream(
           case 'diagnosis':
             if (onDiagnosis) onDiagnosis(mapDiagnosis(data));
             break;
+          case 'interrupt':
+            if (onInterrupt && data && typeof data === 'object') onInterrupt(data);
+            break;
           case 'done':
             if (onDone) onDone(typeof data === 'string' ? data : null);
             if (typeof window !== 'undefined') {
@@ -173,23 +265,18 @@ export async function sendMessageStream(
             finish('resolve');
             break;
           default:
-            // Unknown event type — ignore silently to stay forward-compatible.
             break;
         }
       },
       onclose() {
-        // Server closed without a `done` event — treat as completion so we
-        // don't leave the caller hanging, but skip side-effects.
         finish('resolve');
       },
       onerror(err) {
         if (onError) onError(err);
         finish('reject', err);
-        // Throwing prevents fetchEventSource from retrying automatically.
         throw err;
       },
     }).catch((err) => {
-      // Swallow — already surfaced via onerror/finish above.
       if (!settled) finish('reject', err);
     });
   });
