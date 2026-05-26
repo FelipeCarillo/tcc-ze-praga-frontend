@@ -47,7 +47,7 @@ function parseEventData(raw) {
   }
 }
 
-export async function sendMessage(messages, imageFile = null, modelId = 'ensemble') {
+export async function sendMessage(messages, imageFile = null, modelId = 'ensemble', audioFile = null) {
   if (USE_MOCK) {
     return mockSendMessage(messages, imageFile, modelId);
   }
@@ -56,8 +56,14 @@ export async function sendMessage(messages, imageFile = null, modelId = 'ensembl
   formData.append('messages', JSON.stringify(messages));
   formData.append('model', modelId);
   if (imageFile) formData.append('image', imageFile);
+  if (audioFile) formData.append('audio', audioFile, 'voice.webm');
 
-  const response = await api.post('/api/v1/chat', formData);
+  // Sem este header, a instância `api` (default Content-Type: application/json)
+  // faz o axios serializar o FormData como JSON e o backend (campos `Form(...)`)
+  // recebe o corpo vazio → 422. Forçar multipart deixa o browser pôr o boundary.
+  const response = await api.post('/api/v1/chat', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   const { role, content, diagnosis } = response.data;
   const result = { role, content, diagnosis: mapDiagnosis(diagnosis) };
 
@@ -101,6 +107,7 @@ export async function sendMessageStream(
   imageFile = null,
   modelId = 'ensemble',
   sessionId = null,
+  audioFile = null,
   callbacks = {},
   options = {}
 ) {
@@ -117,6 +124,7 @@ export async function sendMessageStream(
   formData.append('messages', JSON.stringify(messages));
   formData.append('model', modelId);
   if (imageFile) formData.append('image', imageFile);
+  if (audioFile) formData.append('audio', audioFile, 'voice.webm');
   if (sessionId) formData.append('session_id', sessionId);
 
   const token = getAuthToken();

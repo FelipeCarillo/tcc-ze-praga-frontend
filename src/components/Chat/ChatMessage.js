@@ -5,24 +5,32 @@ import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 import DiagnosisCard from './DiagnosisCard';
-
-function renderContent(text) {
-  if (!text) return null;
-  return text.split('\n').map((line, i, arr) => {
-    const html = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    return (
-      <span key={i}>
-        <span dangerouslySetInnerHTML={{ __html: html }} />
-        {i < arr.length - 1 && <br />}
-      </span>
-    );
-  });
-}
+import Markdown from '../common/Markdown';
 
 function ChatMessage({ message, onSaveDiagnosis }) {
   const theme = useTheme();
   const isUser = message.role === 'user';
   const isDark = theme.palette.mode === 'dark';
+
+  const renderAssistantContent = () => {
+    if (!message.content) return null;
+    if (message.isStreaming) {
+      return (
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
+        >
+          {message.content}
+        </Typography>
+      );
+    }
+    return (
+      <Box sx={{ lineHeight: 1.6, fontSize: '0.9rem' }}>
+        <Markdown>{message.content}</Markdown>
+      </Box>
+    );
+  };
 
   return (
     <Box
@@ -67,14 +75,18 @@ function ChatMessage({ message, onSaveDiagnosis }) {
               sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: '10px', display: 'block', mb: message.content ? 1 : 0, objectFit: 'cover' }}
             />
           )}
-          {message.content && (
-            <Typography
-              variant="body2"
-              component="div"
-              sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
-            >
-              {renderContent(message.content)}
-            </Typography>
+          {isUser ? (
+            message.content && (
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
+              >
+                {message.content}
+              </Typography>
+            )
+          ) : (
+            renderAssistantContent()
           )}
         </Box>
       </Box>

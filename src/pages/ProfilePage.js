@@ -158,9 +158,10 @@ function ProfilePage() {
   };
 
   return (
-    <Box sx={{ maxWidth: 560, mx: 'auto', pb: 4 }}>
-      {/* Header mata */}
+    <Box sx={{ pb: 4 }}>
+      {/* Header mata — full-bleed, conteúdo centralizado */}
       <Box sx={{ background: 'linear-gradient(180deg, #1F5A3D, #0F3D27)', color: (t) => t.palette.brand.creme, px: { xs: 2.5, md: 3 }, pt: 4, pb: 0 }}>
+        <Box sx={{ maxWidth: 1000, mx: 'auto' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
           <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: (t) => t.palette.brand.milho, color: 'primary.main', display: 'grid', placeItems: 'center', fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.6rem' }}>
             {initial}
@@ -185,9 +186,10 @@ function ProfilePage() {
           <StatCell value={talhoesCount} label="talhões" />
           <StatCell value={planTitle.replace(/^Plano\s+/, '')} label="plano" />
         </Box>
+        </Box>
       </Box>
 
-      <Box sx={{ px: { xs: 2.5, md: 3 }, pt: 3 }}>
+      <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2.5, md: 3 }, pt: 3 }}>
         {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
 
         <Collapse in={editing}>
@@ -198,31 +200,35 @@ function ProfilePage() {
           </Box>
         </Collapse>
 
-        {/* Produção */}
-        <Box sx={{ mb: 3 }}>
-          <TalhoesSection />
-        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 3, md: 4 }, alignItems: 'start' }}>
+          {/* Produção */}
+          <Box>
+            <TalhoesSection />
+          </Box>
 
-        {/* Conta */}
-        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 1.5 }}>Conta</Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <ShortcutRow icon={<ClipboardList size={16} />} title="Histórico completo" to="/historico" />
-          <ShortcutRow icon={<CreditCard size={16} />} title={subscription ? 'Plano e cobrança' : 'Ver planos'} to="/planos" />
-          <FeatureGate feature="api_access">
-            <ShortcutRow icon={<KeyRound size={16} />} title="API keys" to="/api-docs" />
-          </FeatureGate>
-          <ShortcutRow
-            icon={<Moon size={16} />}
-            title="Modo noite"
-            onClick={toggleColorMode}
-            right={<Switch checked={mode === 'dark'} onChange={toggleColorMode} size="small" onClick={(e) => e.stopPropagation()} />}
-          />
-        </Box>
+          {/* Conta */}
+          <Box>
+            <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 1.5 }}>Conta</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <ShortcutRow icon={<ClipboardList size={16} />} title="Histórico completo" to="/historico" />
+              <ShortcutRow icon={<CreditCard size={16} />} title={subscription ? 'Plano e cobrança' : 'Ver planos'} to="/planos" />
+              <FeatureGate feature="api_access">
+                <ShortcutRow icon={<KeyRound size={16} />} title="API keys" to="/api-docs" />
+              </FeatureGate>
+              <ShortcutRow
+                icon={<Moon size={16} />}
+                title="Modo noite"
+                onClick={toggleColorMode}
+                right={<Switch checked={mode === 'dark'} onChange={toggleColorMode} size="small" onClick={(e) => e.stopPropagation()} />}
+              />
+            </Box>
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Button onClick={() => { logout(); navigate('/'); }} startIcon={<LogOut size={16} />} color="error" sx={{ fontWeight: 600 }}>
-            Encerrar sessão
-          </Button>
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Button onClick={() => { logout(); navigate('/'); }} startIcon={<LogOut size={16} />} color="error" sx={{ fontWeight: 600 }}>
+                Encerrar sessão
+              </Button>
+            </Box>
+          </Box>
         </Box>
       </Box>
     </Box>

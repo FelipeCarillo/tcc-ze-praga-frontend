@@ -7,7 +7,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { Camera, ImageIcon, ArrowUp, Cpu, X } from 'lucide-react';
+import { Camera, ImageIcon, ArrowUp, Cpu, X, Mic, StopCircle } from 'lucide-react';
 import { copy } from '../../copy/ze';
 
 const MODELS = [
@@ -17,10 +17,12 @@ const MODELS = [
   { id: 'vit', name: 'ViT-B/16' },
 ];
 
+// Maximum recording duration in milliseconds.
+const MAX_RECORDING_MS = 60_000;
+
 /**
- * Composer enxuto (auditoria, seção 11): câmera + pill de texto + enviar.
- * Mantém a escolha de modelo de forma discreta. Drag-and-drop fica por conta
- * da página (overlay).
+ * Composer enxuto: camera + pill de texto + enviar.
+ * onSend contract: (text: string, imageFile: File|null, model: string, audioFile: File|null) => void
  */
 function ChatInput({ onSend, disabled = false }) {
   const [text, setText] = useState('');
@@ -29,11 +31,16 @@ function ChatInput({ onSend, disabled = false }) {
   const [model, setModel] = useState('ensemble');
   const [camAnchor, setCamAnchor] = useState(null);
   const [modelAnchor, setModelAnchor] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
   const galleryRef = useRef(null);
   const cameraRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const streamRef = useRef(null);
 
   const currentModel = MODELS.find((m) => m.id === model);
-  const canSend = (text.trim() || imageFile) && !disabled;
+  const canSend = (text.trim() || imageFile) && !disabled && !isRecording;
 
   const stageFile = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -48,7 +55,7 @@ function ChatInput({ onSend, disabled = false }) {
   const submit = (e) => {
     e?.preventDefault();
     if (!canSend) return;
-    onSend(text.trim(), imageFile, model);
+    onSend(text.trim(), imageFile, model, null);
     setText('');
     setImageFile(null);
     setImagePreview(null);
@@ -58,6 +65,78 @@ function ChatInput({ onSend, disabled = false }) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit(e);
+    }
+  };
+
+  // --- Voice recording helpers ---
+
+  const stopTracks = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const startRecording = async () => {
+    if (disabled || isRecording) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mr.onstop = () => {
+        stopTracks();
+        clearTimeout(recordingTimerRef.current);
+
+        const mimeType = mr.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        const audioFile = new File([blob], 'voice.webm', { type: mimeType });
+        audioChunksRef.current = [];
+
+        setIsRecording(false);
+        onSend('', imageFile, model, audioFile);
+        setImageFile(null);
+        setImagePreview(null);
+      };
+
+      mr.start();
+      setIsRecording(true);
+
+      // Auto-stop after MAX_RECORDING_MS.
+      recordingTimerRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      }, MAX_RECORDING_MS);
+    } catch (err) {
+      // Permission denied or device unavailable -- fail silently; UI stays usable.
+      console.warn('[ChatInput] Microphone access error:', err);
+      stopTracks();
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    clearTimeout(recordingTimerRef.current);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
@@ -79,7 +158,7 @@ function ChatInput({ onSend, disabled = false }) {
         <IconButton
           aria-label="Adicionar foto"
           onClick={(e) => setCamAnchor(e.currentTarget)}
-          disabled={disabled}
+          disabled={disabled || isRecording}
           sx={{ width: 44, height: 44, bgcolor: 'primary.main', color: (t) => t.palette.brand.milho, flexShrink: 0, '&:hover': { bgcolor: 'primary.dark' } }}
         >
           <Camera size={20} />
@@ -90,14 +169,31 @@ function ChatInput({ onSend, disabled = false }) {
             fullWidth
             multiline
             maxRows={4}
-            placeholder={copy.chat.placeholder}
+            placeholder={isRecording ? 'Gravando...' : copy.chat.placeholder}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
-            disabled={disabled}
+            disabled={disabled || isRecording}
             sx={{ fontSize: '0.9rem' }}
           />
         </Box>
+
+        {/* Mic button */}
+        <IconButton
+          aria-label={isRecording ? 'Parar gravacao' : 'Gravar mensagem de voz'}
+          onClick={handleMicClick}
+          disabled={disabled}
+          sx={{
+            width: 44,
+            height: 44,
+            flexShrink: 0,
+            bgcolor: isRecording ? 'error.main' : 'action.selected',
+            color: isRecording ? '#fff' : 'text.secondary',
+            '&:hover': { bgcolor: isRecording ? 'error.dark' : 'action.hover' },
+          }}
+        >
+          {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+        </IconButton>
 
         <IconButton
           type="submit"
@@ -112,8 +208,8 @@ function ChatInput({ onSend, disabled = false }) {
       {/* seletor de modelo discreto */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.75 }}>
         <Box
-          onClick={(e) => !disabled && setModelAnchor(e.currentTarget)}
-          sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: disabled ? 'default' : 'pointer', color: 'text.disabled', px: 1 }}
+          onClick={(e) => !disabled && !isRecording && setModelAnchor(e.currentTarget)}
+          sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: disabled || isRecording ? 'default' : 'pointer', color: 'text.disabled', px: 1 }}
         >
           <Cpu size={11} />
           <Typography sx={{ fontSize: '0.66rem', fontWeight: 600 }}>{currentModel?.name}</Typography>

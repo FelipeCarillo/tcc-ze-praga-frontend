@@ -42,11 +42,11 @@ function useChat() {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
-  const send = useCallback(async (text, imageFile = null, modelId = 'ensemble') => {
+  const send = useCallback(async (text, imageFile = null, modelId = 'ensemble', audioFile = null) => {
     const userMessage = {
       id: uuidv4(),
       role: 'user',
-      content: text || (imageFile ? 'Imagem enviada para análise' : ''),
+      content: text || (imageFile ? 'Imagem enviada para análise' : audioFile ? '🎤 Mensagem de voz' : ''),
       imageUrl: imageFile ? URL.createObjectURL(imageFile) : null,
     };
 
@@ -59,7 +59,7 @@ function useChat() {
         content: m.content,
       }));
 
-      const response = await sendMessage(allMessages, imageFile, modelId);
+      const response = await sendMessage(allMessages, imageFile, modelId, audioFile);
 
       const assistantMessage = {
         id: uuidv4(),
@@ -89,11 +89,11 @@ function useChat() {
    * replaced by an error message in that case).
    */
   const sendStreaming = useCallback(
-    async (text, imageFile = null, modelId = 'ensemble') => {
+    async (text, imageFile = null, modelId = 'ensemble', audioFile = null) => {
       const userMessage = {
         id: uuidv4(),
         role: 'user',
-        content: text || (imageFile ? 'Imagem enviada para análise' : ''),
+        content: text || (imageFile ? 'Imagem enviada para análise' : audioFile ? '🎤 Mensagem de voz' : ''),
         imageUrl: imageFile ? URL.createObjectURL(imageFile) : null,
       };
 
@@ -127,6 +127,7 @@ function useChat() {
           imageFile,
           modelId,
           sessionId,
+          audioFile,
           {
             onToken: (chunk) => {
               updatePlaceholder((m) => ({ content: (m.content || '') + chunk }));

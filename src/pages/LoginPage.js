@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
 import { useAuth } from '../hooks/useAuth';
 import { ReactComponent as Marca } from '../assets/brand/marca.svg';
 import { copy } from '../copy/ze';
@@ -15,7 +14,6 @@ function LoginPage() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [snack, setSnack] = useState(false);
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,13 +84,9 @@ function LoginPage() {
           <TextField fullWidth required label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} sx={{ mb: 2 }} />
           <TextField fullWidth required label="Senha" name="password" type="password" value={form.password} onChange={handleChange} inputProps={{ minLength: 6 }} sx={{ mb: 2.5 }} />
           <Button fullWidth type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ py: 1.25 }}>
-            {submitting ? 'Entrando…' : isRegistering ? 'Criar conta' : copy.login.sendLink}
+            {submitting ? 'Entrando…' : isRegistering ? 'Criar conta' : 'Entrar'}
           </Button>
         </Box>
-
-        <Button fullWidth onClick={() => setSnack(true)} variant="outlined" sx={{ mt: 1.5, py: 1.1, borderColor: 'divider', color: 'text.primary' }}>
-          🇧🇷 Continuar com Gov.br
-        </Button>
 
         <Box sx={{ mt: 3, textAlign: 'center' }}>
           <Button variant="text" onClick={() => setIsRegistering((p) => !p)} sx={{ color: 'primary.main' }}>
@@ -104,7 +98,6 @@ function LoginPage() {
         </Typography>
       </Box>
 
-      <Snackbar open={snack} autoHideDuration={2500} onClose={() => setSnack(false)} message="Login Gov.br — em breve." anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </Box>
   );
 }

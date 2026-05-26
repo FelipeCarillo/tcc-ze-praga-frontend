@@ -75,8 +75,8 @@ export const copy = {
   login: {
     kicker: 'Oi de novo!',
     title: 'Quem é você, compadre?',
-    subtitle: 'Me passa seu email pra eu guardar seu histórico. Sem senha — te mando um link mágico.',
-    sendLink: 'Me manda o link',
+    subtitle: 'Entra com seu email e senha pra eu guardar seu histórico.',
+    sendLink: 'Entrar',
     sentTitle: 'Link voando pra você.',
     sentSignoff: 'Te espero por aqui.',
     optionalNote: 'Não precisa de conta pra usar o chat.',
