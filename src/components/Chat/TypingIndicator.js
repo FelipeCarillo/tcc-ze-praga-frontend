@@ -1,26 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import { Leaf } from 'lucide-react';
+import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
+import { copy } from '../../copy/ze';
 
-const dotVariants = {
-  initial: { y: 0, opacity: 0.4 },
-  animate: (i) => ({
-    y: [-4, 0, -4],
-    opacity: [0.4, 1, 0.4],
-    transition: {
-      duration: 1.1,
-      repeat: Infinity,
-      delay: i * 0.18,
-      ease: 'easeInOut',
-    },
-  }),
-};
-
+/**
+ * Skeleton do estado "Zé pensando" (auditoria, seção 11): bolha do Zé com um
+ * spinner pequeno + microcopy rotativa (a cada ~1.2s) + placeholders de linha.
+ * Quebra a frieza de "Analisando…" e mantém a voz.
+ */
 function TypingIndicator() {
-  const theme = useTheme();
+  const [idx, setIdx] = useState(0);
+  const phrases = copy.chat.thinking;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIdx((i) => (i + 1) % phrases.length);
+    }, 1200);
+    return () => clearInterval(id);
+  }, [phrases.length]);
+
   return (
     <Box
       component={motion.div}
@@ -28,59 +28,46 @@ function TypingIndicator() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.25 }}
-      sx={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, mb: 2 }}
+      sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}
     >
-      <Box
-        sx={{
-          width: 32,
-          height: 32,
-          borderRadius: '10px',
-          background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Leaf size={15} color="white" />
+      <Box sx={{ width: 30, height: 30, borderRadius: '9px', overflow: 'hidden', flexShrink: 0 }}>
+        <Marca style={{ width: 30, height: 30, display: 'block' }} />
       </Box>
 
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          px: 2,
-          py: 1.5,
           backgroundColor: 'background.paper',
-          borderRadius: '4px 16px 16px 16px',
           border: '1px solid',
           borderColor: 'divider',
-          boxShadow: `0 1px 8px ${alpha(theme.palette.common.black, 0.06)}`,
+          borderRadius: '4px 16px 16px 16px',
+          p: 1.5,
+          minWidth: 200,
+          maxWidth: 300,
         }}
       >
-        {[0, 1, 2].map((i) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
           <Box
-            key={i}
             component={motion.div}
-            custom={i}
-            variants={dotVariants}
-            initial="initial"
-            animate="animate"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             sx={{
-              width: 7,
-              height: 7,
+              width: 14,
+              height: 14,
               borderRadius: '50%',
-              backgroundColor: theme.palette.primary.main,
+              border: '2px solid',
+              borderColor: 'secondary.main',
+              borderTopColor: 'transparent',
             }}
           />
-        ))}
-        <Typography
-          variant="caption"
-          sx={{ ml: 1, color: 'text.secondary', fontWeight: 500, fontSize: '0.72rem' }}
-        >
-          Analisando...
-        </Typography>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'secondary.main' }}>
+            {phrases[idx]}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Box sx={{ height: 8, borderRadius: 1, bgcolor: 'action.hover', width: '90%' }} />
+          <Box sx={{ height: 8, borderRadius: 1, bgcolor: 'action.hover', width: '70%' }} />
+          <Box sx={{ height: 34, borderRadius: 2, bgcolor: 'action.hover', mt: 0.5 }} />
+        </Box>
       </Box>
     </Box>
   );

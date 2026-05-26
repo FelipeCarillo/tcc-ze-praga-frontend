@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createAppTheme } from './theme/theme';
+import BrandCssVariables from './theme/BrandCssVariables';
 import { ColorModeContext } from './ColorModeContext';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -53,6 +55,7 @@ function Root() {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <BrandCssVariables />
         <App />
       </ThemeProvider>
     </ColorModeContext.Provider>

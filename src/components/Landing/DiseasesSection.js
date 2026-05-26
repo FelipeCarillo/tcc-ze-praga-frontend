@@ -1,19 +1,15 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useDarkMode } from '../../hooks/useDarkMode';
-import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
 import { motion } from 'framer-motion';
-import { AlertTriangle, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { diseases } from '../../services/mock/mockData';
 
-const severityConfig = {
-  alta: { label: 'Severa', color: '#E63946', icon: AlertTriangle, bg: '#FEE2E2' },
-  media: { label: 'Moderada', color: '#F4A261', icon: AlertCircle, bg: '#FEF3C7' },
-  baixa: { label: 'Leve', color: '#52B788', icon: Info, bg: '#D1FAE5' },
-  nenhuma: { label: 'Saudável', color: '#52B788', icon: CheckCircle, bg: '#D1FAE5' },
+const SEV = {
+  alta: { label: 'Severa', token: 'alta' },
+  media: { label: 'Moderada', token: 'media' },
+  baixa: { label: 'Leve', token: 'baixa' },
+  nenhuma: { label: 'Saudável', token: 'nenhuma' },
 };
 
 const cardVariants = {
@@ -21,109 +17,63 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
 };
 
+function LeafMark({ healthy }) {
+  return (
+    <Box component="svg" viewBox="0 0 100 100" sx={{ width: 52, height: 52, mb: 1.5 }} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id={healthy ? 'lfh' : 'lfp'} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={healthy ? '#74C69D' : '#A8C99B'} />
+          <stop offset="100%" stopColor={healthy ? '#1F5A3D' : '#4A6B3D'} />
+        </linearGradient>
+      </defs>
+      <path d="M50 12 Q22 28 18 56 Q22 84 50 90 Q78 84 82 56 Q78 28 50 12 Z" fill={`url(#${healthy ? 'lfh' : 'lfp'})`} stroke="#1F5A3D" strokeWidth="1.2" />
+      <path d="M50 14 Q50 50 50 88" stroke="#1F5A3D" strokeWidth="1" fill="none" opacity="0.7" />
+      {!healthy && (
+        <>
+          <circle cx="36" cy="42" r="6" fill="#8B3A26" opacity="0.75" />
+          <circle cx="62" cy="52" r="5" fill="#8B3A26" opacity="0.7" />
+          <circle cx="42" cy="66" r="7" fill="#8B3A26" opacity="0.8" />
+        </>
+      )}
+    </Box>
+  );
+}
+
 function DiseasesSection() {
-  const isDark = useDarkMode();
-  const displayDiseases = diseases.filter((d) => d.severity !== 'nenhuma');
+  const list = diseases.filter((d) => d.severity !== 'nenhuma');
 
   return (
-    <Box
-      sx={{
-        py: { xs: 8, md: 10 },
-        px: { xs: 3, md: 6 },
-        backgroundColor: 'background.default',
-      }}
-    >
+    <Box sx={{ py: { xs: 7, md: 9 }, px: { xs: 3, md: 7 }, backgroundColor: 'background.default' }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <Typography
-          variant="h2"
-          sx={{
-            textAlign: 'center',
-            fontWeight: 700,
-            color: isDark ? 'text.primary' : 'primary.dark',
-            mb: 1.5,
-          }}
-        >
-          Doenças Detectadas
+        <Typography variant="h2" sx={{ textAlign: 'center', mb: 1 }}>
+          Pragas que eu reconheço
         </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            textAlign: 'center',
-            color: 'text.secondary',
-            mb: 6,
-            maxWidth: 500,
-            mx: 'auto',
-          }}
-        >
-          Atualmente focados na soja, com infraestrutura pronta para expandir a diversos cultivos
+        <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary', mb: 5, maxWidth: 560, mx: 'auto' }}>
+          Hoje cuido de soja. Em breve, milho e café.
         </Typography>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ staggerChildren: 0.1 }}
-        >
-          <Grid container spacing={3}>
-            {displayDiseases.map((disease) => {
-              const severity = severityConfig[disease.severity];
-              const SevIcon = severity.icon;
+
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }} transition={{ staggerChildren: 0.08 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2.5 }}>
+            {list.map((disease) => {
+              const sev = SEV[disease.severity] || SEV.media;
               return (
-                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={disease.id}>
-                  <motion.div variants={cardVariants}>
-                    <Card
-                      sx={{
-                        p: 3,
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.28)' : '0 2px 8px rgba(0,0,0,0.04)',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 24px rgba(0,0,0,0.08)',
-                          transform: 'translateY(-2px)',
-                        },
-                      }}
-                    >
-                      <Chip
-                        icon={<SevIcon size={14} />}
-                        label={severity.label}
-                        size="small"
-                        sx={{
-                          mb: 2,
-                          backgroundColor: severity.bg,
-                          color: severity.color,
-                          fontWeight: 600,
-                          '& .MuiChip-icon': { color: severity.color },
-                        }}
-                      />
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {disease.name}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: 'text.secondary', fontStyle: 'italic', display: 'block', mb: 1.5 }}
-                      >
-                        {disease.scientificName}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          lineHeight: 1.6,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {disease.description}
-                      </Typography>
-                    </Card>
-                  </motion.div>
-                </Grid>
+                <motion.div key={disease.id} variants={cardVariants}>
+                  <Card sx={{ p: 2.5, height: '100%', backgroundColor: (t) => t.palette.surface.sunken, transition: 'transform 0.25s', '&:hover': { transform: 'translateY(-3px)' } }}>
+                    <LeafMark healthy={disease.severity === 'nenhuma'} />
+                    <Box sx={{ display: 'inline-flex', px: 1, py: 0.25, borderRadius: 999, fontSize: '0.68rem', fontWeight: 700, mb: 1, bgcolor: (t) => `${t.palette.severity[sev.token]}22`, color: (t) => t.palette.severity[sev.token] }}>
+                      {sev.label}
+                    </Box>
+                    <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1rem', lineHeight: 1.15 }}>
+                      {disease.name}
+                    </Typography>
+                    <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', color: 'text.secondary', mt: 0.25 }}>
+                      {disease.scientificName}
+                    </Typography>
+                  </Card>
+                </motion.div>
               );
             })}
-          </Grid>
+          </Box>
         </motion.div>
       </Box>
     </Box>
@@ -131,4 +81,3 @@ function DiseasesSection() {
 }
 
 export default DiseasesSection;
-

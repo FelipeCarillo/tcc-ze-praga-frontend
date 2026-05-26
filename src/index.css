@@ -1,33 +1,38 @@
-* {
-  box-sizing: border-box;
-}
+/* Estilos globais mínimos — paleta/tipografia/body ficam por conta do tema MUI
+   (CssBaseline + theme). Aqui só o que o tema não cobre: scroll, scrollbar e
+   respeito a prefers-reduced-motion. */
 
 html {
   scroll-behavior: smooth;
 }
 
-body {
-  margin: 0;
-  font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #FAFDF7;
-  color: #1A1A2E;
-}
-
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: rgba(28, 42, 32, 0.22);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 42, 32, 0.38);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+/* Acessibilidade: desliga animações/transições e scroll suave para quem pede
+   movimento reduzido (auditoria, seção 08). Complementa o <MotionConfig
+   reducedMotion="user"> do framer-motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

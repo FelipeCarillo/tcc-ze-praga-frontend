@@ -5,7 +5,7 @@ import { sendMessage, sendMessageStream } from '../services/chatService';
 const INITIAL_ASSISTANT_MESSAGE = {
   role: 'assistant',
   content:
-    'Olá! Sou o Zé Praga, seu assistente de diagnóstico fitossanitário. Envie uma foto da folha de soja para que eu possa analisar, ou pergunte sobre pragas e doenças da cultura.',
+    'Oi, compadre! Manda uma foto da folha aí que eu dou uma olhada. Em 5 segundos te digo o que é.',
   diagnosis: null,
 };
 

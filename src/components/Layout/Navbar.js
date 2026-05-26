@@ -1,367 +1,114 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { alpha, useTheme } from '@mui/material/styles';
-import {
-  ArrowRight,
-  BookOpen,
-  Cpu,
-  Crown,
-  History,
-  Info,
-  Leaf,
-  LogIn,
-  LogOut,
-  Menu,
-  MessageCircle,
-  Moon,
-  Sun,
-  UserRound,
-} from 'lucide-react';
-import { useColorMode } from '../../hooks/useColorMode';
-import { useAuth } from '../../hooks/useAuth';
-import { useTier } from '../../contexts/FeaturesContext';
-import { FeatureGate } from '../FeatureGate';
+import { useTheme } from '@mui/material/styles';
+import { Camera } from 'lucide-react';
+import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 import QuotaDisplay from './QuotaDisplay';
-
-const TIER_LABEL = {
-  free: { label: 'Free', color: 'default' },
-  pro: { label: 'Pro', color: 'primary' },
-  enterprise: { label: 'Enterprise', color: 'secondary' },
-};
+import AvatarMenu from './AvatarMenu';
+import { copy } from '../../copy/ze';
 
 const navLinks = [
-  { label: 'Como Funciona', path: '/#como-funciona' },
-  { label: 'Modelos', path: '/modelos', icon: <Cpu size={18} /> },
-  { label: 'Planos', path: '/planos', icon: <Crown size={18} /> },
-  { label: 'API', path: '/api-docs', icon: <BookOpen size={18} /> },
-  { label: 'Sobre', path: '/sobre', icon: <Info size={18} /> },
+  { label: 'Diagnosticar', path: '/chat' },
+  { label: 'Histórico', path: '/historico' },
+  { label: 'Modelos', path: '/modelos' },
+  { label: 'API', path: '/api-docs' },
+  { label: 'Sobre', path: '/sobre' },
 ];
 
-const mobileNavItems = [
-  { label: 'Início', path: '/', icon: <Leaf size={20} /> },
-  { label: 'Chat', path: '/chat', icon: <MessageCircle size={20} /> },
-  { label: 'Histórico', path: '/historico', icon: <History size={20} /> },
-  { label: 'Modelos', path: '/modelos', icon: <Cpu size={20} /> },
-  { label: 'Planos', path: '/planos', icon: <Crown size={20} /> },
-  { label: 'API Docs', path: '/api-docs', icon: <BookOpen size={20} /> },
-  { label: 'Sobre', path: '/sobre', icon: <Info size={20} /> },
-];
+function isActive(pathname, path) {
+  return path === '/' ? pathname === '/' : pathname.startsWith(path);
+}
 
-function Navbar() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+/**
+ * Navbar enxuta (auditoria, seção 09).
+ * - `variant='default'`: marca + 5 links centralizados + CTA "Mandar foto" + avatar.
+ * - `variant='app'` (/chat): só marca + avatar (o chat tem header próprio).
+ * Sem drawer hambúrguer: no mobile a navegação vive na <BottomNav/>.
+ */
+function Navbar({ variant = 'default' }) {
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { toggleColorMode, mode } = useColorMode();
-  const { user, logout } = useAuth();
-  const tier = useTier();
-
-  const navigate = useNavigate();
-
-  const tierMeta = tier ? TIER_LABEL[tier] : null;
-
-  const handleNavClick = (path) => {
-    if (path.startsWith('/#')) {
-      const id = path.substring(2);
-      if (location.pathname !== '/') {
-        navigate('/', { state: { scrollTo: id } });
-      } else {
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    setDrawerOpen(false);
-    navigate('/');
-  };
-
-  const authItem = user
-    ? { label: 'Perfil', path: '/perfil', icon: <UserRound size={20} /> }
-    : { label: 'Login', path: '/login', icon: <LogIn size={20} /> };
+  const isApp = variant === 'app';
+  const showLinks = !isApp && !isMobile;
 
   return (
-    <>
-      <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 } }}>
-          {isMobile && (
-            <IconButton
-              edge="start"
-              onClick={() => setDrawerOpen(true)}
-              sx={{ mr: 1, color: 'text.primary' }}
-            >
-              <Menu size={24} />
-            </IconButton>
-          )}
-          <Box
-            component={Link}
-            to="/"
+    <AppBar position="sticky" elevation={0}>
+      <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 }, gap: 1 }}>
+        <Box
+          component={Link}
+          to="/"
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
+        >
+          <Marca style={{ width: 34, height: 34, display: 'block' }} />
+          <Typography
             sx={{
-              display: 'flex',
-              alignItems: 'center',
-              textDecoration: 'none',
+              fontFamily: (t) => t.typography.fontFamilyDisplay,
+              fontWeight: 800,
+              fontSize: '1.2rem',
+              letterSpacing: '-0.02em',
               color: 'primary.main',
-              flexGrow: 1,
-              gap: 1,
             }}
           >
-            <Leaf size={28} />
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                color: 'text.primary',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Zé Praga
-            </Typography>
-          </Box>
-          {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {tierMeta && (
-                <Tooltip title={`Plano atual: ${tierMeta.label}`}>
-                  <Chip
-                    label={tierMeta.label}
-                    color={tierMeta.color}
-                    size="small"
-                    aria-label={`Plano ${tierMeta.label}`}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </Tooltip>
-              )}
-              <QuotaDisplay />
-              {navLinks.map((item) => (
-                <Button
+            {copy.brand.name}
+          </Typography>
+        </Box>
+
+        {showLinks ? (
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 3.5 }}>
+            {navLinks.map((item) => {
+              const active = isActive(location.pathname, item.path);
+              return (
+                <Typography
                   key={item.path}
-                  component={item.path.startsWith('/#') ? 'button' : Link}
-                  to={item.path.startsWith('/#') ? undefined : item.path}
-                  onClick={() => handleNavClick(item.path)}
+                  component={Link}
+                  to={item.path}
                   sx={{
-                    color: 'text.secondary',
+                    textDecoration: 'none',
                     fontWeight: 500,
                     fontSize: '0.9rem',
-                    '&:hover': {
-                      color: 'primary.main',
-                      backgroundColor: 'transparent',
-                    },
-                    ...(location.pathname === item.path && {
-                      color: 'primary.main',
-                      fontWeight: 600,
-                    }),
+                    color: active ? 'text.primary' : 'text.secondary',
+                    borderBottom: '2px solid',
+                    borderColor: active ? 'secondary.main' : 'transparent',
+                    pb: 0.25,
+                    transition: 'color 0.15s',
+                    '&:hover': { color: 'text.primary' },
                   }}
                 >
                   {item.label}
-                </Button>
-              ))}
-              <FeatureGate feature="api_access">
-                <Tooltip title="Gerenciar suas chaves de API (Enterprise)">
-                  <Button
-                    component={Link}
-                    to="/api-docs"
-                    variant="text"
-                    size="small"
-                    startIcon={<BookOpen size={16} />}
-                    aria-label="API Keys"
-                    sx={{
-                      color: 'text.secondary',
-                      textTransform: 'none',
-                      fontWeight: 500,
-                    }}
-                  >
-                    API Keys
-                  </Button>
-                </Tooltip>
-              </FeatureGate>
-              <Button
-                component={Link}
-                to="/chat"
-                variant="contained"
-                color="primary"
-                endIcon={<ArrowRight size={18} />}
-                sx={{
-                  ml: 1,
-                  borderRadius: 24,
-                  px: 3,
-                }}
-              >
-                Iniciar Diagnóstico
-              </Button>
-              <Button
-                component={Link}
-                to={authItem.path}
-                variant="outlined"
-                color="primary"
-                startIcon={user ? <UserRound size={18} /> : <LogIn size={18} />}
-                sx={{ ml: 1, borderRadius: 24, px: 2.5 }}
-              >
-                {authItem.label}
-              </Button>
-              {user && (
-                <Tooltip title="Sair">
-                  <IconButton onClick={handleLogout} sx={{ color: 'text.primary' }}>
-                    <LogOut size={20} />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo escuro'}>
-                <IconButton
-                  onClick={toggleColorMode}
-                  sx={{ ml: 0.5, color: 'text.primary' }}
-                >
-                  {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
-          {isMobile && (
-            <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo escuro'}>
-              <IconButton
-                onClick={toggleColorMode}
-                sx={{ color: 'text.primary' }}
-              >
-                {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </IconButton>
-            </Tooltip>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            backgroundColor: 'background.paper',
-            color: 'text.primary',
-            borderRight: '1px solid',
-            borderColor: 'divider',
-          },
-        }}
-      >
-        <Box sx={{ width: 280, pt: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Leaf size={24} color={theme.palette.primary.main} />
-            <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>
-              Zé Praga
-            </Typography>
+                </Typography>
+              );
+            })}
           </Box>
-          <List>
-            {mobileNavItems.map((item) => (
-              <ListItem key={item.path} disablePadding>
-                <ListItemButton
-                  component={Link}
-                  to={item.path}
-                  selected={location.pathname === item.path}
-                  onClick={() => setDrawerOpen(false)}
-                  sx={{
-                    borderRadius: 2,
-                    mx: 1,
-                    color: 'text.secondary',
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                      color: 'text.primary',
-                    },
-                    '&.Mui-selected': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                      color: 'text.primary',
-                      fontWeight: 600,
-                      borderLeft: '3px solid',
-                      borderLeftColor: 'primary.main',
-                    },
-                    '&.Mui-selected:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.16),
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={item.label} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-            <ListItem disablePadding>
-              <ListItemButton
-                component={Link}
-                to={authItem.path}
-                selected={location.pathname === authItem.path}
-                onClick={() => setDrawerOpen(false)}
-                sx={{
-                  borderRadius: 2,
-                  mx: 1,
-                  color: 'text.secondary',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                    color: 'text.primary',
-                  },
-                  '&.Mui-selected': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                    color: 'text.primary',
-                    fontWeight: 600,
-                    borderLeft: '3px solid',
-                    borderLeftColor: 'primary.main',
-                  },
-                  '&.Mui-selected:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.16),
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-                  {authItem.icon}
-                </ListItemIcon>
-                <ListItemText primary={authItem.label} />
-              </ListItemButton>
-            </ListItem>
-          </List>
-          <Box sx={{ px: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', mt: 1 }}>
+        ) : (
+          <Box sx={{ flex: 1 }} />
+        )}
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {!isMobile && !isApp && <QuotaDisplay />}
+          {!isApp && (
             <Button
               component={Link}
               to="/chat"
               variant="contained"
-              color="primary"
-              fullWidth
-              endIcon={<ArrowRight size={18} />}
-              onClick={() => setDrawerOpen(false)}
+              color="secondary"
+              startIcon={<Camera size={18} />}
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
-              Iniciar Diagnóstico
+              {copy.cta.sendPhotoShort}
             </Button>
-            {user && (
-              <Button
-                color="error"
-                variant="outlined"
-                fullWidth
-                startIcon={<LogOut size={18} />}
-                onClick={handleLogout}
-                sx={{ mt: 1.5 }}
-              >
-                Sair
-              </Button>
-            )}
-          </Box>
+          )}
+          <AvatarMenu />
         </Box>
-      </Drawer>
-    </>
+      </Toolbar>
+    </AppBar>
   );
 }
 
 export default Navbar;
-
-

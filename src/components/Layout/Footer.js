@@ -2,137 +2,163 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import IconButton from '@mui/material/IconButton';
-import { Leaf, ExternalLink, BookOpen, Info } from 'lucide-react';
+import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
+import { ReactComponent as Selo } from '../../assets/brand/selo.svg';
 
+const productLinks = [
+  { label: 'Diagnosticar', path: '/chat' },
+  { label: 'Histórico', path: '/historico' },
+  { label: 'Planos', path: '/planos' },
+  { label: 'Perfil', path: '/perfil' },
+];
+
+const projectLinks = [
+  { label: 'Sobre o Zé Praga', path: '/sobre' },
+  { label: 'Modelos & métricas', path: '/modelos' },
+  { label: 'API pública', path: '/api-docs' },
+];
+
+const colTitleSx = {
+  fontFamily: (t) => t.typography.fontFamilyMono,
+  fontSize: '0.7rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: (t) => t.palette.brand.milho,
+  mb: 1.5,
+};
+
+const linkSx = {
+  color: 'rgba(240,237,226,0.8)',
+  textDecoration: 'none',
+  fontSize: '0.875rem',
+  '&:hover': { color: (t) => t.palette.brand.milho },
+  transition: 'color 0.2s',
+};
+
+const pillSx = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  px: 1.25,
+  py: 0.4,
+  borderRadius: 999,
+  fontSize: '0.72rem',
+  fontWeight: 700,
+};
+
+/**
+ * Footer institucional (auditoria, seção 09): fundo Verde Mata, wordmark
+ * Bricolage, selo botânico, 2 colunas de links + selos ODS/TCC.
+ */
 function Footer() {
   return (
     <Box
       component="footer"
       sx={{
-        backgroundColor: '#1B4332',
-        color: 'rgba(255,255,255,0.85)',
+        backgroundColor: 'primary.main',
+        color: (t) => t.palette.brand.creme,
         py: 6,
-        px: { xs: 3, md: 6 },
+        px: { xs: 3, md: 7 },
       }}
     >
       <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-        <Grid container spacing={4}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <Leaf size={24} color="#52B788" />
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1.6fr 1fr 1fr' },
+            gap: 5,
+          }}
+        >
+          {/* Marca + missão */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Marca style={{ width: 44, height: 44, display: 'block' }} />
+              <Typography
+                sx={{
+                  fontFamily: (t) => t.typography.fontFamilyDisplay,
+                  fontWeight: 800,
+                  fontSize: '1.5rem',
+                  letterSpacing: '-0.02em',
+                  color: (t) => t.palette.brand.milho,
+                }}
+              >
                 Zé Praga
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.8 }}>
-              Plataforma de diagnóstico fitossanitário inteligente — hoje focada na soja,
-              com infraestrutura projetada para expandir a diversos cultivos e democratizar
-              o acesso à tecnologia no campo.
+            <Typography
+              sx={{ color: 'rgba(240,237,226,0.78)', lineHeight: 1.7, maxWidth: 360, mb: 2 }}
+            >
+              O consultor fitossanitário de bolso. Hoje na soja, amanhã em qualquer cultivo —
+              pra qualquer produtor, sem cadastro, no celular.
             </Typography>
-          </Grid>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Box sx={{ ...pillSx, bgcolor: (t) => t.palette.brand.milhoSoft, color: '#8A6C0E' }}>
+                ODS 2
+              </Box>
+              <Box sx={{ ...pillSx, bgcolor: (t) => t.palette.brand.milhoSoft, color: '#8A6C0E' }}>
+                ODS 9
+              </Box>
+              <Box
+                sx={{
+                  ...pillSx,
+                  border: '1px solid rgba(240,237,226,0.25)',
+                  color: 'rgba(240,237,226,0.85)',
+                }}
+              >
+                TCC · IMT 2026
+              </Box>
+            </Box>
+          </Box>
 
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 2 }}>
-              Links
-            </Typography>
+          {/* Produto */}
+          <Box>
+            <Typography sx={colTitleSx}>Produto</Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {[
-                { label: 'Chat', path: '/chat' },
-                { label: 'Histórico', path: '/historico' },
-                { label: 'Documentação da API', path: '/api-docs' },
-                { label: 'Sobre o Projeto', path: '/sobre' },
-              ].map((link) => (
-                <Typography
-                  key={link.path}
-                  component={Link}
-                  to={link.path}
-                  variant="body2"
-                  sx={{
-                    color: 'rgba(255,255,255,0.7)',
-                    textDecoration: 'none',
-                    '&:hover': { color: '#52B788' },
-                    transition: 'color 0.2s',
-                  }}
-                >
-                  {link.label}
+              {productLinks.map((l) => (
+                <Typography key={l.path} component={Link} to={l.path} sx={linkSx}>
+                  {l.label}
                 </Typography>
               ))}
             </Box>
-          </Grid>
+          </Box>
 
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#FFFFFF', mb: 2 }}>
-              Projeto
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 2, lineHeight: 1.8 }}>
-              Desenvolvido como Trabalho de Conclusão de Curso no Instituto Mauá de Tecnologia — 2026.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <IconButton
+          {/* Projeto */}
+          <Box>
+            <Typography sx={colTitleSx}>Projeto</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {projectLinks.map((l) => (
+                <Typography key={l.path} component={Link} to={l.path} sx={linkSx}>
+                  {l.label}
+                </Typography>
+              ))}
+              <Typography
+                component="a"
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#52B788' } }}
+                sx={linkSx}
               >
-                <ExternalLink size={20} />
-              </IconButton>
-              <IconButton
-                component={Link}
-                to="/api-docs"
-                sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#52B788' } }}
-              >
-                <BookOpen size={20} />
-              </IconButton>
-              <IconButton
-                component={Link}
-                to="/sobre"
-                sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#52B788' } }}
-              >
-                <Info size={20} />
-              </IconButton>
+                GitHub do TCC
+              </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-              <Box
-                sx={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: 2,
-                  px: 1.5,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}
-              >
-                ODS 2
-              </Box>
-              <Box
-                sx={{
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: 2,
-                  px: 1.5,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}
-              >
-                ODS 9
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         <Box
           sx={{
-            borderTop: '1px solid rgba(255,255,255,0.15)',
             mt: 4,
             pt: 3,
-            textAlign: 'center',
+            borderTop: '1px solid rgba(240,237,226,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            flexWrap: 'wrap',
           }}
         >
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-            &copy; 2026 Grupo Zé Praga — Instituto Mauá de Tecnologia
+          <Typography variant="body2" sx={{ color: 'rgba(240,237,226,0.55)' }}>
+            © 2026 · Grupo Zé Praga · Instituto Mauá de Tecnologia
           </Typography>
+          <Selo style={{ width: 56, height: 56, opacity: 0.7 }} />
         </Box>
       </Box>
     </Box>

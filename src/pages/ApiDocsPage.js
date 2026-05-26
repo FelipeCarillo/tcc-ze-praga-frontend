@@ -7,6 +7,7 @@ import { BookOpen, Server, Key, Zap, AlertTriangle, Gauge } from 'lucide-react';
 import EndpointCard from '../components/ApiDocs/EndpointCard';
 import CodeBlock from '../components/ApiDocs/CodeBlock';
 import ApiSidebar from '../components/ApiDocs/ApiSidebar';
+import TryItPanel from '../components/ApiDocs/TryItPanel';
 
 const BASE_URL = 'https://api.zepraga.com.br/api/v1';
 
@@ -14,6 +15,7 @@ const SECTIONS = [
   { id: 'introducao', label: 'Introdução' },
   { id: 'autenticacao', label: 'Autenticação' },
   { id: 'quickstart', label: 'Quickstart' },
+  { id: 'try-it', label: 'Try it' },
   { id: 'post-classify', label: 'POST /classify' },
   { id: 'get-models', label: 'GET /models' },
   { id: 'get-health', label: 'GET /health' },
@@ -249,6 +251,20 @@ if result['action_plan']
 end`,
             }}
           />
+        </Box>
+
+        {/* Try it */}
+        <Box id="try-it" sx={{ scrollMarginTop: '100px', mb: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <Zap size={20} color="#1F5A3D" />
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              Try it
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.7 }}>
+            Solta uma foto de folha e veja a resposta real da API, sem sair da documentação.
+          </Typography>
+          <TryItPanel />
         </Box>
 
         {/* POST /classify */}

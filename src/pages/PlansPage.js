@@ -1,141 +1,81 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
-import { Check, Crown } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import {
-  PLAN_DETAILS,
-  listPlans,
-} from '../services/subscriptionService';
+import { PLAN_DETAILS, listPlans } from '../services/subscriptionService';
+import { copy } from '../copy/ze';
 
-function formatLimit(value, suffix) {
-  return value === null ? 'Ilimitado' : `${value} ${suffix}`;
-}
-
-function getPlanLabel(details) {
-  return details.title.replace(/^Plano\s+/, '');
-}
-
-function PlanCard({ plan, current, disabled, onSelect }) {
-  const theme = useTheme();
-  const details = PLAN_DETAILS[plan.name];
+function PlanCard({ plan, current, onSelect }) {
+  const details = PLAN_DETAILS[plan.name] || {};
   const isFree = plan.name === 'free';
-  const featuredBg =
-    theme.palette.mode === 'dark'
-      ? alpha(theme.palette.primary.main, 0.18)
-      : alpha(theme.palette.primary.light, 0.16);
+  const supporter = !!details.highlight;
 
   return (
-    <Card
+    <Box
       sx={{
-        height: '100%',
-        borderRadius: 3,
-        backgroundColor: details.highlight ? featuredBg : 'background.paper',
-        border: details.highlight ? '2px solid' : '1px solid',
-        borderColor: details.highlight ? 'primary.main' : 'divider',
-        boxShadow: details.highlight
-          ? `0 12px 28px ${alpha(theme.palette.primary.main, 0.18)}`
-          : 'none',
         position: 'relative',
+        borderRadius: 5,
+        p: 4,
+        border: supporter ? 'none' : '1.5px solid',
+        borderColor: 'divider',
+        backgroundColor: supporter ? 'primary.main' : 'background.paper',
+        color: supporter ? (t) => t.palette.brand.creme : 'text.primary',
+        boxShadow: supporter ? '0 30px 60px -30px rgba(31,90,61,0.5)' : 'none',
       }}
     >
-      {details.highlight && (
-        <Chip
-          label="Mais escolhido"
-          size="small"
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            fontWeight: 700,
-            borderRadius: 999,
-            backgroundColor: 'primary.dark',
-            color: 'primary.light',
-          }}
-        />
+      {supporter && (
+        <Box sx={{ position: 'absolute', top: -12, left: 28, px: 1.5, py: 0.5, borderRadius: 999, bgcolor: 'secondary.main', color: '#fff', fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.62rem', fontWeight: 700 }}>
+          ★ APOIE O PROJETO
+        </Box>
       )}
-      <CardContent sx={{ p: 3.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Chip
-          label={getPlanLabel(details)}
-          size="small"
-          sx={{
-            alignSelf: 'flex-start',
-            mb: 2,
-            borderRadius: 999,
-            backgroundColor: alpha(theme.palette.primary.main, 0.1),
-            color: 'primary.main',
-            fontWeight: 700,
-          }}
-        />
-        <Typography variant="h4" sx={{ mb: 1 }}>
-          {details.title}
+      <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: supporter ? (t) => t.palette.brand.milho : 'text.secondary' }}>
+        {isFree ? 'Produtor' : 'Apoiador'}
+      </Typography>
+      <Typography variant="h3" sx={{ color: supporter ? (t) => t.palette.brand.milho : 'text.primary', mt: 0.5 }}>
+        {(details.title || plan.name).replace(/^Plano\s+/, '')}
+      </Typography>
+      <Typography variant="body2" sx={{ color: supporter ? 'rgba(240,237,226,0.78)' : 'text.secondary', mb: 2, minHeight: 40 }}>
+        {details.description}
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 3 }}>
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '3rem', lineHeight: 1, color: supporter ? (t) => t.palette.brand.milho : 'text.primary' }}>
+          {details.price}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ minHeight: 48 }}>
-          {details.description}
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, my: 3 }}>
-          <Typography variant="h2" sx={{ color: 'primary.main' }}>
-            {details.price}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {details.period}
-          </Typography>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
-        <Box sx={{ display: 'grid', gap: 1.25, mb: 3 }}>
-          {details.features.map((feature) => (
-            <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  color: 'primary.main',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Check size={14} />
-              </Box>
-              <Typography variant="body2">{feature}</Typography>
-            </Box>
-          ))}
-        </Box>
-        <Divider sx={{ my: 2 }} />
-        <Typography variant="caption" color="text.secondary">
-          Chat: {formatLimit(plan.chat_daily_limit, 'por dia')} · Inferência:{' '}
-          {formatLimit(plan.inference_daily_limit, 'por dia')} · API:{' '}
-          {formatLimit(plan.api_monthly_limit, 'por mês')}
-        </Typography>
-        <Button
-          fullWidth
-          variant={details.highlight ? 'contained' : 'outlined'}
-          onClick={() => onSelect(plan)}
-          disabled={current || disabled || isFree}
-          sx={{ mt: 'auto', pt: 1.2, pb: 1.2, borderRadius: 999 }}
-        >
-          {current ? 'Plano atual' : isFree ? 'Incluído no acesso' : 'Assinar plano'}
-        </Button>
-      </CardContent>
-    </Card>
+        <Typography variant="body2" sx={{ color: supporter ? 'rgba(240,237,226,0.7)' : 'text.secondary' }}>{details.period}</Typography>
+      </Box>
+      <Button
+        fullWidth
+        variant={supporter ? 'contained' : 'outlined'}
+        onClick={() => onSelect(plan)}
+        disabled={current || isFree}
+        sx={{
+          mb: 2.5,
+          py: 1.25,
+          ...(supporter
+            ? { bgcolor: (t) => t.palette.brand.milho, color: 'primary.main', fontWeight: 800, '&:hover': { bgcolor: '#E9BC45' } }
+            : { borderColor: 'divider', color: 'text.primary' }),
+        }}
+      >
+        {current ? 'Plano atual' : isFree ? copy.plans.freeCta : copy.plans.supporterCta}
+      </Button>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {(details.features || []).map((f) => (
+          <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Check size={15} color={supporter ? '#F4C95D' : '#1F5A3D'} />
+            <Typography variant="body2" sx={{ color: supporter ? (t) => t.palette.brand.creme : 'text.primary' }}>{f}</Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }
 
 function PlansPage() {
-  const theme = useTheme();
   const [plans, setPlans] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -144,74 +84,70 @@ function PlansPage() {
 
   useEffect(() => {
     listPlans()
-      .then((items) => {
-        setPlans(items);
-        setError('');
-      })
-      .catch(() => setError('Não foi possível carregar os planos agora.'))
+      .then((items) => { setPlans(items); setError(''); })
+      .catch(() => setError('Não consegui carregar os planos agora.'))
       .finally(() => setLoading(false));
   }, []);
 
   const currentPlanName = user?.subscription?.is_active ? user.subscription.plan.name : 'free';
-  const activePlan = useMemo(
-    () => plans.find((plan) => plan.name === currentPlanName),
-    [currentPlanName, plans]
-  );
 
   const handleSelect = (plan) => {
-    if (!user) {
-      navigate('/login', { state: { from: '/planos' } });
-      return;
-    }
-
+    if (!user) return navigate('/login', { state: { from: '/planos' } });
     if (plan.name === 'free') return;
-
     navigate(`/planos/pagamento/${plan.name}`);
   };
 
+  // Mostra os 2 primeiros planos como cards principais; o restante (ex.: API) vira bloco dev.
+  const mainPlans = plans.slice(0, 2);
+
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <Crown size={28} color={theme.palette.primary.dark} />
-        <Typography variant="h3">Planos</Typography>
+    <Box sx={{ maxWidth: 960, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 5, md: 7 } }}>
+      <Box sx={{ textAlign: 'center', mb: 5 }}>
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'secondary.main', fontWeight: 700 }}>
+          Planos
+        </Typography>
+        <Typography variant="h2" sx={{ mt: 1, mb: 1.5 }}>{copy.plans.title}</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560, mx: 'auto' }}>
+          {copy.plans.subtitle}
+        </Typography>
       </Box>
-      <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720, mb: 3 }}>
-        Escolha o plano ideal para o volume de diagnósticos da sua lavoura e amplie seus limites de
-        uso conforme a rotina da propriedade.
-      </Typography>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {activePlan && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Sua assinatura atual é o {PLAN_DETAILS[activePlan.name].title}.
-        </Alert>
-      )}
-
-      {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress />
-        </Box>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
 
       {!loading && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-          {plans.map((plan) => (
-            <PlanCard
-              key={plan.name}
-              plan={plan}
-              current={currentPlanName === plan.name}
-              disabled={false}
-              onSelect={handleSelect}
-            />
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+          {mainPlans.map((plan) => (
+            <PlanCard key={plan.name} plan={plan} current={currentPlanName === plan.name} onSelect={handleSelect} />
           ))}
         </Box>
       )}
-    </Container>
+
+      {/* Bloco API (dev) */}
+      <Box sx={{ mt: 7 }}>
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'text.secondary', mb: 1 }}>
+          Para desenvolvedores
+        </Typography>
+        <Box sx={{ borderRadius: 4, p: { xs: 3, md: 4 }, backgroundColor: (t) => t.palette.brand.solo, color: (t) => t.palette.brand.creme, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4" sx={{ color: (t) => t.palette.brand.milho, mb: 1 }}>Integre o Zé no seu app</Typography>
+            <Typography variant="body2" sx={{ opacity: 0.85, mb: 2 }}>
+              Cooperativa, ERP de fazenda, app de revenda… Use a API do Zé pra classificar folhas
+              direto do seu sistema.
+            </Typography>
+            <Button component={Link} to="/api-docs" endIcon={<ArrowRight size={18} />} sx={{ bgcolor: (t) => t.palette.brand.milho, color: (t) => t.palette.brand.mata, fontWeight: 800, '&:hover': { bgcolor: '#E9BC45' } }}>
+              Ver a documentação
+            </Button>
+          </Box>
+          <Box component="pre" sx={{ m: 0, p: 2, borderRadius: 2.5, bgcolor: 'rgba(0,0,0,0.35)', fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.72rem', color: (t) => t.palette.brand.folha, overflow: 'auto' }}>
+{`curl -X POST \\
+  api.zepraga.com.br/v1/classify \\
+  -H "Authorization: Bearer ze_..." \\
+  -F "image=@folha.jpg"`}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

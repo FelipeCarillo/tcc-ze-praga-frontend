@@ -1,16 +1,13 @@
 import React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
-import { Leaf, Target, Users, GraduationCap, ArrowRight, Globe, Workflow } from 'lucide-react';
-import ApplicationFlowGraph from '../components/About/ApplicationFlowGraph';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import { Camera } from 'lucide-react';
+import { ReactComponent as Selo } from '../assets/brand/selo.svg';
+import { copy } from '../copy/ze';
 
-const teamMembers = [
+const team = [
   { name: 'Breno Coutinho Rodrigues', role: 'Desenvolvedor' },
   { name: 'Felipe Carillo', role: 'Desenvolvedor' },
   { name: 'Gabriel Soares Teixeira', role: 'Desenvolvedor' },
@@ -18,203 +15,126 @@ const teamMembers = [
   { name: 'Luca Pinheiro Gomes', role: 'Desenvolvedor' },
 ];
 
+const timeline = [
+  { tag: '2024.2', title: 'Projeto aprovado', desc: 'Definição de escopo, formação do grupo, alinhamento com orientadores.' },
+  { tag: '2025.1', title: 'Primeiro modelo', desc: 'CNN treinada em PlantVillage. POC de classificação.' },
+  { tag: '2025.2', title: 'Web app + API', desc: 'React + FastAPI, primeira versão pública.' },
+  { tag: '2026.1', title: 'Redesign + banca', desc: 'Voz do Zé, identidade visual, mobile-first. Defesa.', star: true },
+];
+
+const ods = [
+  { num: '02', title: 'Fome zero & agricultura sustentável', desc: 'Reduzir perdas de safra por diagnóstico tardio.' },
+  { num: '09', title: 'Indústria, inovação e infraestrutura', desc: 'Democratização de IA aplicada ao agro brasileiro.' },
+  { num: '17', title: 'Parcerias e meios de implementação', desc: 'Código aberto + dataset público + parcerias acadêmicas.' },
+];
+
 function AboutPage() {
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
-      {/* Project Description */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <Leaf size={28} color="#2D6A4F" />
-          <Typography variant="h3" sx={{ fontWeight: 700 }}>
-            Sobre o Zé Praga
-          </Typography>
-        </Box>
-        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, mb: 3 }}>
-          O Zé Praga é uma plataforma de diagnóstico fitossanitário inteligente, desenvolvida
-          como Trabalho de Conclusão de Curso (TCC) no Instituto Mauá de Tecnologia. Atualmente,
-          nosso foco está na detecção de doenças e pragas na soja, utilizando modelos de deep
-          learning treinados com o dataset PlantVillage para identificar as principais doenças
-          foliares, fornecendo diagnósticos rápidos e planos de ação personalizados.
+    <Box>
+      {/* Quote hero */}
+      <Box sx={{ px: { xs: 3, md: 7 }, py: { xs: 6, md: 9 }, maxWidth: 1100, mx: 'auto' }}>
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'secondary.main', mb: 2 }}>
+          Sobre
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-          Porém, nossa infraestrutura e solução foram projetadas para expandir para diversos
-          cultivos. O objetivo é democratizar o acesso à tecnologia de diagnóstico fitossanitário,
-          permitindo que qualquer produtor — independente do porte ou região — possa identificar
-          problemas em suas lavouras de forma rápida, precisa e acessível, contribuindo para a
-          segurança alimentar e a agricultura sustentável.
+        <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '3.2rem' }, maxWidth: 820, mb: 4 }}>
+          "Quando o produtor não tem agrônomo perto,{' '}
+          <Box component="span" sx={{ color: 'secondary.main' }}>o Zé fica.</Box>"
         </Typography>
-      </Box>
-
-      {/* Motivation */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <Target size={22} color="#2D6A4F" />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Motivação
-          </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.3fr 1fr' }, gap: 5, alignItems: 'start' }}>
+          <Box>
+            <Typography variant="body1" sx={{ lineHeight: 1.7, mb: 2 }}>
+              O Zé Praga nasceu no <b>Instituto Mauá de Tecnologia</b> como Trabalho de Conclusão de
+              Curso, a partir de uma constatação: muitos produtores não têm acesso regular a um
+              agrônomo. Quando aparece uma praga na folha, "o que é isso?" vira "vou pulverizar e ver".
+            </Typography>
+            <Typography variant="body1" sx={{ lineHeight: 1.7, mb: 2 }}>
+              Construímos o Zé como um consultor fitossanitário de bolso, gratuito, sem cadastro, que
+              roda no navegador. Foto → diagnóstico → receita prática, em português.
+            </Typography>
+            <Typography variant="body1" sx={{ lineHeight: 1.7 }}>
+              Hoje o Zé reconhece <b>6 classes de pragas em soja</b>. Em breve, milho, café e algodão.
+            </Typography>
+          </Box>
+          <Box sx={{ aspectRatio: '4/5', borderRadius: 4, background: 'linear-gradient(160deg, #1F5A3D, #74C69D)', position: 'relative', overflow: 'hidden', display: 'grid', placeItems: 'center' }}>
+            <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontSize: '5rem', color: (t) => t.palette.brand.milho, opacity: 0.4 }}>Z</Typography>
+            <Typography sx={{ position: 'absolute', bottom: 16, left: 16, right: 16, fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.62rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Foto do grupo — placeholder
+            </Typography>
+          </Box>
         </Box>
-        <Grid container spacing={3}>
-          {[
-            {
-              title: 'Problema',
-              text: 'A identificação de doenças e pragas depende de conhecimento técnico especializado, nem sempre acessível para pequenos e médios produtores em todo o Brasil.',
-            },
-            {
-              title: 'Solução',
-              text: 'Uma plataforma simples e expansível: hoje focada na soja, mas com infraestrutura pronta para abranger diversos cultivos — levando tecnologia ao campo.',
-            },
-            {
-              title: 'Impacto',
-              text: 'Democratização do acesso a diagnóstico fitossanitário, redução de perdas e uso mais eficiente de insumos para produtores de qualquer porte.',
-            },
-          ].map((item) => (
-            <Grid size={{ xs: 12, md: 4 }} key={item.title}>
-              <Card sx={{ p: 3, height: '100%' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                  {item.text}
-                </Typography>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Application Flow */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <Workflow size={22} color="#2D6A4F" />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Como o Zé Praga Funciona
-          </Typography>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 3 }}>
-          O fluxo abaixo mostra como a tecnologia chega até qualquer produtor rural de forma simples e acessível.
-          Da foto da folha ao diagnóstico com plano de ação — tudo em segundos, sem necessidade de
-          conhecimento técnico especializado. Hoje para soja, amanhã para qualquer cultivo.
-        </Typography>
-        <ApplicationFlowGraph />
       </Box>
 
       {/* Team */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-          <Users size={22} color="#2D6A4F" />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Equipe
+      <Box sx={{ backgroundColor: (t) => t.palette.surface.sunken, px: { xs: 3, md: 7 }, py: { xs: 6, md: 8 } }}>
+        <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
+          <Typography variant="h3" sx={{ mb: 0.5 }}>Quem fez</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+            Turma de TCC do IMT, sob orientação dos Profs. Alexsander Tressino de Carvalho e Gabriel de Souza Lima.
           </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {teamMembers.map((member) => (
-            <Card
-              key={member.name}
-              sx={{
-                p: 3,
-                textAlign: 'center',
-                flex: { xs: '1 1 calc(50% - 16px)', sm: '1 1 calc(33.333% - 16px)', md: '1 1 0' },
-                maxWidth: { md: 'calc(20% - 13px)' },
-                minWidth: 140,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(45, 106, 79, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 2,
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
-                  color: 'primary.main',
-                }}
-              >
-                {member.name.charAt(0)}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(5,1fr)' }, gap: 2 }}>
+            {team.map((m) => (
+              <Box key={m.name} sx={{ backgroundColor: 'background.paper', borderRadius: 3, p: 2, border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ aspectRatio: '1', borderRadius: 2, background: 'linear-gradient(160deg,#74C69D,#1F5A3D)', display: 'grid', placeItems: 'center', mb: 1.5, color: (t) => t.palette.brand.milho, fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.8rem' }}>
+                  {m.name.charAt(0)}
+                </Box>
+                <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '0.82rem', lineHeight: 1.2 }}>
+                  {m.name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">{m.role}</Typography>
               </Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                {member.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {member.role}
-              </Typography>
-            </Card>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Timeline */}
+      <Box sx={{ px: { xs: 3, md: 7 }, py: { xs: 6, md: 8 }, maxWidth: 1100, mx: 'auto' }}>
+        <Typography variant="h3" sx={{ mb: 4 }}>Marcos</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 3 }}>
+          {timeline.map((t, i) => (
+            <Box key={t.tag}>
+              <Box sx={{ width: 30, height: 30, borderRadius: '50%', display: 'grid', placeItems: 'center', mb: 1.5, fontFamily: (th) => th.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '0.8rem', bgcolor: t.star ? 'secondary.main' : 'primary.main', color: t.star ? '#fff' : (th) => th.palette.brand.milho }}>
+                {t.star ? '★' : i + 1}
+              </Box>
+              <Typography sx={{ fontFamily: (th) => th.typography.fontFamilyMono, fontSize: '0.7rem', color: 'secondary.main', fontWeight: 700 }}>{t.tag}</Typography>
+              <Typography sx={{ fontFamily: (th) => th.typography.fontFamilyDisplay, fontWeight: 600, fontSize: '0.95rem', mt: 0.25 }}>{t.title}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.5 }}>{t.desc}</Typography>
+            </Box>
           ))}
         </Box>
       </Box>
 
-      {/* Institution */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <GraduationCap size={22} color="#2D6A4F" />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Instituição e Orientação
-          </Typography>
-        </Box>
-        <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, mb: 2 }}>
-          Este projeto foi desenvolvido no Centro Universitário do Instituto Mauá de Tecnologia (IMT),
-          como Trabalho de Conclusão de Curso em Ciência da Computação.
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-          <strong>Orientadores:</strong> Prof. Alexsander Tressino de Carvalho e Prof. Gabriel de Souza Lima
-        </Typography>
-      </Box>
-
       {/* ODS */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <Globe size={22} color="#2D6A4F" />
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
-            Objetivos de Desenvolvimento Sustentável
+      <Box sx={{ backgroundColor: 'primary.main', color: (t) => t.palette.brand.creme, px: { xs: 3, md: 7 }, py: { xs: 6, md: 8 } }}>
+        <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: (t) => t.palette.brand.milho, mb: 1 }}>
+            Impacto
           </Typography>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
-          O Zé Praga está alinhado com os Objetivos de Desenvolvimento Sustentável da ONU:
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <Card sx={{ p: 2.5, flex: '1 1 200px' }}>
-            <Chip label="ODS 2" size="small" sx={{ mb: 1, backgroundColor: '#DDA63A', color: '#FFF', fontWeight: 700 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Fome Zero e Agricultura Sustentável
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Contribui para a segurança alimentar ao ajudar produtores a proteger suas lavouras.
-            </Typography>
-          </Card>
-          <Card sx={{ p: 2.5, flex: '1 1 200px' }}>
-            <Chip label="ODS 9" size="small" sx={{ mb: 1, backgroundColor: '#FD6925', color: '#FFF', fontWeight: 700 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Indústria, Inovação e Infraestrutura
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Utiliza inteligência artificial e inovação tecnológica aplicada ao agronegócio.
-            </Typography>
-          </Card>
+          <Typography variant="h3" sx={{ color: (t) => t.palette.brand.milho, mb: 3 }}>Ligações com ODS</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3,1fr)' }, gap: 3 }}>
+            {ods.map((o) => (
+              <Box key={o.num}>
+                <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '3rem', color: (t) => t.palette.brand.milho, lineHeight: 1 }}>{o.num}</Typography>
+                <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontSize: '1.05rem', mt: 1, mb: 0.5 }}>{o.title}</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.85, lineHeight: 1.5 }}>{o.desc}</Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Box>
 
-      {/* CTA */}
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
-          Experimente o Zé Praga
+      {/* Acknowledgements + CTA */}
+      <Box sx={{ px: 3, py: { xs: 7, md: 9 }, textAlign: 'center', maxWidth: 720, mx: 'auto' }}>
+        <Selo style={{ width: 80, height: 80, margin: '0 auto 16px' }} />
+        <Typography variant="h3" sx={{ mb: 1 }}>Experimenta o Zé.</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          Instituto Mauá de Tecnologia · 2026 · Licença MIT.
         </Typography>
-        <Button
-          component={Link}
-          to="/chat"
-          variant="contained"
-          color="primary"
-          size="large"
-          endIcon={<ArrowRight size={20} />}
-          sx={{ px: 5, py: 1.5 }}
-        >
-          Iniciar Diagnóstico
+        <Button component={Link} to="/chat" variant="contained" color="secondary" size="large" startIcon={<Camera size={20} />}>
+          {copy.cta.sendPhoto}
         </Button>
       </Box>
-    </Container>
+    </Box>
   );
 }
 

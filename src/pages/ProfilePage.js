@@ -1,264 +1,231 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Alert from '@mui/material/Alert';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
-import Collapse from '@mui/material/Collapse';
-import CircularProgress from '@mui/material/CircularProgress';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
-import LinearProgress from '@mui/material/LinearProgress';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import { Activity, Crown, LogOut, Mail, Save, UserRound } from 'lucide-react';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Collapse from '@mui/material/Collapse';
+import Switch from '@mui/material/Switch';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import { ClipboardList, CreditCard, Moon, KeyRound, LogOut, Plus, Trash2, Pencil } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useColorMode } from '../hooks/useColorMode';
+import { FeatureGate } from '../components/FeatureGate';
 import { PLAN_DETAILS } from '../services/subscriptionService';
+import { getDiagnoses } from '../services/historyService';
+import { listTalhoes, createTalhao, deleteTalhao } from '../services/talhoesService';
 
-const DEFAULT_PROFILE_NAME = 'Produtor';
+function StatCell({ value, label }) {
+  return (
+    <Box sx={{ backgroundColor: 'primary.main', textAlign: 'center', py: 1.5 }}>
+      <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.4rem', color: (t) => t.palette.brand.milho, lineHeight: 1 }}>
+        {value}
+      </Typography>
+      <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.58rem', color: 'rgba(240,237,226,0.7)', mt: 0.5, textTransform: 'uppercase' }}>
+        {label}
+      </Typography>
+    </Box>
+  );
+}
 
-function UsageRow({ label, value }) {
-  const percent = value.limit ? Math.min(100, (value.used / value.limit) * 100) : 0;
-  const count = value.limit === null ? 'Ilimitado' : `${value.used}/${value.limit}`;
+function ShortcutRow({ icon, title, right, onClick, to }) {
+  const Comp = to ? Link : 'div';
+  return (
+    <Box
+      component={Comp}
+      to={to}
+      onClick={onClick}
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.25, p: 1.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper', textDecoration: 'none', color: 'text.primary', cursor: 'pointer', '&:hover': { borderColor: 'primary.light' } }}
+    >
+      <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'grid', placeItems: 'center', backgroundColor: (t) => t.palette.surface.sunken, color: 'primary.main' }}>
+        {icon}
+      </Box>
+      <Typography sx={{ flex: 1, fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '0.9rem' }}>{title}</Typography>
+      {right}
+    </Box>
+  );
+}
+
+function TalhoesSection() {
+  const [talhoes, setTalhoes] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ nome: '', hectares: '', cultura: 'soja' });
+
+  const reload = useCallback(() => { listTalhoes().then(setTalhoes); }, []);
+  useEffect(() => { reload(); }, [reload]);
+
+  const add = async (e) => {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    await createTalhao(form);
+    setForm({ nome: '', hectares: '', cultura: 'soja' });
+    setAdding(false);
+    reload();
+  };
+  const remove = async (id) => { await deleteTalhao(id); reload(); };
 
   return (
-    <Box sx={{ mb: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {label}
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+        <Typography sx={{ flex: 1, fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary' }}>
+          Meus talhões
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {count}
-        </Typography>
+        <IconButton size="small" onClick={() => setAdding((v) => !v)} aria-label="Adicionar talhão" sx={{ bgcolor: 'secondary.main', color: '#fff', '&:hover': { bgcolor: 'secondary.dark' } }}>
+          <Plus size={16} />
+        </IconButton>
       </Box>
-      <LinearProgress
-        variant="determinate"
-        value={percent}
-        sx={{
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: 'action.disabledBackground',
-          '& .MuiLinearProgress-bar': { borderRadius: 4, backgroundColor: 'primary.main' },
-        }}
-      />
+
+      <Collapse in={adding}>
+        <Box component="form" onSubmit={add} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 2, mb: 1.5, borderRadius: 2.5, backgroundColor: (t) => t.palette.surface.sunken }}>
+          <TextField size="small" label="Nome / apelido do talhão" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} />
+          <TextField size="small" label="Hectares" type="number" value={form.hectares} onChange={(e) => setForm((f) => ({ ...f, hectares: e.target.value }))} />
+          <Button type="submit" variant="contained" color="secondary" size="small">Salvar talhão</Button>
+        </Box>
+      </Collapse>
+
+      {talhoes.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
+          Nenhum talhão ainda. Cadastra um pra eu agrupar seus diagnósticos por área.
+        </Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {talhoes.map((t) => (
+            <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper' }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 2, background: 'linear-gradient(160deg,#74C69D,#1F5A3D)', flexShrink: 0 }} />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontFamily: (th) => th.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '0.88rem' }} noWrap>{t.nome}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {[t.hectares ? `${t.hectares} ha` : null, t.cultura].filter(Boolean).join(' · ')}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={() => remove(t.id)} aria-label="Remover" sx={{ color: 'text.secondary' }}>
+                <Trash2 size={16} />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }
 
 function ProfilePage() {
-  const theme = useTheme();
   const { user, loading, updateProfile, logout } = useAuth();
-  const [form, setForm] = useState({ full_name: '', email: '' });
+  const { mode, toggleColorMode } = useColorMode();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ full_name: '', email: '' });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
+  const [diagCount, setDiagCount] = useState(0);
+  const [talhoesCount, setTalhoesCount] = useState(0);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login', { replace: true, state: { from: '/perfil' } });
-    }
+    if (!loading && !user) navigate('/login', { replace: true, state: { from: '/perfil' } });
   }, [loading, navigate, user]);
 
   useEffect(() => {
-    if (user) {
-      setForm({ full_name: user.full_name || '', email: user.email || '' });
-    }
+    if (user) setForm({ full_name: user.full_name || '', email: user.email || '' });
   }, [user]);
 
-  const handleChange = (event) => {
-    setForm((prev) => ({ ...prev, [event.target.name]: event.target.value }));
-  };
+  useEffect(() => {
+    getDiagnoses().then((d) => setDiagCount(d.length)).catch(() => {});
+    listTalhoes().then((t) => setTalhoesCount(t.length)).catch(() => {});
+  }, []);
 
-  const handleSave = async (event) => {
-    event.preventDefault();
+  if (loading || !user) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+  }
+
+  const subscription = user.subscription?.is_active ? user.subscription : null;
+  const planTitle = subscription ? (PLAN_DETAILS[subscription.plan.name]?.title || subscription.plan.display_name) : 'Grátis';
+  const isSupporter = !!subscription;
+  const initial = (user.full_name || user.email || 'Z').trim().charAt(0).toUpperCase();
+
+  const handleSave = async (e) => {
+    e.preventDefault();
     setSaving(true);
     setMessage('');
     try {
       await updateProfile(form);
-      setMessage('Perfil atualizado com sucesso.');
+      setMessage('Pronto, atualizei aqui.');
       setEditing(false);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  if (loading || !user) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  const usage = user.usage || {
-    chat: { used: 0, limit: 10 },
-    inference: { used: 0, limit: 5 },
-    api: { used: 0, limit: 0 },
-  };
-  const subscription = user.subscription?.is_active ? user.subscription : null;
-  const activePlan = subscription?.plan;
-  const planTitle = activePlan ? PLAN_DETAILS[activePlan.name]?.title || activePlan.display_name : 'Plano Gratuito';
-  const initials = (user.full_name || user.email || 'ZP')
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-            <UserRound size={28} color={theme.palette.primary.dark} />
-            <Typography variant="h3">Perfil</Typography>
+    <Box sx={{ maxWidth: 560, mx: 'auto', pb: 4 }}>
+      {/* Header mata */}
+      <Box sx={{ background: 'linear-gradient(180deg, #1F5A3D, #0F3D27)', color: (t) => t.palette.brand.creme, px: { xs: 2.5, md: 3 }, pt: 4, pb: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
+          <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: (t) => t.palette.brand.milho, color: 'primary.main', display: 'grid', placeItems: 'center', fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.6rem' }}>
+            {initial}
           </Box>
-          <Typography variant="body1" color="text.secondary">
-            Gerencie os dados da sua conta e acompanhe o uso previsto do plano gratuito.
-          </Typography>
-        </Box>
-        <Button color="error" variant="outlined" startIcon={<LogOut size={18} />} onClick={handleLogout}>
-          Sair
-        </Button>
-      </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)' },
-          gap: 3,
-        }}
-      >
-        <Card sx={{ borderRadius: 3, boxShadow: 'none' }}>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: { xs: 'flex-start', sm: 'center' },
-                gap: 2.5,
-                flexDirection: { xs: 'column', sm: 'row' },
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 88,
-                  height: 88,
-                  backgroundColor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontSize: '1.6rem',
-                  fontWeight: 700,
-                }}
-              >
-                {initials}
-              </Avatar>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="h5" sx={{ mb: 0.5 }}>
-                  {user.full_name || DEFAULT_PROFILE_NAME}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
-                  {user.email}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Estas informações ficam salvas para manter sua sessão ativa neste dispositivo.
-                </Typography>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.2rem', color: (t) => t.palette.brand.milho, lineHeight: 1.1 }} noWrap>
+              {user.full_name || 'Compadre'}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.8 }} noWrap component="div">{user.email}</Typography>
+            {isSupporter && (
+              <Box sx={{ display: 'inline-flex', mt: 0.75, px: 1, py: 0.25, borderRadius: 999, bgcolor: 'secondary.main', color: '#fff', fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.58rem', fontWeight: 700 }}>
+                ★ {planTitle.replace(/^Plano\s+/, '').toUpperCase()}
               </Box>
-              <Button
-                variant="outlined"
-                onClick={() => setEditing((prev) => !prev)}
-                sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
-              >
-                {editing ? 'Fechar edição' : 'Editar informações'}
-              </Button>
-            </Box>
-
-            {message && (
-              <Alert severity="success" sx={{ mt: 3, mb: 2 }}>
-                {message}
-              </Alert>
             )}
-
-            <Collapse in={editing}>
-              <Divider sx={{ my: 3 }} />
-              <Box component="form" onSubmit={handleSave}>
-                <TextField
-                  fullWidth
-                  label="Nome"
-                  name="full_name"
-                  value={form.full_name}
-                  onChange={handleChange}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  required
-                  label="E-mail"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  sx={{ mb: 3 }}
-                />
-                <Button type="submit" variant="contained" startIcon={<Save size={18} />} disabled={saving}>
-                  {saving ? 'Salvando...' : 'Salvar alterações'}
-                </Button>
-              </Box>
-            </Collapse>
-          </CardContent>
-        </Card>
-
-        <Box sx={{ display: 'grid', gap: 3 }}>
-          <Card sx={{ borderRadius: 4 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Crown size={20} color="#F4A261" />
-                <Typography variant="h5">Assinatura</Typography>
-              </Box>
-              <Chip
-                label={planTitle}
-                color="success"
-                size="small"
-                sx={{ mb: 2 }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {subscription
-                  ? 'Sua assinatura está ativa e seus limites já foram atualizados para este perfil.'
-                  : 'Você está no plano gratuito. Ative um plano pago para ampliar limites e acessar recursos avançados.'}
-              </Typography>
-              <Button component={Link} to="/planos" variant="outlined">
-                {subscription ? 'Trocar plano' : 'Ver planos'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card sx={{ borderRadius: 4 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Activity size={20} color={theme.palette.primary.dark} />
-                <Typography variant="h5">Uso</Typography>
-              </Box>
-              <UsageRow label="Chat diário" value={usage.chat} />
-              <UsageRow label="Inferências diárias" value={usage.inference} />
-              <UsageRow label="Chamadas de API mensais" value={usage.api || { used: 0, limit: 0 }} />
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                <Mail size={16} />
-                <Typography variant="body2">{user.email}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
+          </Box>
+          <IconButton onClick={() => setEditing((v) => !v)} aria-label="Editar perfil" sx={{ color: (t) => t.palette.brand.milho }}>
+            <Pencil size={18} />
+          </IconButton>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', borderRadius: '10px 10px 0 0', overflow: 'hidden', backgroundColor: 'rgba(244,201,93,0.18)' }}>
+          <StatCell value={diagCount} label="diagnósticos" />
+          <StatCell value={talhoesCount} label="talhões" />
+          <StatCell value={planTitle.replace(/^Plano\s+/, '')} label="plano" />
         </Box>
       </Box>
-    </Container>
+
+      <Box sx={{ px: { xs: 2.5, md: 3 }, pt: 3 }}>
+        {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
+
+        <Collapse in={editing}>
+          <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2, mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <TextField size="small" label="Nome" name="full_name" value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} />
+            <TextField size="small" label="E-mail" name="email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+            <Button type="submit" variant="contained" color="secondary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar alterações'}</Button>
+          </Box>
+        </Collapse>
+
+        {/* Produção */}
+        <Box sx={{ mb: 3 }}>
+          <TalhoesSection />
+        </Box>
+
+        {/* Conta */}
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 1.5 }}>Conta</Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <ShortcutRow icon={<ClipboardList size={16} />} title="Histórico completo" to="/historico" />
+          <ShortcutRow icon={<CreditCard size={16} />} title={subscription ? 'Plano e cobrança' : 'Ver planos'} to="/planos" />
+          <FeatureGate feature="api_access">
+            <ShortcutRow icon={<KeyRound size={16} />} title="API keys" to="/api-docs" />
+          </FeatureGate>
+          <ShortcutRow
+            icon={<Moon size={16} />}
+            title="Modo noite"
+            onClick={toggleColorMode}
+            right={<Switch checked={mode === 'dark'} onChange={toggleColorMode} size="small" onClick={(e) => e.stopPropagation()} />}
+          />
+        </Box>
+
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Button onClick={() => { logout(); navigate('/'); }} startIcon={<LogOut size={16} />} color="error" sx={{ fontWeight: 600 }}>
+            Encerrar sessão
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

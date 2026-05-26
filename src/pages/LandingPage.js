@@ -5,6 +5,8 @@ import HeroSection from '../components/Landing/HeroSection';
 import HowItWorksSection from '../components/Landing/HowItWorksSection';
 import DiseasesSection from '../components/Landing/DiseasesSection';
 import TechnologySection from '../components/Landing/TechnologySection';
+import FAQ from '../components/Landing/FAQ';
+import CTAFooter from '../components/Landing/CTAFooter';
 
 function LandingPage() {
   const location = useLocation();
@@ -25,6 +27,8 @@ function LandingPage() {
       <HowItWorksSection />
       <DiseasesSection />
       <TechnologySection />
+      <FAQ />
+      <CTAFooter />
     </Box>
   );
 }

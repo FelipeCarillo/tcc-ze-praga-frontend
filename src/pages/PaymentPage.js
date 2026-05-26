@@ -1,321 +1,171 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
-import { ArrowLeft, CreditCard, Leaf, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Camera, Copy } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import {
-  PLAN_DETAILS,
-  listPlans,
-  subscribeToPlan,
-  usageFromPlan,
-} from '../services/subscriptionService';
+import { PLAN_DETAILS, listPlans, subscribeToPlan, usageFromPlan } from '../services/subscriptionService';
+import { copy } from '../copy/ze';
 
-function formatLimit(value, suffix) {
-  return value === null ? 'Ilimitado' : `${value} ${suffix}`;
-}
+const TABS = [
+  { key: 'pix', label: '⚡ Pix' },
+  { key: 'card', label: 'Cartão' },
+  { key: 'boleto', label: 'Boleto' },
+];
 
-function getPlanLabel(details) {
-  return details.title.replace(/^Plano\s+/, '');
-}
-
-const NAME_PATTERN = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/;
-const EXPIRY_PATTERN = /^(0[1-9]|1[0-2])\/\d{2}$/;
-
-function onlyDigits(value, maxLength) {
-  return value.replace(/\D/g, '').slice(0, maxLength);
-}
-
-function formatExpiry(value) {
-  const digits = onlyDigits(value, 4);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-}
-
-function formatCardNumber(value) {
-  return onlyDigits(value, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
-}
-
-function sanitizeName(value) {
-  return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g, '').replace(/\s{2,}/g, ' ').slice(0, 80);
-}
+function onlyDigits(v, n) { return v.replace(/\D/g, '').slice(0, n); }
+function formatCard(v) { return onlyDigits(v, 16).replace(/(\d{4})(?=\d)/g, '$1 '); }
 
 function PaymentPage() {
-  const theme = useTheme();
   const { planName } = useParams();
-  const [plan, setPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [payment, setPayment] = useState({
-    holder: '',
-    number: '',
-    expiry: '',
-    cvc: '',
-  });
   const { user, syncUser } = useAuth();
   const navigate = useNavigate();
-  const paymentValid =
-    NAME_PATTERN.test(payment.holder.trim()) &&
-    payment.number.length === 16 &&
-    EXPIRY_PATTERN.test(payment.expiry) &&
-    payment.cvc.length === 3;
+  const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('pix');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [card, setCard] = useState({ number: '', expiry: '', cvc: '', cpf: '' });
 
   useEffect(() => {
     if (!user) {
       navigate('/login', { replace: true, state: { from: `/planos/pagamento/${planName}` } });
       return;
     }
-
-    setError('');
     listPlans()
       .then((items) => {
-        const selected = items.find((item) => item.name === planName);
-        if (!selected || selected.name === 'free') {
-          navigate('/planos', { replace: true });
-          return;
-        }
-        setPlan(selected);
+        const sel = items.find((i) => i.name === planName);
+        if (!sel || sel.name === 'free') navigate('/planos', { replace: true });
+        else setPlan(sel);
       })
-      .catch(() => setError('Não foi possível carregar o plano selecionado.'))
+      .catch(() => setError('Não consegui carregar o plano.'))
       .finally(() => setLoading(false));
   }, [navigate, planName, user]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    const nextValue = {
-      holder: sanitizeName(value),
-      number: onlyDigits(value, 16),
-      expiry: formatExpiry(value),
-      cvc: onlyDigits(value, 3),
-    }[name] ?? value;
-
-    setPayment((prev) => ({ ...prev, [name]: nextValue }));
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!plan || !user || !paymentValid) return;
-
+  const confirm = async () => {
+    if (!plan || !user) return;
     setSubmitting(true);
     setError('');
     try {
       const subscription = await subscribeToPlan(plan.name);
-      syncUser({
-        ...user,
-        subscription,
-        usage: usageFromPlan(subscription.plan),
-      });
-      setPayment({ holder: '', number: '', expiry: '', cvc: '' });
-      navigate('/perfil', { replace: true });
+      syncUser({ ...user, subscription, usage: usageFromPlan(subscription.plan) });
+      setSuccess(true);
     } catch {
-      setError('Não foi possível ativar a assinatura. Tente novamente.');
+      setError('Não consegui ativar a assinatura. Tenta de novo.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
+  if (!plan) return null;
+
+  const details = PLAN_DETAILS[plan.name] || {};
+
+  if (success) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
+      <Box sx={{ maxWidth: 460, mx: 'auto', px: 3, py: 6, textAlign: 'center' }}>
+        <Box component="svg" viewBox="0 0 100 100" sx={{ width: 92, mx: 'auto', mb: 2 }} xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="44" fill="#1F5A3D" />
+          <path d="M30 52 L44 66 L72 36" stroke="#F4C95D" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </Box>
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyHand, color: 'secondary.main', fontSize: '1.6rem' }}>
+          {copy.payment.successKicker}
+        </Typography>
+        <Typography variant="h3" sx={{ mb: 1 }}>{copy.payment.successTitle}</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          {(details.title || plan.name)} ativo. Diagnósticos ampliados e selo no perfil já valendo.
+        </Typography>
+        <Button component={Link} to="/chat" variant="contained" color="secondary" size="large" startIcon={<Camera size={20} />}>
+          Voltar pro Zé
+        </Button>
       </Box>
     );
   }
 
-  if (!plan) {
-    return error ? (
-      <Container maxWidth="sm" sx={{ py: { xs: 4, md: 6 } }}>
-        <Button
-          startIcon={<ArrowLeft size={18} />}
-          onClick={() => navigate('/planos')}
-          sx={{ mb: 3, color: 'text.secondary' }}
-        >
-          Voltar aos planos
-        </Button>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    ) : null;
-  }
-
-  const details = PLAN_DETAILS[plan.name];
-  const summaryBg =
-    theme.palette.mode === 'dark'
-      ? alpha(theme.palette.primary.main, 0.18)
-      : alpha(theme.palette.primary.light, 0.16);
-
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-      <Button
-        startIcon={<ArrowLeft size={18} />}
-        onClick={() => navigate('/planos')}
-        sx={{ mb: 3, color: 'text.secondary' }}
-      >
-        Voltar aos planos
-      </Button>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 420px' }, gap: 3 }}>
-        <Card sx={{ borderRadius: 3, boxShadow: 'none' }}>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  color: 'primary.main',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ShieldCheck size={20} />
-              </Box>
-              <Typography variant="h5">Pagamento seguro</Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Preencha os dados para simular a ativação. Nenhuma cobrança real é realizada.
-            </Typography>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            <Box component="form" onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                required
-                label="Nome impresso no cartão"
-                name="holder"
-                value={payment.holder}
-                onChange={handleChange}
-                error={Boolean(payment.holder) && !NAME_PATTERN.test(payment.holder.trim())}
-                helperText="Use apenas letras e espaços."
-                inputProps={{ maxLength: 80 }}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                required
-                label="Número do cartão"
-                name="number"
-                value={formatCardNumber(payment.number)}
-                onChange={handleChange}
-                placeholder="4242 4242 4242 4242"
-                helperText="Digite os 16 números do cartão."
-                inputProps={{ inputMode: 'numeric', maxLength: 19, pattern: '[0-9 ]*' }}
-                sx={{ mb: 2 }}
-              />
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
-                <TextField
-                  required
-                  label="Validade"
-                  name="expiry"
-                  value={payment.expiry}
-                  onChange={handleChange}
-                  placeholder="12/30"
-                  error={payment.expiry.length === 5 && !EXPIRY_PATTERN.test(payment.expiry)}
-                  helperText="Formato MM/YY."
-                  inputProps={{ inputMode: 'numeric', maxLength: 5, pattern: '(0[1-9]|1[0-2])/[0-9]{2}' }}
-                />
-                <TextField
-                  required
-                  label="CVC"
-                  name="cvc"
-                  value={payment.cvc}
-                  onChange={handleChange}
-                  placeholder="123"
-                  helperText="3 dígitos."
-                  inputProps={{ inputMode: 'numeric', maxLength: 3, pattern: '[0-9]{3}' }}
-                />
-              </Box>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<CreditCard size={18} />}
-                disabled={submitting || !paymentValid}
-                sx={{ borderRadius: 999 }}
-              >
-                {submitting ? 'Ativando...' : 'Ativar assinatura'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            backgroundColor: summaryBg,
-            border: '2px solid',
-            borderColor: 'primary.main',
-            boxShadow: `0 12px 28px ${alpha(theme.palette.primary.main, 0.18)}`,
-          }}
-        >
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Leaf size={20} color={theme.palette.primary.dark} />
-                <Typography variant="h5">Resumo</Typography>
-              </Box>
-              <Box
-                sx={{
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 999,
-                  backgroundColor: 'primary.dark',
-                  color: 'primary.light',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                }}
-              >
-                {getPlanLabel(details)}
-              </Box>
-            </Box>
-            <Typography variant="h4" sx={{ mb: 1 }}>
-              {details.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {details.description}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 2 }}>
-              <Typography variant="h3" sx={{ color: 'primary.main' }}>
-                {details.price}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {details.period}
-              </Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            {[
-              ['Chat', formatLimit(plan.chat_daily_limit, 'por dia')],
-              ['Inferência', formatLimit(plan.inference_daily_limit, 'por dia')],
-              ['API', formatLimit(plan.api_monthly_limit, 'por mês')],
-            ].map(([label, value]) => (
-              <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {label}
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  {value}
-                </Typography>
-              </Box>
-            ))}
-            <Alert severity="info" sx={{ mt: 3 }}>
-              Esta tela simula o pagamento e ativa o plano no seu perfil.
-            </Alert>
-          </CardContent>
-        </Card>
+    <Box sx={{ maxWidth: 460, mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <IconButton onClick={() => navigate('/planos')} size="small" aria-label="Voltar" sx={{ color: 'text.secondary' }}>
+          <ChevronLeft size={20} />
+        </IconButton>
+        <Box>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>
+            Plano {(details.title || plan.name).replace(/^Plano\s+/, '')}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">{details.price}{details.period}</Typography>
+        </Box>
       </Box>
-    </Container>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {/* Tabs */}
+      <Box sx={{ display: 'flex', gap: 0.5, p: 0.5, borderRadius: 999, backgroundColor: (t) => t.palette.surface.sunken, mb: 2.5 }}>
+        {TABS.map((tb) => (
+          <Box
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
+            sx={{ flex: 1, textAlign: 'center', py: 1, borderRadius: 999, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, bgcolor: tab === tb.key ? 'primary.main' : 'transparent', color: tab === tb.key ? (t) => t.palette.brand.milho : 'text.secondary' }}
+          >
+            {tb.label}
+          </Box>
+        ))}
+      </Box>
+
+      {tab === 'pix' && (
+        <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ width: 180, height: 180, mx: 'auto', mb: 1.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', display: 'grid', placeItems: 'center', backgroundColor: '#fff' }}>
+            <Box component="svg" viewBox="0 0 100 100" sx={{ width: 150, height: 150 }} xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="6" width="28" height="28" fill="#1C2A20" />
+              <rect x="66" y="6" width="28" height="28" fill="#1C2A20" />
+              <rect x="6" y="66" width="28" height="28" fill="#1C2A20" />
+              <rect x="42" y="42" width="10" height="10" fill="#1C2A20" />
+              <rect x="58" y="58" width="14" height="14" fill="#1C2A20" />
+              <rect x="78" y="60" width="10" height="10" fill="#1C2A20" />
+            </Box>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Aponta a câmera do banco</Typography>
+          <Button startIcon={<Copy size={14} />} size="small" sx={{ mb: 2, color: 'text.secondary' }}>Copiar código Pix</Button>
+          <Button fullWidth variant="contained" color="secondary" onClick={confirm} disabled={submitting} sx={{ py: 1.25 }}>
+            {submitting ? 'Confirmando…' : 'Já fiz o Pix'}
+          </Button>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>{copy.payment.waitingPix}</Typography>
+        </Box>
+      )}
+
+      {tab === 'card' && (
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); confirm(); }}>
+          <TextField fullWidth label="Número do cartão" value={formatCard(card.number)} onChange={(e) => setCard((c) => ({ ...c, number: onlyDigits(e.target.value, 16) }))} placeholder="5172 0000 0000 4321" sx={{ mb: 2 }} />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+            <TextField label="Validade" value={card.expiry} onChange={(e) => { const d = onlyDigits(e.target.value, 4); setCard((c) => ({ ...c, expiry: d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d })); }} placeholder="12/28" />
+            <TextField label="CVV" value={card.cvc} onChange={(e) => setCard((c) => ({ ...c, cvc: onlyDigits(e.target.value, 3) }))} placeholder="123" />
+          </Box>
+          <TextField fullWidth label="CPF do titular" value={card.cpf} onChange={(e) => setCard((c) => ({ ...c, cpf: onlyDigits(e.target.value, 11) }))} placeholder="123.456.789-00" sx={{ mb: 2.5 }} />
+          <Button fullWidth type="submit" variant="contained" color="secondary" disabled={submitting || card.number.length < 16 || card.cvc.length < 3} sx={{ py: 1.25 }}>
+            {submitting ? 'Ativando…' : `Confirmar ${details.price}${details.period}`}
+          </Button>
+        </Box>
+      )}
+
+      {tab === 'boleto' && (
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Geramos um boleto pro seu e-mail. A ativação ocorre na compensação (até 2 dias úteis).
+          </Typography>
+          <Button fullWidth variant="contained" color="secondary" onClick={confirm} disabled={submitting} sx={{ py: 1.25 }}>
+            {submitting ? 'Gerando…' : 'Gerar boleto e ativar'}
+          </Button>
+        </Box>
+      )}
+
+      <Alert severity="info" sx={{ mt: 3 }}>Tela de simulação — nenhuma cobrança real é feita.</Alert>
+    </Box>
   );
 }
 

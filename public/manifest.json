@@ -3,6 +3,12 @@
   "name": "Zé Praga - Diagnóstico Fitossanitário",
   "icons": [
     {
+      "src": "marca.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
       "src": "favicon-48.png",
       "sizes": "48x48",
       "type": "image/png"
@@ -20,6 +26,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#2D6A4F",
-  "background_color": "#FAFDF7"
+  "theme_color": "#1F5A3D",
+  "background_color": "#FBF7EE"
 }
