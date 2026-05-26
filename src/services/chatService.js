@@ -133,11 +133,25 @@ export async function sendMessageStream(
 
   // fetchEventSource throws inside onerror when we want to surface to the
   // caller; we wrap it so callers can `await sendMessageStream(...)`.
+  // Controller próprio pra encerrar o stream assim que ele resolve/rejeita —
+  // sem isto, fetchEventSource tenta reconectar quando o servidor fecha a
+  // conexão após o `done`, re-enviando o turno. Encadeia o signal externo.
+  const ctrl = new AbortController();
+  if (options.signal) {
+    if (options.signal.aborted) ctrl.abort();
+    else options.signal.addEventListener('abort', () => ctrl.abort(), { once: true });
+  }
+
   return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (kind, value) => {
       if (settled) return;
       settled = true;
+      try {
+        ctrl.abort();
+      } catch (_e) {
+        /* noop */
+      }
       if (kind === 'resolve') resolve(value);
       else reject(value);
     };
@@ -146,7 +160,7 @@ export async function sendMessageStream(
       method: 'POST',
       headers,
       body: formData,
-      signal: options.signal,
+      signal: ctrl.signal,
       // Don't auto-reconnect on tab visibility changes — chat streams are
       // one-shot, not long-lived connections.
       openWhenHidden: true,
@@ -173,6 +187,16 @@ export async function sendMessageStream(
           case 'diagnosis':
             if (onDiagnosis) onDiagnosis(mapDiagnosis(data));
             break;
+          case 'error': {
+            // Servidor sinalizou falha no meio do turno (evento `error` do
+            // chat_stream). Rejeita pra UI trocar o balão pela mensagem de erro.
+            const message =
+              typeof data === 'string' && data ? data : 'Erro ao gerar a resposta.';
+            const err = new Error(message);
+            if (onError) onError(err);
+            finish('reject', err);
+            break;
+          }
           case 'done':
             if (onDone) onDone(typeof data === 'string' ? data : null);
             if (typeof window !== 'undefined') {

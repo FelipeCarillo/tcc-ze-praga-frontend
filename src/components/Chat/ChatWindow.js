@@ -13,6 +13,9 @@ function ChatWindow({ messages, isLoading, onSend, onSaveDiagnosis }) {
   const showWelcome = messages.length <= 1;
   const lastMsg = messages[messages.length - 1];
   const showQuickReplies = !isLoading && lastMsg?.role === 'assistant' && !!lastMsg?.diagnosis;
+  // Enquanto o balão de stream já mostra texto, não duplica com o typing.
+  const streamingWithContent =
+    lastMsg?.role === 'assistant' && lastMsg?.isStreaming && !!lastMsg?.content;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,7 +51,7 @@ function ChatWindow({ messages, isLoading, onSend, onSaveDiagnosis }) {
           ))}
         </AnimatePresence>
 
-        {isLoading && <TypingIndicator />}
+        {isLoading && !streamingWithContent && <TypingIndicator />}
 
         {showWelcome && !isLoading && (
           <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pt: 3 }}>

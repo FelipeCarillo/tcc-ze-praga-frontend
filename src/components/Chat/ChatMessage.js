@@ -12,19 +12,16 @@ function ChatMessage({ message, onSaveDiagnosis }) {
   const isUser = message.role === 'user';
   const isDark = theme.palette.mode === 'dark';
 
+  // Placeholder de streaming ainda sem conteúdo: não renderiza um balão vazio —
+  // quem cobre o estado "pensando" é o TypingIndicator do ChatWindow.
+  if (!isUser && message.isStreaming && !message.content) {
+    return null;
+  }
+
   const renderAssistantContent = () => {
     if (!message.content) return null;
-    if (message.isStreaming) {
-      return (
-        <Typography
-          variant="body2"
-          component="div"
-          sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
-        >
-          {message.content}
-        </Typography>
-      );
-    }
+    // Renderiza Markdown também durante o streaming — o react-markdown lida bem
+    // com conteúdo parcial, então o texto formata ao vivo em vez de só no fim.
     return (
       <Box sx={{ lineHeight: 1.6, fontSize: '0.9rem' }}>
         <Markdown>{message.content}</Markdown>

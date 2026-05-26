@@ -34,7 +34,12 @@ export async function getDiagnoses() {
   if (USE_MOCK) return mockHistory.getAll(userId());
 
   const response = await api.get('/api/v1/diagnoses', { headers: getAuthHeaders() });
-  return (response.data || []).map(mapDiagnosis);
+  // O backend pagina: { items, total, page, limit }. `.map` num objeto lançava
+  // e a UI mostrava "Erro ao carregar histórico". Aceita também array cru
+  // (mock/legado).
+  const data = response.data;
+  const items = Array.isArray(data) ? data : data?.items || [];
+  return items.map(mapDiagnosis);
 }
 
 export async function getDiagnosisById(id) {

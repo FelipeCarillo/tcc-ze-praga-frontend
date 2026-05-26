@@ -174,7 +174,7 @@ function DiagnosisDetailPage() {
   }
   if (error) {
     return (
-      <Box sx={{ maxWidth: 760, mx: 'auto', p: 3 }}>
+      <Box sx={{ width: '100%', p: 3 }}>
         <Button startIcon={<ChevronLeft size={18} />} onClick={() => navigate('/historico')} sx={{ mb: 2, color: 'text.secondary' }}>
           Voltar ao histórico
         </Button>
@@ -189,7 +189,7 @@ function DiagnosisDetailPage() {
     : null;
 
   return (
-    <Box sx={{ maxWidth: 760, mx: 'auto', backgroundColor: 'background.paper', minHeight: '100%' }}>
+    <Box sx={{ width: '100%', backgroundColor: 'background.paper', minHeight: '100%' }}>
       <HeroPhoto result={diagnosis} onBack={() => navigate('/historico')} onExport={() => setSheetOpen(true)} />
 
       <Box sx={{ p: { xs: 2, md: 3 } }}>

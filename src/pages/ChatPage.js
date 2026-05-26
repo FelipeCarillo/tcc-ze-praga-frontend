@@ -16,7 +16,10 @@ import { saveDiagnosis } from '../services/historyService';
 import { copy } from '../copy/ze';
 
 function ChatPage() {
-  const { messages, isLoading, send, clearChat } = useChat();
+  // Usa o caminho de streaming (SSE) — sem o teto de 30s do axios, com
+  // session_id (memória server-side) e tokens incrementais. Aliasado como
+  // `send` porque a assinatura é idêntica à do `send` síncrono.
+  const { messages, isLoading, sendStreaming: send, clearChat } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });

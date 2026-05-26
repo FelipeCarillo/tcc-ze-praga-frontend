@@ -110,10 +110,10 @@ function useChat() {
       setMessages((prev) => [...prev, userMessage, placeholder]);
       setIsLoading(true);
 
-      const allMessages = [...messagesRef.current, userMessage].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // O backend lê só a última mensagem (router._extract_last_message) e
+      // mantém o histórico server-side via session_id — então mandamos apenas
+      // o turno atual, não o histórico inteiro.
+      const outgoing = [{ role: 'user', content: userMessage.content }];
 
       const updatePlaceholder = (updater) => {
         setMessages((prev) =>
@@ -121,16 +121,40 @@ function useChat() {
         );
       };
 
+      // Typewriter: os tokens chegam em rajadas (o LLM streama rápido). Em vez
+      // de despejar cada chunk no balão de uma vez, acumulamos em `target` e
+      // revelamos poucos caracteres por tick — escrita visível e suave. Se o
+      // buffer cresce muito, acelera pra não atrasar demais o fim.
+      let target = '';
+      let shown = 0;
+      const TICK_MS = 18;
+      const revealTimer = setInterval(() => {
+        if (shown >= target.length) return;
+        const remaining = target.length - shown;
+        const step = remaining > 160 ? Math.ceil(remaining / 30) : 1;
+        shown = Math.min(target.length, shown + step);
+        const slice = target.slice(0, shown);
+        updatePlaceholder(() => ({ content: slice }));
+      }, TICK_MS);
+
+      // Espera a animação alcançar todo o texto recebido antes de encerrar.
+      const drainTypewriter = () =>
+        new Promise((resolve) => {
+          const check = () =>
+            shown >= target.length ? resolve() : setTimeout(check, TICK_MS);
+          check();
+        });
+
       try {
         await sendMessageStream(
-          allMessages,
+          outgoing,
           imageFile,
           modelId,
           sessionId,
           audioFile,
           {
             onToken: (chunk) => {
-              updatePlaceholder((m) => ({ content: (m.content || '') + chunk }));
+              target += chunk;
             },
             onToolCall: (name) => {
               updatePlaceholder(() => ({ toolCall: name }));
@@ -143,12 +167,21 @@ function useChat() {
               updatePlaceholder(() => ({ diagnosis: diag }));
             },
             onDone: (sid) => {
-              updatePlaceholder(() => ({ isStreaming: false, toolCall: null }));
               if (sid) setSessionId(sid);
             },
           }
         );
+        // Deixa o typewriter terminar de escrever o buffer e então finaliza o
+        // balão (cobre também o caso de fechar sem `done`).
+        await drainTypewriter();
+        clearInterval(revealTimer);
+        updatePlaceholder(() => ({
+          content: target,
+          isStreaming: false,
+          toolCall: null,
+        }));
       } catch (error) {
+        clearInterval(revealTimer);
         const message = describeChatError(error);
         setMessages((prev) =>
           prev.map((m) =>

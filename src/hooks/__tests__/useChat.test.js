@@ -108,7 +108,7 @@ describe('useChat streaming (sendStreaming)', () => {
     // Capture callbacks so we can drive them manually.
     let captured = null;
     sendMessageStream.mockImplementation(
-      (msgs, img, model, sid, callbacks) =>
+      (msgs, img, model, sid, audio, callbacks) =>
         new Promise((resolve) => {
           captured = { callbacks, resolve };
         })
@@ -139,8 +139,12 @@ describe('useChat streaming (sendStreaming)', () => {
       captured.callbacks.onToken('mundo!');
     });
 
+    // Typewriter revela progressivamente — espera alcançar o buffer.
+    await waitFor(() => {
+      const p = result.current.messages[result.current.messages.length - 1];
+      expect(p.content).toBe('Olá, mundo!');
+    });
     placeholder = result.current.messages[result.current.messages.length - 1];
-    expect(placeholder.content).toBe('Olá, mundo!');
     expect(placeholder.isStreaming).toBe(true);
 
     // Tool call -> badge appears, then result -> badge cleared.
@@ -180,7 +184,7 @@ describe('useChat streaming (sendStreaming)', () => {
   });
 
   it('replaces placeholder with an error message when stream rejects', async () => {
-    sendMessageStream.mockImplementation((msgs, img, model, sid, callbacks) => {
+    sendMessageStream.mockImplementation((msgs, img, model, sid, audio, callbacks) => {
       // Drive a token first, then reject.
       callbacks.onToken('parcial');
       return Promise.reject({ response: { status: 429, data: {} } });
@@ -201,8 +205,8 @@ describe('useChat streaming (sendStreaming)', () => {
     expect(last.diagnosis).toBeNull();
   });
 
-  it('passes prior conversation and image to the stream service', async () => {
-    sendMessageStream.mockImplementation((msgs, img, model, sid, callbacks) => {
+  it('passes only the current turn (not full history) and image to the stream service', async () => {
+    sendMessageStream.mockImplementation((msgs, img, model, sid, audio, callbacks) => {
       callbacks.onDone('s1');
       return Promise.resolve();
     });
@@ -217,18 +221,16 @@ describe('useChat streaming (sendStreaming)', () => {
     expect(sendMessageStream).toHaveBeenCalledTimes(1);
     const [msgs, img, model, sid] = sendMessageStream.mock.calls[0];
     expect(Array.isArray(msgs)).toBe(true);
-    // First message is the greeting; last is the user's question.
-    expect(msgs[msgs.length - 1]).toEqual({
-      role: 'user',
-      content: 'analisa essa folha',
-    });
+    // Backend reads only the last message + keeps history server-side via
+    // session_id, so we send just the current turn — not the greeting/history.
+    expect(msgs).toEqual([{ role: 'user', content: 'analisa essa folha' }]);
     expect(img).toBe(fakeFile);
     expect(model).toBe('vit');
     expect(sid).toBeNull(); // no prior session yet
   });
 
   it('clearChat resets sessionId after a successful stream', async () => {
-    sendMessageStream.mockImplementation((msgs, img, model, sid, callbacks) => {
+    sendMessageStream.mockImplementation((msgs, img, model, sid, audio, callbacks) => {
       callbacks.onDone('s-keep');
       return Promise.resolve();
     });
