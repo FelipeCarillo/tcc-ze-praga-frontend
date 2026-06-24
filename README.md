@@ -1,70 +1,74 @@
-# Getting Started with Create React App
+# Zé Praga — Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+SPA em **React + Material UI** do **Zé Praga**, sistema de diagnóstico de doenças
+foliares de soja (TCC). Consome a API FastAPI (`tcc-ze-praga-backend`): autenticação,
+upload de imagem + diagnóstico (modelo ONNX), planos de ação, chat com agente
+LangGraph (texto, imagem e áudio), histórico, cotas de uso e API keys.
 
-## Available Scripts
+## Stack
 
-In the project directory, you can run:
+- React (Create React App) + React Router
+- Material UI (MUI) — tema claro/escuro
+- `react-markdown` para renderizar as respostas do chat
+- Consome a API REST/SSE do backend
 
-### `npm start`
+## Pré-requisitos
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js 18+
+- O backend rodando (ver `tcc-ze-praga-backend/README.md`) — por padrão em
+  `http://localhost:8000`.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Setup
 
-### `npm test`
+```bash
+npm install
+cp .env.example .env   # e ajuste as variáveis (veja abaixo)
+npm start              # http://localhost:3000
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Variáveis de ambiente (`.env`)
 
-### `npm run build`
+| Variável | Descrição | Default |
+|---|---|---|
+| `REACT_APP_API_URL` | URL base da API do backend | `http://localhost:8000/api/v1` |
+| `REACT_APP_AUTH_MODE` | Modo de autenticação | `real` |
+| `REACT_APP_USE_MOCK` | `true` usa dados mockados (sem backend); `false` chama a API real | `false` |
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+> Em desenvolvimento sem backend, `REACT_APP_USE_MOCK=true` permite navegar a UI
+> com respostas simuladas.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Scripts
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Comando | O que faz |
+|---|---|
+| `npm start` | Dev server com hot-reload (porta 3000) |
+| `npm test` | Testes (Jest + React Testing Library) em watch mode |
+| `npm run build` | Build de produção em `build/` |
 
-### `npm run eject`
+## Funcionalidades
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **Autenticação**: login/registro contra `/auth` (JWT).
+- **Diagnóstico**: upload de foto da folha → `POST /inference` → card com top-3
+  doenças, confiança, severidade e plano de ação.
+- **Chat multimodal**: agente LangGraph via SSE (streaming), com suporte a imagem
+  (gate de visão) e áudio (transcrição); Markdown ao vivo.
+- **Histórico**: lista de diagnósticos anteriores (resposta paginada).
+- **Cotas & planos**: indicador de uso restante; modal de upgrade no 429.
+- **API keys**: página de gestão de chaves (tier Enterprise).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Estrutura
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+src/
+├── pages/          # telas (Chat, DiagnosisDetail, History, ApiKeys, ...)
+├── components/     # Chat/, Layout/, common/ (Markdown), ...
+├── hooks/          # useChat (streaming + interrupt), ...
+├── services/       # chatService, inferenceService, historyService, authService
+└── contexts/       # FeaturesContext, auth, ...
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Relação com o backend
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Este frontend é a camada de apresentação do contrato definido no backend
+(`POST /api/v1/inference`, `/auth`, `/chat`, `/diagnoses`, `/action-plans`,
+`/usage`). Mantenha `REACT_APP_API_URL` apontando para a API correta.
