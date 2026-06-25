@@ -3,47 +3,42 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ConfusionMatrix from '../components/Models/ConfusionMatrix';
 import Pipeline from '../components/Models/Pipeline';
+import {
+  MODELS as models,
+  DATASET,
+  CONFUSION_LABELS,
+  CONFUSION_SHORT,
+  CONFUSION_MATRIX,
+  prodModel as prod,
+} from '../data/modelMetrics';
 
-const models = [
-  { id: 'ensemble', name: 'Ensemble', sub: 'ResNet + EfficientNet + ViT', accuracy: 0.978, f1: 0.976, latency: 185, size: 502, prod: true },
-  { id: 'efficientnet', name: 'EfficientNet-B4', sub: 'tf-keras · imagenet', accuracy: 0.971, f1: 0.968, latency: 62, size: 74 },
-  { id: 'vit', name: 'ViT-B/16', sub: 'vision transformer', accuracy: 0.964, f1: 0.961, latency: 78, size: 330 },
-  { id: 'resnet50', name: 'ResNet-50', sub: 'torchvision · imagenet', accuracy: 0.956, f1: 0.952, latency: 45, size: 98 },
-];
-
-const prod = models.find((m) => m.prod);
+const fmtPct = (v) => (v * 100).toFixed(1).replace('.', ',');
+const fmtLatency = (ms) => (ms >= 1000 ? `${(ms / 1000).toFixed(1).replace('.', ',')}s` : `${Math.round(ms)}ms`);
 
 const stats = [
-  { value: '97,8', unit: '%', label: 'Top-1 accuracy' },
-  { value: '0,98', unit: '', label: 'F1 macro' },
-  { value: '185', unit: 'ms', label: 'Latência P95' },
-  { value: '502', unit: 'MB', label: 'Checkpoint' },
+  { value: fmtPct(prod.accuracy), unit: '%', label: 'Top-1 accuracy' },
+  { value: prod.f1.toFixed(2).replace('.', ','), unit: '', label: 'F1 macro' },
+  { value: fmtLatency(prod.latencyMs), unit: '', label: 'Latência (CPU)' },
+  { value: String(prod.sizeMB), unit: 'MB', label: 'Checkpoints' },
 ];
 
-const matrixLabels = ['Ferrugem', 'Mancha-alvo', 'Antracnose', 'Cercospor.', 'Míldio', 'Saudável'];
-const matrixShort = ['Ferr.', 'Manch.', 'Antr.', 'Cerc.', 'Míld.', 'Saud.'];
-const confusion = [
-  [97, 1, 1, 0, 1, 0],
-  [1, 95, 2, 1, 1, 0],
-  [1, 2, 94, 2, 1, 0],
-  [0, 1, 2, 96, 1, 0],
-  [1, 1, 1, 1, 96, 0],
-  [0, 0, 0, 0, 1, 99],
-];
+const matrixLabels = CONFUSION_LABELS;
+const matrixShort = CONFUSION_SHORT;
+const confusion = CONFUSION_MATRIX;
 
 const limitations = [
-  { tone: 'tijolo', title: 'Confusão #1', body: 'Cercosporiose × Antracnose em estágio inicial — sinais visuais parecidos. Resíduo de ~2-3%.' },
+  { tone: 'tijolo', title: 'Confusão residual', body: 'Mancha-Alvo em estágio inicial pode confundir com Olho-de-rã/Saudável — resíduo de ~1-2% no ensemble. Demais classes têm diagonal ≥99%.' },
   { tone: 'solo', title: 'Limitação #1', body: 'Hoje só soja (6 classes). Milho, café e algodão estão no roadmap 2026.' },
   { tone: 'solo', title: 'Limitação #2', body: 'Foto muito desfocada ou com pouca luz: o Zé responde "não sei", não tenta adivinhar.' },
 ];
 
 const dataset = [
-  { label: 'Dataset', value: 'PlantVillage (soja)' },
-  { label: 'Imagens', value: '~5.500' },
-  { label: 'Classes', value: '6' },
-  { label: 'Split', value: '70/15/15' },
-  { label: 'Resolução', value: '224×224' },
-  { label: 'Framework', value: 'PyTorch 2.x' },
+  { label: 'Dataset', value: DATASET.name },
+  { label: 'Imagens', value: DATASET.totalImages.toLocaleString('pt-BR') },
+  { label: 'Classes', value: String(DATASET.classes) },
+  { label: 'Split', value: DATASET.split.ratio },
+  { label: 'Resolução', value: '224 / 380' },
+  { label: 'Framework', value: DATASET.framework },
 ];
 
 function StatHero() {
@@ -81,10 +76,10 @@ function ArchitectureTable() {
             </Box>
             <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.62rem', color: 'text.secondary' }}>{m.sub}</Typography>
           </Box>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{(m.accuracy * 100).toFixed(1)}%</Typography>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{m.f1.toFixed(2)}</Typography>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{m.latency}ms</Typography>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{m.size}MB</Typography>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{fmtPct(m.accuracy)}%</Typography>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{m.f1.toFixed(2).replace('.', ',')}</Typography>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{fmtLatency(m.latencyMs)}</Typography>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700 }}>{m.sizeMB}MB</Typography>
         </Box>
       ))}
     </Box>
@@ -99,9 +94,10 @@ function ModelsPage() {
       </Typography>
       <Typography variant="h2" sx={{ mb: 1.5 }}>Como o Zé enxerga uma folha.</Typography>
       <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680 }}>
-        Quatro arquiteturas foram treinadas sobre o dataset PlantVillage de soja (6 classes), com
-        transfer learning, e comparadas no mesmo test-set. O escolhido em produção balanceia
-        acurácia, latência e robustez.
+        Quatro arquiteturas foram treinadas sobre o dataset ASDID de soja (6 classes), com
+        transfer learning, e comparadas no mesmo test-set (n={DATASET.split.test}). O ensemble —
+        média das probabilidades das três redes — é o servido por padrão e bate todos os modelos
+        individuais.
       </Typography>
 
       <StatHero />
@@ -119,13 +115,15 @@ function ModelsPage() {
       <Typography variant="h3" sx={{ mb: 2 }}>Comparação de arquiteturas</Typography>
       <ArchitectureTable />
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, mb: 6 }}>
-        ★ <b>{prod.name}</b> escolhido por melhor relação acurácia × robustez. (Valores
-        representativos do treinamento; atualizados na versão final.)
+        ★ <b>{prod.name}</b> servido por padrão — maior acurácia ({fmtPct(prod.accuracy)}%) e F1 macro
+        ({prod.f1.toFixed(2).replace('.', ',')}). Métricas reais medidas no test-set do ASDID
+        (n={DATASET.split.test}); latências em CPU, lote 1.
       </Typography>
 
       <Typography variant="h3" sx={{ mb: 1 }}>Matriz de confusão</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Holdout 20%. Diagonal forte = sinal verde; confusão fora da diagonal merece mais dataset.
+        Ensemble no test-set (n={DATASET.split.test}), % por linha. Diagonal forte = sinal verde;
+        confusão fora da diagonal merece mais dataset.
       </Typography>
       <ConfusionMatrix labels={matrixLabels} shortLabels={matrixShort} matrix={confusion} />
 

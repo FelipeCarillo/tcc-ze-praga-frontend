@@ -10,7 +10,7 @@ const faqs = [
   { q: 'Preciso pagar?', a: 'Não. O Zé é de graça pro produtor, pra sempre. Quem quiser ajudar a manter no ar vira Compadre por R$ 19/mês — mas é opcional.' },
   { q: 'Funciona offline?', a: 'A análise precisa de internet, mas eu guardo sua última conversa e o histórico no aparelho. Sem sinal, eu te aviso e mando assim que voltar.' },
   { q: 'E se você errar?', a: 'Eu mostro minha confiança e as outras hipóteses que considerei. Se a foto tiver pouca luz ou estiver borrada, eu falo "não sei" em vez de chutar.' },
-  { q: 'Tá disponível pra outras culturas?', a: 'Hoje cuido de soja (8 classes). Milho, café e algodão estão no roadmap pra 2026.' },
+  { q: 'Tá disponível pra outras culturas?', a: 'Hoje cuido de soja (6 classes). Milho, café e algodão estão no roadmap pra 2026.' },
   { q: 'Minha foto fica salva?', a: 'Só se você quiser. Depois do diagnóstico eu pergunto se guardo no seu histórico. Você manda apagar quando quiser.' },
   { q: 'É igual receita de agrônomo?', a: 'É um apoio rápido pra orientar a decisão no campo. Pra casos sérios, leve meu diagnóstico (dá pra exportar em PDF) pro seu agrônomo.' },
 ];
