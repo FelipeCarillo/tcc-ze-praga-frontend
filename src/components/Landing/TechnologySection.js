@@ -5,12 +5,13 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen } from 'lucide-react';
+import { prodModel, DATASET } from '../../data/modelMetrics';
 
 const metrics = [
-  { value: '94,2', unit: '%', label: 'Top-1 accuracy' },
-  { value: '0,93', unit: '', label: 'F1 macro' },
-  { value: '187', unit: 'ms', label: 'Latência P95' },
-  { value: '32k', unit: '', label: 'imagens treino' },
+  { value: (prodModel.accuracy * 100).toFixed(1).replace('.', ','), unit: '%', label: 'Top-1 accuracy' },
+  { value: prodModel.f1.toFixed(2).replace('.', ','), unit: '', label: 'F1 macro' },
+  { value: DATASET.totalImages.toLocaleString('pt-BR'), unit: '', label: 'imagens (ASDID)' },
+  { value: String(DATASET.classes), unit: '', label: 'classes de soja' },
 ];
 
 /** "Pra banca" — bloco escuro com métricas e links institucionais (auditoria, seção 10). */
@@ -25,7 +26,8 @@ function TechnologySection() {
           Metodologia, métricas e honestidade.
         </Typography>
         <Typography variant="body1" sx={{ color: 'rgba(240,237,226,0.75)', maxWidth: 640, mb: 4 }}>
-          EfficientNet-B0 em produção, treinado sobre 8 classes de soja. Avaliado em holdout 20%.
+          Ensemble de 3 redes (ResNet-50 + EfficientNet-B4 + ViT-B/16) em produção, treinado sobre
+          6 classes de soja no dataset ASDID. Avaliado no test-set (n={DATASET.split.test}).
           Metodologia completa, matriz de confusão e limitações conhecidas nas páginas técnicas.
         </Typography>
 

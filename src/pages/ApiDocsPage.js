@@ -310,7 +310,7 @@ end`,
                 sources: [
                   { name: 'EMBRAPA Soja', detail: 'Circular Técnica 104 — Ferrugem Asiática da Soja' },
                   { name: 'Consórcio Antiferrugem', detail: 'Sistema de alerta e monitoramento nacional' },
-                  { name: 'PlantVillage - Penn State University', detail: 'Dataset de treinamento dos modelos' },
+                  { name: 'ASDID — Annotated Soybean Disease Image Dataset', detail: 'Dataset de treinamento dos modelos (8.130 imagens, 6 classes)' },
                 ],
               },
               model_used: 'ensemble',
@@ -402,10 +402,10 @@ data['action_plan']['sources'].each { |s| puts s['name'] }`,
             description="Lista os modelos de classificação disponíveis e suas métricas de desempenho."
             responseExample={{
               models: [
-                { id: 'resnet50', name: 'ResNet-50', accuracy: 0.921, f1_score: 0.918 },
-                { id: 'efficientnet_b4', name: 'EfficientNet-B4', accuracy: 0.938, f1_score: 0.935 },
-                { id: 'vit_b16', name: 'ViT-B/16', accuracy: 0.945, f1_score: 0.942 },
-                { id: 'ensemble', name: 'Ensemble', accuracy: 0.952, f1_score: 0.949 },
+                { id: 'resnet50', name: 'ResNet-50', accuracy: 0.96, f1_score: 0.961 },
+                { id: 'efficientnet_b4', name: 'EfficientNet-B4', accuracy: 0.988, f1_score: 0.988 },
+                { id: 'vit_b16', name: 'ViT-B/16', accuracy: 0.98, f1_score: 0.981 },
+                { id: 'ensemble', name: 'Ensemble', accuracy: 0.991, f1_score: 0.992 },
               ],
             }}
             codeExamples={{

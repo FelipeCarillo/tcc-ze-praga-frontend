@@ -5,8 +5,8 @@ import { Camera, Settings2, BrainCircuit, BarChart3, MessageCircle, ArrowDown } 
 
 const STEPS = [
   { icon: Camera, title: 'Upload', desc: 'Foto JPEG/PNG até 10 MB', tone: 'mata' },
-  { icon: Settings2, title: 'Preprocessing', desc: 'Resize 224×224, normalize ImageNet', tone: 'folha' },
-  { icon: BrainCircuit, title: 'EfficientNet / Ensemble', desc: 'Inferência · ~185ms', tone: 'prod' },
+  { icon: Settings2, title: 'Preprocessing', desc: 'Resize 224–380, normalize ImageNet', tone: 'folha' },
+  { icon: BrainCircuit, title: 'Ensemble (3 redes)', desc: 'ResNet-50 + EfficientNet-B4 + ViT-B/16', tone: 'prod' },
   { icon: BarChart3, title: 'Softmax + threshold', desc: '≥0.5 = diagnóstico; <0.5 = "não sei"', tone: 'cerrado' },
   { icon: MessageCircle, title: 'Resposta do Zé', desc: 'Copy + receita por classe', tone: 'milho' },
 ];
