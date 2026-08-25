@@ -11,6 +11,7 @@ import ChatPage from './pages/ChatPage';
 import HistoryPage from './pages/HistoryPage';
 import DiagnosisDetailPage from './pages/DiagnosisDetailPage';
 import LoginPage from './pages/LoginPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import PlansPage from './pages/PlansPage';
 import PaymentPage from './pages/PaymentPage';
 import ProfilePage from './pages/ProfilePage';
@@ -112,6 +113,7 @@ function App() {
                 <Route path="/modelos" element={<Layout><ModelsPage /></Layout>} />
                 <Route path="/sobre" element={<Layout><AboutPage /></Layout>} />
                 <Route path="/login" element={<Layout><LoginPage /></Layout>} />
+                <Route path="/redefinir-senha" element={<Layout><ResetPasswordPage /></Layout>} />
                 <Route path="/planos" element={<Layout><PlansPage /></Layout>} />
                 <Route path="/planos/pagamento/:planName" element={<Layout><PaymentPage /></Layout>} />
                 <Route path="/perfil" element={<Layout><ProfilePage /></Layout>} />

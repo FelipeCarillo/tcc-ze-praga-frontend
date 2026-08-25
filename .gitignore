@@ -70,6 +70,9 @@ web_modules/
 # dotenv environment variable files
 .env
 .env.*
+# Excecao: no CRA toda REACT_APP_* vai pro bundle publico, entao este arquivo
+# nunca pode conter segredo — e configuracao, e fica versionada de proposito.
+!.env.production
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
