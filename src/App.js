@@ -65,7 +65,11 @@ function App() {
 
   const register = useCallback(async (values) => {
     const session = await authService.register(values);
+    // Com verificação de e-mail ligada não há sessão ainda — a conta só é
+    // ativada pelo link. Devolvemos o resultado pra tela decidir o que mostrar.
+    if (session.pendingVerification) return session;
     setUser(session.user);
+    return session;
   }, []);
 
   const updateProfile = useCallback(async (values) => {
