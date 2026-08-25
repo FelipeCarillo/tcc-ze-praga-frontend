@@ -117,6 +117,17 @@ export async function resendVerification(email) {
   await api.post('/api/v1/auth/resend-verification', { email });
 }
 
+export async function forgotPassword(email) {
+  if (AUTH_MODE !== 'api') return;
+  // Sempre 202, exista a conta ou não — o backend não revela quem tem cadastro.
+  await api.post('/api/v1/auth/forgot-password', { email });
+}
+
+export async function resetPassword({ token, password }) {
+  if (AUTH_MODE !== 'api') return;
+  await api.post('/api/v1/auth/reset-password', { token, password });
+}
+
 export async function updateProfile(values) {
   if (AUTH_MODE !== 'api') {
     return saveSession(getAuthToken(), { ...readUser(), ...values });

@@ -6,7 +6,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useAuth } from '../hooks/useAuth';
-import { resendVerification } from '../services/authService';
+import { resendVerification, forgotPassword } from '../services/authService';
 import { ReactComponent as Marca } from '../assets/brand/marca.svg';
 import { copy } from '../copy/ze';
 
@@ -18,6 +18,9 @@ function LoginPage() {
   // E-mail pendente de confirmação — preenchido quando o backend responde 202.
   const [pendingEmail, setPendingEmail] = useState('');
   const [resendMsg, setResendMsg] = useState('');
+  // Modo "esqueci minha senha": troca o formulário por um pedido de e-mail.
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,7 +28,10 @@ function LoginPage() {
 
   // O backend redireciona pra cá depois do clique no link do e-mail
   // (GET /api/v1/auth/verify → 303 /login?verificado=1|erro).
-  const verificado = new URLSearchParams(location.search).get('verificado');
+  const params = new URLSearchParams(location.search);
+  const verificado = params.get('verificado');
+  // A tela de redefinição manda pra cá depois de trocar a senha.
+  const senhaRedefinida = params.get('senha') === 'redefinida';
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -53,6 +59,27 @@ function LoginPage() {
         typeof detail === 'string' && detail.includes('Confirme seu e-mail')
           ? 'Sua conta ainda não foi confirmada. Procure o link que enviamos por e-mail.'
           : 'Não consegui te autenticar. Confere os dados e tenta de novo.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    setError('');
+    setForgotMsg('');
+    setSubmitting(true);
+    try {
+      await forgotPassword(form.email);
+      // Mensagem propositalmente vaga: o backend responde igual exista ou não a
+      // conta, e a tela não pode contradizer isso revelando quem tem cadastro.
+      setForgotMsg('Se existir uma conta com esse e-mail, o link de redefinição já está a caminho.');
+    } catch (err) {
+      setError(
+        err?.response?.status === 429
+          ? 'Muitos pedidos seguidos. Espera um pouco antes de tentar de novo.'
+          : 'Não consegui enviar agora. Tenta de novo em instantes.'
       );
     } finally {
       setSubmitting(false);
@@ -102,14 +129,22 @@ function LoginPage() {
           {copy.login.kicker}
         </Typography>
         <Typography variant="h3" sx={{ mb: 1 }}>
-          {pendingEmail ? 'Confirma teu e-mail' : isRegistering ? 'Criar conta' : copy.login.title}
+          {pendingEmail
+            ? 'Confirma teu e-mail'
+            : forgotMode
+              ? 'Esqueceu a senha?'
+              : isRegistering
+                ? 'Criar conta'
+                : copy.login.title}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {pendingEmail
             ? 'Falta só um passo pra tua conta ficar de pé.'
-            : isRegistering
-              ? 'Preenche os dados pra começar.'
-              : copy.login.subtitle}
+            : forgotMode
+              ? 'Põe teu e-mail que eu mando um link pra criar uma nova.'
+              : isRegistering
+                ? 'Preenche os dados pra começar.'
+                : copy.login.subtitle}
         </Typography>
 
         {verificado === '1' && (
@@ -121,6 +156,11 @@ function LoginPage() {
           <Alert severity="warning" sx={{ mb: 2 }}>
             Esse link não vale mais — ou já foi usado, ou passou da validade. Cria a conta de novo
             ou pede um link novo.
+          </Alert>
+        )}
+        {senhaRedefinida && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Senha redefinida! Entra com a nova.
           </Alert>
         )}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -148,6 +188,19 @@ function LoginPage() {
               Já confirmei — quero entrar
             </Button>
           </Box>
+        ) : forgotMode ? (
+          <Box component="form" onSubmit={handleForgot}>
+            {forgotMsg && <Alert severity="success" sx={{ mb: 2 }}>{forgotMsg}</Alert>}
+            <TextField fullWidth required label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} sx={{ mb: 2.5 }} />
+            <Button fullWidth type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ py: 1.25 }}>
+              {submitting ? 'Enviando…' : 'Mandar o link'}
+            </Button>
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Button variant="text" onClick={() => { setForgotMode(false); setForgotMsg(''); setError(''); }} sx={{ color: 'primary.main' }}>
+                Voltar pro login
+              </Button>
+            </Box>
+          </Box>
         ) : (
           <>
             <Box component="form" onSubmit={handleSubmit}>
@@ -165,6 +218,11 @@ function LoginPage() {
               <Button variant="text" onClick={() => setIsRegistering((p) => !p)} sx={{ color: 'primary.main' }}>
                 {isRegistering ? 'Já tenho conta' : 'Criar uma conta'}
               </Button>
+              {!isRegistering && (
+                <Button variant="text" onClick={() => { setForgotMode(true); setError(''); }} sx={{ display: 'block', mx: 'auto', color: 'text.secondary', fontSize: '0.85rem' }}>
+                  Esqueci minha senha
+                </Button>
+              )}
             </Box>
           </>
         )}
