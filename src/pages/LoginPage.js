@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useAuth } from '../hooks/useAuth';
+import { resendVerification } from '../services/authService';
 import { ReactComponent as Marca } from '../assets/brand/marca.svg';
 import { copy } from '../copy/ze';
 
@@ -14,25 +15,57 @@ function LoginPage() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // E-mail pendente de confirmação — preenchido quando o backend responde 202.
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [resendMsg, setResendMsg] = useState('');
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from || '/perfil';
+
+  // O backend redireciona pra cá depois do clique no link do e-mail
+  // (GET /api/v1/auth/verify → 303 /login?verificado=1|erro).
+  const verificado = new URLSearchParams(location.search).get('verificado');
 
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setResendMsg('');
     setSubmitting(true);
     try {
-      if (isRegistering) await register(form);
-      else await login(form);
+      if (isRegistering) {
+        const result = await register(form);
+        if (result?.pendingVerification) {
+          setPendingEmail(result.email || form.email);
+          return;
+        }
+      } else {
+        await login(form);
+      }
       navigate(redirectTo, { replace: true });
-    } catch {
-      setError('Não consegui te autenticar. Confere os dados e tenta de novo.');
+    } catch (err) {
+      // 401 com a conta ainda não confirmada tem mensagem própria — repetir
+      // "confere os dados" mandaria o usuário caçar um erro que não existe.
+      const detail = err?.response?.data?.detail;
+      setError(
+        typeof detail === 'string' && detail.includes('Confirme seu e-mail')
+          ? 'Sua conta ainda não foi confirmada. Procure o link que enviamos por e-mail.'
+          : 'Não consegui te autenticar. Confere os dados e tenta de novo.'
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendMsg('');
+    try {
+      await resendVerification(pendingEmail);
+      setResendMsg('Reenviei o link. Dá uma olhada na caixa de entrada e no spam.');
+    } catch {
+      setResendMsg('Não consegui reenviar agora. Tenta de novo em instantes.');
     }
   };
 
@@ -69,30 +102,72 @@ function LoginPage() {
           {copy.login.kicker}
         </Typography>
         <Typography variant="h3" sx={{ mb: 1 }}>
-          {isRegistering ? 'Criar conta' : copy.login.title}
+          {pendingEmail ? 'Confirma teu e-mail' : isRegistering ? 'Criar conta' : copy.login.title}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {isRegistering ? 'Preenche os dados pra começar.' : copy.login.subtitle}
+          {pendingEmail
+            ? 'Falta só um passo pra tua conta ficar de pé.'
+            : isRegistering
+              ? 'Preenche os dados pra começar.'
+              : copy.login.subtitle}
         </Typography>
 
+        {verificado === '1' && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            E-mail confirmado! Agora é só entrar.
+          </Alert>
+        )}
+        {verificado === 'erro' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Esse link não vale mais — ou já foi usado, ou passou da validade. Cria a conta de novo
+            ou pede um link novo.
+          </Alert>
+        )}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        <Box component="form" onSubmit={handleSubmit}>
-          {isRegistering && (
-            <TextField fullWidth label="Nome" name="full_name" value={form.full_name} onChange={handleChange} sx={{ mb: 2 }} />
-          )}
-          <TextField fullWidth required label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} sx={{ mb: 2 }} />
-          <TextField fullWidth required label="Senha" name="password" type="password" value={form.password} onChange={handleChange} inputProps={{ minLength: 6 }} sx={{ mb: 2.5 }} />
-          <Button fullWidth type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ py: 1.25 }}>
-            {submitting ? 'Entrando…' : isRegistering ? 'Criar conta' : 'Entrar'}
-          </Button>
-        </Box>
+        {pendingEmail ? (
+          <Box>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Mandei um link de confirmação pra <strong>{pendingEmail}</strong>. Clica nele pra
+              ativar a conta — vale por 24 horas. Se não achar, olha no spam.
+            </Alert>
+            {resendMsg && <Alert severity="success" sx={{ mb: 2 }}>{resendMsg}</Alert>}
+            <Button fullWidth variant="outlined" color="primary" onClick={handleResend} sx={{ mb: 1.5, py: 1.25 }}>
+              Reenviar o link
+            </Button>
+            <Button
+              fullWidth
+              variant="text"
+              onClick={() => {
+                setPendingEmail('');
+                setIsRegistering(false);
+                setResendMsg('');
+              }}
+              sx={{ color: 'primary.main' }}
+            >
+              Já confirmei — quero entrar
+            </Button>
+          </Box>
+        ) : (
+          <>
+            <Box component="form" onSubmit={handleSubmit}>
+              {isRegistering && (
+                <TextField fullWidth label="Nome" name="full_name" value={form.full_name} onChange={handleChange} sx={{ mb: 2 }} />
+              )}
+              <TextField fullWidth required label="E-mail" name="email" type="email" value={form.email} onChange={handleChange} sx={{ mb: 2 }} />
+              <TextField fullWidth required label="Senha" name="password" type="password" value={form.password} onChange={handleChange} inputProps={{ minLength: 6 }} sx={{ mb: 2.5 }} />
+              <Button fullWidth type="submit" variant="contained" color="secondary" disabled={submitting} sx={{ py: 1.25 }}>
+                {submitting ? 'Entrando…' : isRegistering ? 'Criar conta' : 'Entrar'}
+              </Button>
+            </Box>
 
-        <Box sx={{ mt: 3, textAlign: 'center' }}>
-          <Button variant="text" onClick={() => setIsRegistering((p) => !p)} sx={{ color: 'primary.main' }}>
-            {isRegistering ? 'Já tenho conta' : 'Criar uma conta'}
-          </Button>
-        </Box>
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Button variant="text" onClick={() => setIsRegistering((p) => !p)} sx={{ color: 'primary.main' }}>
+                {isRegistering ? 'Já tenho conta' : 'Criar uma conta'}
+              </Button>
+            </Box>
+          </>
+        )}
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
           {copy.login.optionalNote} <Box component={Link} to="/chat" sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none' }}>Voltar pro Zé</Box>
         </Typography>

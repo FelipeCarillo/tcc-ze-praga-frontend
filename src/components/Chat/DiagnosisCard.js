@@ -12,6 +12,7 @@ import {
   ChevronDown, ChevronUp, Cpu, Bookmark, BookmarkCheck,
 } from 'lucide-react';
 import ActionPlan from '../Diagnosis/ActionPlan';
+import { useActionPlan } from '../../hooks/useActionPlan';
 
 const SEVERITY = {
   alta: { label: 'Severa', icon: AlertTriangle, paletteKey: 'error' },
@@ -37,6 +38,15 @@ function DiagnosisCard({ diagnosis, onSave }) {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Só busca quando o usuário expande — o plano é um request extra e a maioria
+  // dos turnos de chat nunca abre o card. `diagnosis.actionPlan` só existe no
+  // modo mock; no caminho real ele vem daqui.
+  const { actionPlan: fetchedPlan, loading: planLoading } = useActionPlan(
+    diagnosis.diseaseId,
+    expanded
+  );
+  const actionPlan = diagnosis.actionPlan || fetchedPlan;
 
   const sev = SEVERITY[diagnosis.severity] || SEVERITY.nenhuma;
   const SevIcon = sev.icon;
@@ -249,9 +259,14 @@ function DiagnosisCard({ diagnosis, onSave }) {
               {diagnosis.description}
             </Typography>
           )}
-          {diagnosis.actionPlan && (
+          {planLoading && !actionPlan && (
+            <Typography variant="body2" sx={{ color: 'text.disabled', fontSize: '0.8rem', mb: 2 }}>
+              Buscando a receita…
+            </Typography>
+          )}
+          {actionPlan && (
             <Box sx={{ mb: 2 }}>
-              <ActionPlan actions={diagnosis.actionPlan} />
+              <ActionPlan actions={actionPlan} />
             </Box>
           )}
         </Collapse>

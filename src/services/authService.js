@@ -102,7 +102,19 @@ export async function register({ full_name, email, password }) {
   }
 
   const response = await api.post('/api/v1/auth/register', { full_name, email, password });
+
+  // 202 = backend com verificação de e-mail ligada (REQUIRE_EMAIL_VERIFICATION).
+  // Não há token nem sessão: a conta nasce inativa e só o link do e-mail a ativa.
+  if (response.status === 202) {
+    return { pendingVerification: true, email: response.data.email, user: null, token: null };
+  }
+
   return saveSession(response.data.access_token, response.data.user);
+}
+
+export async function resendVerification(email) {
+  if (AUTH_MODE !== 'api') return;
+  await api.post('/api/v1/auth/resend-verification', { email });
 }
 
 export async function updateProfile(values) {

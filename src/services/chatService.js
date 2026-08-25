@@ -1,6 +1,7 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import api from './api';
 import { mockSendMessage } from './mock/mockChat';
+import { mockSendMessageStream } from './mock/mockChatStream';
 
 const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
 const TOKEN_KEY = 'ze-praga-auth-token';
@@ -35,6 +36,23 @@ function mapDiagnosis(data) {
       severity: p.severity,
     })),
     timestamp: data.created_at,
+  };
+}
+
+/**
+ * Normaliza o `InterruptInfo` do backend para camelCase.
+ *
+ * `responseKind` diz como perguntar: 'text' (campo livre), 'choice' (uma de N
+ * opções), 'boolean' (sim/não) ou 'confirm' (só seguir).
+ */
+function mapInterrupt(data) {
+  if (!data || typeof data !== 'object') return null;
+  return {
+    kind: data.kind || 'ask_user',
+    question: data.question || '',
+    responseKind: data.response_kind || 'text',
+    options: data.options || null,
+    askedAt: data.asked_at || null,
   };
 }
 
@@ -78,10 +96,12 @@ export async function sendMessage(messages, imageFile = null, modelId = 'ensembl
  * Stream a chat completion from the backend via Server-Sent Events.
  *
  * Backend contract (POST /api/v1/chat/stream, text/event-stream):
+ *   event: transcript   | data: "<texto>"            — áudio transcrito (STT)
  *   event: token        | data: "<chunk>"            — incremental LLM token
  *   event: tool_call    | data: "<tool name>"        — tool invoked
  *   event: tool_result  | data: "<result text>"      — tool returned
  *   event: diagnosis    | data: <DiagnosisResponse>  — persisted diagnosis JSON
+ *   event: interrupt    | data: <InterruptInfo>      — agente parou e perguntou
  *   event: done         | data: "<session_id>"       — stream finalized
  *
  * Returns a promise that resolves when the stream completes (onDone) and
@@ -92,10 +112,12 @@ export async function sendMessage(messages, imageFile = null, modelId = 'ensembl
  * @param {string} modelId
  * @param {string|null} sessionId
  * @param {{
+ *   onTranscript?: (text: string) => void,
  *   onToken?: (chunk: string) => void,
  *   onToolCall?: (name: string) => void,
  *   onToolResult?: (result: string) => void,
  *   onDiagnosis?: (diagnosis: object) => void,
+ *   onInterrupt?: (interrupt: object) => void,
  *   onDone?: (sessionId: string) => void,
  *   onError?: (error: Error) => void,
  * }} callbacks
@@ -112,13 +134,21 @@ export async function sendMessageStream(
   options = {}
 ) {
   const {
+    onTranscript,
     onToken,
     onToolCall,
     onToolResult,
     onDiagnosis,
+    onInterrupt,
     onDone,
     onError,
   } = callbacks;
+
+  // `REACT_APP_USE_MOCK` prometia navegar a UI sem backend, mas só o
+  // `sendMessage` tinha caminho mock — e a ChatPage usa este streaming.
+  if (USE_MOCK) {
+    return mockSendMessageStream(messages, imageFile, modelId, audioFile, callbacks);
+  }
 
   const formData = new FormData();
   formData.append('messages', JSON.stringify(messages));
@@ -175,6 +205,14 @@ export async function sendMessageStream(
       onmessage(ev) {
         const data = parseEventData(ev.data);
         switch (ev.event) {
+          case 'transcript':
+            // O backend emite isto antes dos tokens quando o turno veio por
+            // áudio. Sem tratar, o usuário nunca via o que o Whisper entendeu —
+            // e não tinha como perceber um erro de transcrição.
+            if (onTranscript) {
+              onTranscript(typeof data === 'string' ? data : String(data ?? ''));
+            }
+            break;
           case 'token':
             if (onToken) onToken(typeof data === 'string' ? data : String(data ?? ''));
             break;
@@ -186,6 +224,12 @@ export async function sendMessageStream(
             break;
           case 'diagnosis':
             if (onDiagnosis) onDiagnosis(mapDiagnosis(data));
+            break;
+          case 'interrupt':
+            // O agente pausou (tool `ask_user`) e espera resposta. Sem tratar,
+            // o turno terminava com o balão vazio e a conversa travava — era o
+            // motivo de `agent_enable_ask_user` estar desligado no backend.
+            if (onInterrupt) onInterrupt(mapInterrupt(data));
             break;
           case 'error': {
             // Servidor sinalizou falha no meio do turno (evento `error` do
@@ -222,6 +266,115 @@ export async function sendMessageStream(
       },
     }).catch((err) => {
       // Swallow — already surfaced via onerror/finish above.
+      if (!settled) finish('reject', err);
+    });
+  });
+}
+
+/**
+ * Retoma um turno pausado por `ask_user`, mandando a resposta do usuário.
+ *
+ * Espelha `sendMessageStream`, mas fala com POST /api/v1/chat/resume/stream e
+ * manda JSON (não multipart) — o backend espera `{ thread_id, response }`. O
+ * agente pode interromper de novo no mesmo turno, então o callback
+ * `onInterrupt` continua valendo aqui.
+ *
+ * @param {string} threadId id da sessão (= chat_session.id)
+ * @param {string} response resposta do usuário à pergunta do agente
+ * @param {object} callbacks mesmos de `sendMessageStream`
+ * @returns {Promise<void>}
+ */
+export async function resumeMessageStream(threadId, response, callbacks = {}) {
+  const {
+    onToken,
+    onToolCall,
+    onToolResult,
+    onDiagnosis,
+    onInterrupt,
+    onDone,
+    onError,
+  } = callbacks;
+
+  const token = getAuthToken();
+  const headers = { Accept: 'text/event-stream', 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const ctrl = new AbortController();
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (kind, value) => {
+      if (settled) return;
+      settled = true;
+      try {
+        ctrl.abort();
+      } catch (_e) {
+        /* noop */
+      }
+      if (kind === 'resolve') resolve(value);
+      else reject(value);
+    };
+
+    fetchEventSource(`${getApiBaseUrl()}/api/v1/chat/resume/stream`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ thread_id: threadId, response }),
+      signal: ctrl.signal,
+      openWhenHidden: true,
+      async onopen(res) {
+        if (res.ok && res.headers.get('content-type')?.includes('text/event-stream')) {
+          return;
+        }
+        const err = new Error(`Stream failed to open (status ${res.status})`);
+        err.response = { status: res.status };
+        throw err;
+      },
+      onmessage(ev) {
+        const data = parseEventData(ev.data);
+        switch (ev.event) {
+          case 'token':
+            if (onToken) onToken(typeof data === 'string' ? data : String(data ?? ''));
+            break;
+          case 'tool_call':
+            if (onToolCall) onToolCall(typeof data === 'string' ? data : String(data ?? ''));
+            break;
+          case 'tool_result':
+            if (onToolResult) onToolResult(typeof data === 'string' ? data : String(data ?? ''));
+            break;
+          case 'diagnosis':
+            if (onDiagnosis) onDiagnosis(mapDiagnosis(data));
+            break;
+          case 'interrupt':
+            if (onInterrupt) onInterrupt(mapInterrupt(data));
+            break;
+          case 'error': {
+            const message =
+              typeof data === 'string' && data ? data : 'Erro ao retomar a conversa.';
+            const err = new Error(message);
+            if (onError) onError(err);
+            finish('reject', err);
+            break;
+          }
+          case 'done':
+            if (onDone) onDone(typeof data === 'string' ? data : null);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('quota-updated'));
+            }
+            finish('resolve');
+            break;
+          default:
+            break;
+        }
+      },
+      onclose() {
+        finish('resolve');
+      },
+      onerror(err) {
+        if (onError) onError(err);
+        finish('reject', err);
+        throw err;
+      },
+    }).catch((err) => {
       if (!settled) finish('reject', err);
     });
   });

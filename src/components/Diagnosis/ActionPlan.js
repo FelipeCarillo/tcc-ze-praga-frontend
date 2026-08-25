@@ -6,7 +6,8 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Collapse from '@mui/material/Collapse';
 import Button from '@mui/material/Button';
 import { alpha, useTheme } from '@mui/material/styles';
-import { CheckCircle2, AlertTriangle, Zap, Map, GraduationCap, BookOpen, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { CheckCircle2, AlertTriangle, Zap, Map, GraduationCap, BookOpen, ExternalLink, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 const levels = [
   { id: 'essencial', label: 'Essencial', icon: Zap, description: 'Ações imediatas' },
@@ -20,8 +21,20 @@ function ActionPlan({ actions }) {
   const [showSources, setShowSources] = useState(false);
 
   const isMultiLevel = actions && typeof actions === 'object' && !Array.isArray(actions);
-  const currentActions = isMultiLevel ? actions[activeLevel] : actions;
   const sources = isMultiLevel ? actions.sources : null;
+
+  // O backend entrega só os níveis que o plano libera. Os demais continuam
+  // visíveis como upsell — antes disto, clicar num nível ausente zerava o
+  // componente inteiro (currentActions vazio => return null).
+  const available = isMultiLevel
+    ? levels.filter((l) => Array.isArray(actions[l.id]) && actions[l.id].length > 0)
+    : [];
+  const isLocked = (levelId) => isMultiLevel && !available.some((l) => l.id === levelId);
+
+  // Se o nível ativo não veio (plano mudou, ou 'essencial' não existe pra essa
+  // doença), cai no primeiro disponível em vez de sumir com a seção.
+  const effectiveLevel = isLocked(activeLevel) ? available[0]?.id : activeLevel;
+  const currentActions = isMultiLevel ? actions[effectiveLevel] : actions;
 
   if (!currentActions || currentActions.length === 0) return null;
 
@@ -37,9 +50,9 @@ function ActionPlan({ actions }) {
             Selecione o nível de detalhamento:
           </Typography>
           <ToggleButtonGroup
-            value={activeLevel}
+            value={effectiveLevel}
             exclusive
-            onChange={(e, val) => { if (val) setActiveLevel(val); }}
+            onChange={(e, val) => { if (val && !isLocked(val)) setActiveLevel(val); }}
             size="small"
             sx={{
               display: 'flex',
@@ -54,13 +67,18 @@ function ActionPlan({ actions }) {
             }}
           >
             {levels.map((level) => {
-              const Icon = level.icon;
-              const isActive = activeLevel === level.id;
+              const locked = isLocked(level.id);
+              const Icon = locked ? Lock : level.icon;
+              const isActive = effectiveLevel === level.id;
               return (
                 <ToggleButton
                   key={level.id}
                   value={level.id}
+                  component={locked ? Link : 'button'}
+                  to={locked ? '/planos' : undefined}
+                  aria-label={locked ? `${level.label} — disponível nos planos pagos` : level.label}
                   sx={{
+                    ...(locked && { opacity: 0.5 }),
                     textTransform: 'none',
                     px: 2,
                     py: 1,
@@ -86,7 +104,7 @@ function ActionPlan({ actions }) {
                       {level.label}
                     </Typography>
                     <Typography variant="caption" sx={{ fontSize: '0.65rem', color: isActive ? 'primary.main' : 'text.disabled', display: { xs: 'none', sm: 'block' }, lineHeight: 1.2 }}>
-                      {level.description}
+                      {locked ? 'Nos planos pagos' : level.description}
                     </Typography>
                   </Box>
                 </ToggleButton>

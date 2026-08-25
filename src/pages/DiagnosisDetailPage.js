@@ -13,6 +13,7 @@ import { ReactComponent as Marca } from '../assets/brand/marca.svg';
 import ConfidenceBar from '../components/Diagnosis/ConfidenceBar';
 import ActionPlan from '../components/Diagnosis/ActionPlan';
 import { getDiagnosisById } from '../services/historyService';
+import { useActionPlan } from '../hooks/useActionPlan';
 import { exportDiagnosisPdf } from '../services/pdfExport';
 
 const SEV = {
@@ -136,6 +137,11 @@ function DiagnosisDetailPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
 
+  // O plano de ação não vem no payload do diagnóstico — é buscado por doença.
+  // `diagnosis.actionPlan` só é preenchido no modo mock.
+  const { actionPlan: fetchedPlan } = useActionPlan(diagnosis?.diseaseId);
+  const actionPlan = diagnosis?.actionPlan || fetchedPlan;
+
   useEffect(() => {
     async function load() {
       try {
@@ -152,7 +158,10 @@ function DiagnosisDetailPage() {
   }, [id]);
 
   const handlePdf = () => {
-    exportDiagnosisPdf(diagnosis);
+    // Sem o merge, o PDF sai sem a receita — `exportDiagnosisPdf` lê
+    // `actionPlan` do objeto, que no caminho real vem do hook, não da API
+    // de diagnósticos.
+    exportDiagnosisPdf({ ...diagnosis, actionPlan });
     setSheetOpen(false);
   };
   const handleCopyLink = async () => {
@@ -211,9 +220,9 @@ function DiagnosisDetailPage() {
 
         <ConfidenceBar confidence={diagnosis.confidence} />
 
-        {diagnosis.actionPlan && (
+        {actionPlan && (
           <Box sx={{ mt: 2.5 }}>
-            <ActionPlan actions={diagnosis.actionPlan} />
+            <ActionPlan actions={actionPlan} />
           </Box>
         )}
 

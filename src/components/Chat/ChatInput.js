@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import InputBase from '@mui/material/InputBase';
 import IconButton from '@mui/material/IconButton';
@@ -7,15 +7,11 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { Camera, ImageIcon, ArrowUp, Cpu, X, Mic, StopCircle } from 'lucide-react';
+import { Camera, ImageIcon, ArrowUp, Cpu, X, Mic, StopCircle, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { copy } from '../../copy/ze';
-
-const MODELS = [
-  { id: 'ensemble', name: 'Ensemble' },
-  { id: 'resnet50', name: 'ResNet-50' },
-  { id: 'efficientnet', name: 'EfficientNet-B4' },
-  { id: 'vit', name: 'ViT-B/16' },
-];
+import { useFeatures } from '../../contexts/FeaturesContext';
+import { MODELS, allowedModelIds, defaultModelId } from '../../data/diagnosisModels';
 
 // Maximum recording duration in milliseconds.
 const MAX_RECORDING_MS = 60_000;
@@ -28,7 +24,18 @@ function ChatInput({ onSend, disabled = false }) {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [model, setModel] = useState('ensemble');
+  // O plano decide o que está disponível. O backend rebaixa de qualquer jeito;
+  // aqui a UI evita oferecer o que o usuário não tem (ver data/diagnosisModels).
+  const features = useFeatures();
+  const allowed = useMemo(() => allowedModelIds(features), [features]);
+  const [model, setModel] = useState(() => defaultModelId(features));
+
+  // As features chegam depois do primeiro render (vêm do /users/me). Quando
+  // chegarem, corrige a seleção se o default inicial não for permitido.
+  useEffect(() => {
+    if (allowed && !allowed.has(model)) setModel(defaultModelId(features));
+  }, [allowed, features, model]);
+
   const [camAnchor, setCamAnchor] = useState(null);
   const [modelAnchor, setModelAnchor] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -228,11 +235,36 @@ function ChatInput({ onSend, disabled = false }) {
       </Menu>
 
       <Menu anchorEl={modelAnchor} open={Boolean(modelAnchor)} onClose={() => setModelAnchor(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }} transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        {MODELS.map((m) => (
-          <MenuItem key={m.id} selected={m.id === model} onClick={() => { setModel(m.id); setModelAnchor(null); }}>
-            {m.name}
-          </MenuItem>
-        ))}
+        {MODELS.map((m) => {
+          const locked = allowed ? !allowed.has(m.id) : false;
+          // Bloqueado vira link pros planos em vez de sumir: o usuário precisa
+          // saber que existe algo melhor, e por que não pode usar.
+          return (
+            <MenuItem
+              key={m.id}
+              selected={m.id === model}
+              component={locked ? Link : 'li'}
+              to={locked ? '/planos' : undefined}
+              onClick={() => {
+                if (!locked) setModel(m.id);
+                setModelAnchor(null);
+              }}
+              sx={locked ? { opacity: 0.55 } : undefined}
+            >
+              <ListItemText
+                primary={m.name}
+                secondary={locked ? 'Disponível nos planos pagos' : m.detail}
+                primaryTypographyProps={{ fontSize: '0.85rem' }}
+                secondaryTypographyProps={{ fontSize: '0.7rem' }}
+              />
+              {locked && (
+                <ListItemIcon sx={{ minWidth: 0, ml: 1.5 }}>
+                  <Lock size={13} />
+                </ListItemIcon>
+              )}
+            </MenuItem>
+          );
+        })}
       </Menu>
     </Box>
   );
