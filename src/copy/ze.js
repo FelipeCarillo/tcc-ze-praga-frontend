@@ -56,6 +56,22 @@ export const copy = {
       fullRecipe: 'Receita completa',
       anotherPhoto: 'Outra foto',
     },
+    // O que mostrar quando o agente chama uma ferramenta. O stream manda o nome
+    // técnico (`analyze_image`); aqui ele vira a voz do Zé. Nome desconhecido
+    // cai no fallback e a UI não quebra quando o backend ganhar tools novas.
+    tools: {
+      inspect_image: 'Olhando a foto…',
+      analyze_image: 'Rodando o diagnóstico…',
+      deep_diagnose: 'Analisando as fotos…',
+      get_disease_info: 'Consultando o caderno de doenças…',
+      get_action_plan: 'Montando a receita…',
+      search_my_diagnoses: 'Procurando no seu histórico…',
+      compare_diagnoses: 'Comparando os modelos…',
+      search_web: 'Dando uma pesquisada…',
+      search_scientific: 'Vendo o que dizem os artigos…',
+      identify_crop: 'Vendo que cultura é essa…',
+      _fallback: 'Trabalhando nisso…',
+    },
   },
 
   diagnosis: {

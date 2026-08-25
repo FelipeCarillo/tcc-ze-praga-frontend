@@ -3,9 +3,11 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
+import { Mic } from 'lucide-react';
 import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 import DiagnosisCard from './DiagnosisCard';
 import Markdown from '../common/Markdown';
+import { copy } from '../../copy/ze';
 
 function ChatMessage({ message, onSaveDiagnosis }) {
   const theme = useTheme();
@@ -17,6 +19,50 @@ function ChatMessage({ message, onSaveDiagnosis }) {
   if (!isUser && message.isStreaming && !message.content) {
     return null;
   }
+
+  // Tool chamada DEPOIS que o balão já tem texto: o TypingIndicator do
+  // ChatWindow some assim que o stream começa, então sem isto o usuário fica
+  // sem sinal enquanto o agente busca plano de ação ou pesquisa na web. Antes
+  // do primeiro token quem mostra o estado é o TypingIndicator — renderizar
+  // aqui também duplicaria o spinner.
+  const activeTool =
+    message.isStreaming && message.content ? message.toolCall : null;
+
+  const renderToolBadge = () => {
+    if (!activeTool) return null;
+    const label = copy.chat.tools[activeTool] || copy.chat.tools._fallback;
+    return (
+      <Box
+        component={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.75,
+          mt: message.content ? 1 : 0,
+        }}
+      >
+        <Box
+          component={motion.div}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          sx={{
+            width: 11,
+            height: 11,
+            borderRadius: '50%',
+            border: '2px solid',
+            borderColor: 'secondary.main',
+            borderTopColor: 'transparent',
+            flexShrink: 0,
+          }}
+        />
+        <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: 'secondary.main' }}>
+          {label}
+        </Typography>
+      </Box>
+    );
+  };
 
   const renderAssistantContent = () => {
     if (!message.content) return null;
@@ -74,16 +120,26 @@ function ChatMessage({ message, onSaveDiagnosis }) {
           )}
           {isUser ? (
             message.content && (
-              <Typography
-                variant="body2"
-                component="div"
-                sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
-              >
-                {message.content}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
+                {/* Marca que o texto veio do áudio, não do teclado — sem isso a
+                    transcrição parece algo que o usuário digitou. */}
+                {message.isTranscript && (
+                  <Mic size={13} style={{ flexShrink: 0, marginTop: 4, opacity: 0.75 }} />
+                )}
+                <Typography
+                  variant="body2"
+                  component="div"
+                  sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
+                >
+                  {message.content}
+                </Typography>
+              </Box>
             )
           ) : (
-            renderAssistantContent()
+            <>
+              {renderAssistantContent()}
+              {renderToolBadge()}
+            </>
           )}
         </Box>
       </Box>

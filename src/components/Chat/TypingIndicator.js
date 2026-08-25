@@ -9,17 +9,29 @@ import { copy } from '../../copy/ze';
  * Skeleton do estado "Zé pensando" (auditoria, seção 11): bolha do Zé com um
  * spinner pequeno + microcopy rotativa (a cada ~1.2s) + placeholders de linha.
  * Quebra a frieza de "Analisando…" e mantém a voz.
+ *
+ * Quando o agente está rodando uma ferramenta (`toolCall`), a microcopy genérica
+ * dá lugar ao que ele está de fato fazendo — a inferência ONNX segura ~1,2s no
+ * ensemble, e antes disso o balão ficava mudo sem explicação.
+ *
+ * @param {{ toolCall?: string|null }} props nome técnico da tool em execução
  */
-function TypingIndicator() {
+function TypingIndicator({ toolCall = null }) {
   const [idx, setIdx] = useState(0);
   const phrases = copy.chat.thinking;
 
   useEffect(() => {
+    // Com tool ativa o texto é fixo — rotacionar por cima dele confundiria.
+    if (toolCall) return undefined;
     const id = setInterval(() => {
       setIdx((i) => (i + 1) % phrases.length);
     }, 1200);
     return () => clearInterval(id);
-  }, [phrases.length]);
+  }, [phrases.length, toolCall]);
+
+  const label = toolCall
+    ? copy.chat.tools[toolCall] || copy.chat.tools._fallback
+    : phrases[idx];
 
   return (
     <Box
@@ -60,7 +72,7 @@ function TypingIndicator() {
             }}
           />
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'secondary.main' }}>
-            {phrases[idx]}
+            {label}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>

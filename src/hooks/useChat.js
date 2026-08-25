@@ -1,6 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { sendMessage, sendMessageStream } from '../services/chatService';
+import {
+  sendMessage,
+  sendMessageStream,
+  resumeMessageStream,
+} from '../services/chatService';
+import { getSessionMessages, closeSession } from '../services/sessionsService';
 
 const INITIAL_ASSISTANT_MESSAGE = {
   role: 'assistant',
@@ -39,6 +44,10 @@ function useChat() {
   const [messages, setMessages] = useState(createInitialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  // Pergunta feita pelo agente via `ask_user` (HITL). Enquanto está preenchida,
+  // a conversa está pausada esperando resposta — o grafo já persistiu o
+  // snapshot no checkpointer e retoma via /chat/resume.
+  const [pendingInterrupt, setPendingInterrupt] = useState(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
@@ -97,6 +106,7 @@ function useChat() {
         imageUrl: imageFile ? URL.createObjectURL(imageFile) : null,
       };
 
+      const userMessageId = userMessage.id;
       const placeholderId = uuidv4();
       const placeholder = {
         id: placeholderId,
@@ -153,6 +163,18 @@ function useChat() {
           sessionId,
           audioFile,
           {
+            onTranscript: (text) => {
+              // Troca o "🎤 Mensagem de voz" pelo que o Whisper entendeu, pra
+              // o usuário conferir a transcrição em vez de confiar no escuro.
+              if (!text) return;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === userMessageId
+                    ? { ...m, content: text, isTranscript: true }
+                    : m
+                )
+              );
+            },
             onToken: (chunk) => {
               target += chunk;
             },
@@ -166,8 +188,18 @@ function useChat() {
             onDiagnosis: (diag) => {
               updatePlaceholder(() => ({ diagnosis: diag }));
             },
+            onInterrupt: (info) => {
+              if (info) setPendingInterrupt({ ...info, sessionId });
+            },
             onDone: (sid) => {
-              if (sid) setSessionId(sid);
+              if (sid) {
+                setSessionId(sid);
+                // O interrupt chega antes do `done`, e só aí sabemos o
+                // session_id numa primeira mensagem — completa o thread_id.
+                setPendingInterrupt((cur) =>
+                  cur && !cur.sessionId ? { ...cur, sessionId: sid } : cur
+                );
+              }
             },
           }
         );
@@ -204,12 +236,159 @@ function useChat() {
     [sessionId]
   );
 
-  const clearChat = useCallback(() => {
-    setMessages(createInitialMessages());
-    setSessionId(null);
+  /**
+   * Responde à pergunta do agente e retoma o turno pausado.
+   *
+   * Reusa o mesmo padrão de placeholder + typewriter do `sendStreaming`: do
+   * ponto de vista do usuário, a conversa apenas continua.
+   */
+  const answerInterrupt = useCallback(
+    async (answer) => {
+      const current = pendingInterrupt;
+      const threadId = current?.sessionId || sessionId;
+      if (!current || !threadId) return;
+
+      const userMessage = { id: uuidv4(), role: 'user', content: answer };
+      const placeholderId = uuidv4();
+      const placeholder = {
+        id: placeholderId,
+        role: 'assistant',
+        content: '',
+        diagnosis: null,
+        isStreaming: true,
+        toolCall: null,
+      };
+
+      setPendingInterrupt(null);
+      setMessages((prev) => [...prev, userMessage, placeholder]);
+      setIsLoading(true);
+
+      const updatePlaceholder = (updater) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === placeholderId ? { ...m, ...updater(m) } : m))
+        );
+      };
+
+      let target = '';
+      let shown = 0;
+      const TICK_MS = 18;
+      const revealTimer = setInterval(() => {
+        if (shown >= target.length) return;
+        const remaining = target.length - shown;
+        const step = remaining > 160 ? Math.ceil(remaining / 30) : 1;
+        shown = Math.min(target.length, shown + step);
+        updatePlaceholder(() => ({ content: target.slice(0, shown) }));
+      }, TICK_MS);
+
+      const drainTypewriter = () =>
+        new Promise((resolve) => {
+          const check = () =>
+            shown >= target.length ? resolve() : setTimeout(check, TICK_MS);
+          check();
+        });
+
+      try {
+        await resumeMessageStream(threadId, answer, {
+          onToken: (chunk) => {
+            target += chunk;
+          },
+          onToolCall: (name) => updatePlaceholder(() => ({ toolCall: name })),
+          onToolResult: () => updatePlaceholder(() => ({ toolCall: null })),
+          onDiagnosis: (diag) => updatePlaceholder(() => ({ diagnosis: diag })),
+          onInterrupt: (info) => {
+            // O agente pode perguntar de novo no mesmo turno.
+            if (info) setPendingInterrupt({ ...info, sessionId: threadId });
+          },
+        });
+        await drainTypewriter();
+        clearInterval(revealTimer);
+        updatePlaceholder(() => ({
+          content: target,
+          isStreaming: false,
+          toolCall: null,
+        }));
+      } catch (error) {
+        clearInterval(revealTimer);
+        const message = describeChatError(error);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === placeholderId
+              ? {
+                  id: placeholderId,
+                  role: 'assistant',
+                  content: message,
+                  diagnosis: null,
+                  isStreaming: false,
+                  toolCall: null,
+                }
+              : m
+          )
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [pendingInterrupt, sessionId]
+  );
+
+  /**
+   * Reabre uma conversa anterior: carrega as mensagens persistidas e passa a
+   * usar aquele `sessionId`, então o próximo turno continua o mesmo thread
+   * (inclusive o checkpointer do agente, que é chaveado por ele).
+   */
+  const loadSession = useCallback(async (targetSessionId) => {
+    if (!targetSessionId) return;
+    setIsLoading(true);
+    try {
+      const history = await getSessionMessages(targetSessionId);
+      setPendingInterrupt(null);
+      setSessionId(targetSessionId);
+      setMessages(
+        history.length
+          ? history.map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              diagnosis: null,
+            }))
+          : createInitialMessages()
+      );
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          role: 'assistant',
+          content: 'Não consegui abrir essa conversa. Tenta de novo?',
+          diagnosis: null,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { messages, isLoading, sessionId, send, sendStreaming, clearChat };
+  const clearChat = useCallback(() => {
+    // Fecha a conversa anterior antes de largar o id: é o que dispara o resumo
+    // no backend (`summary_text` + índice no Store). Sem isto o endpoint de
+    // close nunca era chamado e a memória entre sessões ficava vazia.
+    if (sessionId) closeSession(sessionId);
+    setMessages(createInitialMessages());
+    setSessionId(null);
+    setPendingInterrupt(null);
+  }, [sessionId]);
+
+  return {
+    messages,
+    isLoading,
+    sessionId,
+    pendingInterrupt,
+    send,
+    sendStreaming,
+    answerInterrupt,
+    loadSession,
+    clearChat,
+  };
 }
 
 export default useChat;

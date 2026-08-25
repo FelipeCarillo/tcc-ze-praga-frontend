@@ -5,14 +5,29 @@ import { AnimatePresence } from 'framer-motion';
 import { Camera, ImageIcon } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
+import InterruptPrompt from './InterruptPrompt';
+import { useFeatures } from '../../contexts/FeaturesContext';
+import { defaultModelId } from '../../data/diagnosisModels';
 
-function ChatWindow({ messages, isLoading, onSend, onSaveDiagnosis }) {
+function ChatWindow({
+  messages,
+  isLoading,
+  onSend,
+  onSaveDiagnosis,
+  pendingInterrupt = null,
+  onAnswerInterrupt,
+}) {
+  // Estes atalhos não passam pelo seletor do ChatInput — sem isto mandariam
+  // 'ensemble' fixo, que o backend rebaixaria para quem não é Enterprise.
+  const features = useFeatures();
   const bottomRef = useRef(null);
   const galleryRef = useRef(null);
   const cameraRef = useRef(null);
   const showWelcome = messages.length <= 1;
   const lastMsg = messages[messages.length - 1];
-  const showQuickReplies = !isLoading && lastMsg?.role === 'assistant' && !!lastMsg?.diagnosis;
+  // Com uma pergunta pendente, o proximo passo e responder, nao mandar foto.
+  const showQuickReplies =
+    !isLoading && !pendingInterrupt && lastMsg?.role === 'assistant' && !!lastMsg?.diagnosis;
   // Enquanto o balão de stream já mostra texto, não duplica com o typing.
   const streamingWithContent =
     lastMsg?.role === 'assistant' && lastMsg?.isStreaming && !!lastMsg?.content;
@@ -23,7 +38,7 @@ function ChatWindow({ messages, isLoading, onSend, onSaveDiagnosis }) {
 
   const stageAndSend = (e) => {
     const file = e.target.files && e.target.files[0];
-    if (file) onSend('', file, 'ensemble');
+    if (file) onSend('', file, defaultModelId(features));
     e.target.value = '';
   };
 
@@ -51,7 +66,17 @@ function ChatWindow({ messages, isLoading, onSend, onSaveDiagnosis }) {
           ))}
         </AnimatePresence>
 
-        {isLoading && !streamingWithContent && <TypingIndicator />}
+        {isLoading && !streamingWithContent && (
+          <TypingIndicator toolCall={lastMsg?.toolCall} />
+        )}
+
+        {pendingInterrupt && !isLoading && (
+          <InterruptPrompt
+            interrupt={pendingInterrupt}
+            onAnswer={onAnswerInterrupt}
+            disabled={isLoading}
+          />
+        )}
 
         {showWelcome && !isLoading && (
           <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pt: 3 }}>

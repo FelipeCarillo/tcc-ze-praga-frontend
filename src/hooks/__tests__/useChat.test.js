@@ -3,6 +3,16 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 jest.mock('../../services/chatService', () => ({
   sendMessage: jest.fn(),
   sendMessageStream: jest.fn(),
+  resumeMessageStream: jest.fn(),
+}));
+
+// `clearChat` fecha a sessão no backend (é o que dispara o resumo + índice no
+// Store). Sem mockar, o teste dispara um axios real e o worker do jest fica
+// pendurado no request.
+jest.mock('../../services/sessionsService', () => ({
+  getSessionMessages: jest.fn().mockResolvedValue([]),
+  closeSession: jest.fn().mockResolvedValue(null),
+  listSessions: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('uuid', () => {
@@ -15,7 +25,15 @@ if (typeof URL.createObjectURL === 'undefined') {
   Object.defineProperty(URL, 'createObjectURL', { value: () => 'blob:fake' });
 }
 
-const { sendMessage, sendMessageStream } = require('../../services/chatService');
+const {
+  sendMessage,
+  sendMessageStream,
+  resumeMessageStream,
+} = require('../../services/chatService');
+const {
+  getSessionMessages,
+  closeSession,
+} = require('../../services/sessionsService');
 const useChat = require('../useChat').default;
 
 describe('useChat error handling', () => {
@@ -248,5 +266,310 @@ describe('useChat streaming (sendStreaming)', () => {
     });
 
     expect(result.current.sessionId).toBeNull();
+  });
+});
+
+describe('useChat — transcrição de voz', () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+  });
+
+  it('substitui o balão do usuário pelo texto transcrito', async () => {
+    // O backend emite `transcript` antes dos tokens quando o turno veio por
+    // áudio. Antes o evento caía no `default` do switch e o usuário ficava só
+    // com "🎤 Mensagem de voz" — sem conferir o que o Whisper entendeu.
+    let captured = null;
+    sendMessageStream.mockImplementation(
+      (msgs, img, model, sid, audio, callbacks) =>
+        new Promise((resolve) => {
+          captured = { callbacks, resolve };
+        })
+    );
+
+    const { result } = renderHook(() => useChat());
+    const audio = new File(['x'], 'voice.webm', { type: 'audio/webm' });
+
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('', null, 'ensemble', audio);
+    });
+
+    const userMsg = () =>
+      result.current.messages.filter((m) => m.role === 'user').pop();
+
+    expect(userMsg().content).toBe('🎤 Mensagem de voz');
+
+    await act(async () => {
+      captured.callbacks.onTranscript('a folha tá com manchas amareladas');
+    });
+
+    expect(userMsg().content).toBe('a folha tá com manchas amareladas');
+    expect(userMsg().isTranscript).toBe(true);
+
+    await act(async () => {
+      captured.callbacks.onDone('s-1');
+      captured.resolve();
+      await streamPromise;
+    });
+  });
+
+  it('ignora transcrição vazia em vez de apagar o balão', async () => {
+    let captured = null;
+    sendMessageStream.mockImplementation(
+      (msgs, img, model, sid, audio, callbacks) =>
+        new Promise((resolve) => {
+          captured = { callbacks, resolve };
+        })
+    );
+
+    const { result } = renderHook(() => useChat());
+    const audio = new File(['x'], 'voice.webm', { type: 'audio/webm' });
+
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('', null, 'ensemble', audio);
+    });
+
+    await act(async () => {
+      captured.callbacks.onTranscript('');
+    });
+
+    const userMsg = result.current.messages.filter((m) => m.role === 'user').pop();
+    expect(userMsg.content).toBe('🎤 Mensagem de voz');
+
+    await act(async () => {
+      captured.callbacks.onDone('s-1');
+      captured.resolve();
+      await streamPromise;
+    });
+  });
+});
+
+describe('useChat — human-in-the-loop (ask_user)', () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+    resumeMessageStream.mockReset();
+  });
+
+  function driveStream() {
+    let captured = null;
+    sendMessageStream.mockImplementation(
+      (msgs, img, model, sid, audio, callbacks) =>
+        new Promise((resolve) => {
+          captured = { callbacks, resolve };
+        })
+    );
+    return () => captured;
+  }
+
+  it('expõe a pergunta do agente e pausa a conversa', async () => {
+    const get = driveStream();
+    const { result } = renderHook(() => useChat());
+
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('analisa isso');
+    });
+
+    expect(result.current.pendingInterrupt).toBeNull();
+
+    await act(async () => {
+      get().callbacks.onInterrupt({
+        kind: 'ask_user',
+        question: 'É soja ou milho?',
+        responseKind: 'choice',
+        options: ['Soja', 'Milho'],
+      });
+      get().callbacks.onDone('sess-1');
+      get().resolve();
+      await streamPromise;
+    });
+
+    expect(result.current.pendingInterrupt.question).toBe('É soja ou milho?');
+    expect(result.current.pendingInterrupt.options).toEqual(['Soja', 'Milho']);
+    // O session_id chega no `done`, depois do interrupt — sem ele o resume não
+    // saberia qual thread retomar.
+    expect(result.current.pendingInterrupt.sessionId).toBe('sess-1');
+  });
+
+  it('answerInterrupt retoma o turno e limpa a pergunta', async () => {
+    const get = driveStream();
+    resumeMessageStream.mockImplementation((threadId, answer, callbacks) => {
+      callbacks.onToken('Beleza, soja então.');
+      return Promise.resolve();
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('analisa');
+    });
+    await act(async () => {
+      get().callbacks.onInterrupt({
+        question: 'É soja ou milho?',
+        responseKind: 'choice',
+        options: ['Soja', 'Milho'],
+      });
+      get().callbacks.onDone('sess-1');
+      get().resolve();
+      await streamPromise;
+    });
+
+    await act(async () => {
+      await result.current.answerInterrupt('Soja');
+    });
+
+    expect(resumeMessageStream).toHaveBeenCalledWith(
+      'sess-1',
+      'Soja',
+      expect.any(Object)
+    );
+    expect(result.current.pendingInterrupt).toBeNull();
+
+    // A resposta do usuário entra como mensagem dele na conversa.
+    const userMsgs = result.current.messages.filter((m) => m.role === 'user');
+    expect(userMsgs[userMsgs.length - 1].content).toBe('Soja');
+
+    await waitFor(() => {
+      const last = result.current.messages[result.current.messages.length - 1];
+      expect(last.content).toBe('Beleza, soja então.');
+    });
+  });
+
+  it('aceita uma segunda pergunta no mesmo turno', async () => {
+    const get = driveStream();
+    resumeMessageStream.mockImplementation((threadId, answer, callbacks) => {
+      callbacks.onInterrupt({ question: 'Qual estádio?', responseKind: 'text' });
+      return Promise.resolve();
+    });
+
+    const { result } = renderHook(() => useChat());
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('analisa');
+    });
+    await act(async () => {
+      get().callbacks.onInterrupt({ question: 'É soja?', responseKind: 'boolean' });
+      get().callbacks.onDone('sess-1');
+      get().resolve();
+      await streamPromise;
+    });
+
+    await act(async () => {
+      await result.current.answerInterrupt('Sim');
+    });
+
+    expect(result.current.pendingInterrupt.question).toBe('Qual estádio?');
+  });
+
+  it('answerInterrupt é no-op quando não há pergunta pendente', async () => {
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.answerInterrupt('oi');
+    });
+
+    expect(resumeMessageStream).not.toHaveBeenCalled();
+  });
+
+  it('clearChat descarta a pergunta pendente', async () => {
+    const get = driveStream();
+    const { result } = renderHook(() => useChat());
+
+    let streamPromise;
+    await act(async () => {
+      streamPromise = result.current.sendStreaming('analisa');
+    });
+    await act(async () => {
+      get().callbacks.onInterrupt({ question: 'É soja?', responseKind: 'boolean' });
+      get().callbacks.onDone('sess-1');
+      get().resolve();
+      await streamPromise;
+    });
+
+    expect(result.current.pendingInterrupt).not.toBeNull();
+
+    act(() => {
+      result.current.clearChat();
+    });
+
+    expect(result.current.pendingInterrupt).toBeNull();
+  });
+});
+
+describe('useChat — conversas persistidas', () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+    resumeMessageStream.mockReset();
+    getSessionMessages.mockReset();
+    closeSession.mockReset();
+    getSessionMessages.mockResolvedValue([]);
+    closeSession.mockResolvedValue(null);
+  });
+
+  it('loadSession repopula a conversa e adota o sessionId', async () => {
+    getSessionMessages.mockResolvedValueOnce([
+      { id: 'm1', role: 'user', content: 'olha essa folha' },
+      { id: 'm2', role: 'assistant', content: 'Isso é ferrugem.' },
+    ]);
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.loadSession('sess-antiga');
+    });
+
+    expect(result.current.sessionId).toBe('sess-antiga');
+    expect(result.current.messages.map((m) => m.content)).toEqual([
+      'olha essa folha',
+      'Isso é ferrugem.',
+    ]);
+  });
+
+  it('loadSession de conversa vazia cai na saudação inicial', async () => {
+    getSessionMessages.mockResolvedValueOnce([]);
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.loadSession('sess-vazia');
+    });
+
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0].role).toBe('assistant');
+  });
+
+  it('clearChat fecha a sessão anterior para gerar o resumo', async () => {
+    // POST /sessions/{id}/close é o que grava `summary_text` e indexa o resumo
+    // no Store — sem essa chamada a memória entre sessões nunca é alimentada.
+    getSessionMessages.mockResolvedValueOnce([
+      { id: 'm1', role: 'user', content: 'oi' },
+    ]);
+
+    const { result } = renderHook(() => useChat());
+    await act(async () => {
+      await result.current.loadSession('sess-1');
+    });
+
+    act(() => {
+      result.current.clearChat();
+    });
+
+    expect(closeSession).toHaveBeenCalledWith('sess-1');
+    expect(result.current.sessionId).toBeNull();
+  });
+
+  it('clearChat sem sessão aberta não chama o backend', () => {
+    const { result } = renderHook(() => useChat());
+
+    act(() => {
+      result.current.clearChat();
+    });
+
+    expect(closeSession).not.toHaveBeenCalled();
   });
 });

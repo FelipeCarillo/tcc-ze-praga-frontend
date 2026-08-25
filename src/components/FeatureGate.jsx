@@ -1,4 +1,3 @@
-import React from 'react';
 import { useFeatures } from '../contexts/FeaturesContext';
 
 /**
