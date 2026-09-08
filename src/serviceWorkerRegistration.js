@@ -63,8 +63,10 @@ function checkValidServiceWorker(swUrl, config) {
 
 export function unregister() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then((registration) => { registration.unregister(); })
-      .catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(registrations => Promise.all(registrations.filter(registration => {
+      const worker = registration.active || registration.waiting || registration.installing;
+      return worker && new URL(worker.scriptURL).pathname.endsWith('/service-worker.js');
+    }).map(registration => registration.unregister()))).catch(() => {});
   }
+  if ('caches' in window) caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('ze-praga-')).map(key => caches.delete(key)))).catch(() => {});
 }

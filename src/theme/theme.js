@@ -91,16 +91,16 @@ export function createAppTheme(mode) {
     palette: {
       mode,
       primary: {
-        main: brand.mata,
+        main: isDark ? brand.folha : brand.mata,
         light: brand.folha,
         dark: brand.mataNoite,
-        contrastText: '#FFFFFF',
+        contrastText: isDark ? brand.noite : '#FFFFFF',
       },
       secondary: {
-        main: brand.cerrado,
+        main: isDark ? '#F0A98D' : '#AA462B',
         light: '#F0A98D',
         dark: brand.tijolo,
-        contrastText: '#FFFFFF',
+        contrastText: isDark ? brand.noite : '#FFFFFF',
       },
       background: {
         default: isDark ? brand.noite : brand.papel,
@@ -179,7 +179,7 @@ export function createAppTheme(mode) {
       h4: {
         fontFamily: FONT_DISPLAY,
         fontWeight: 600,
-        fontSize: '1.25rem',
+        fontSize: '1.6rem',
         lineHeight: 1.3,
         letterSpacing: '-0.01em',
       },
@@ -210,6 +210,11 @@ export function createAppTheme(mode) {
       borderRadius: 14,
     },
     components: {
+      MuiCssBaseline: { styleOverrides: { html: { scrollBehavior: 'auto' }, body: { overflowWrap: 'break-word' }, '*:focus-visible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 }, '@media (prefers-reduced-motion: reduce)': { '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important', scrollBehavior: 'auto !important' } } } },
+        MuiButtonBase: { styleOverrides: { root: { '&.Mui-focusVisible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 } } } },
+        MuiIconButton: { styleOverrides: { root: { minWidth: 44, minHeight: 44 } } },
+      MuiMenuItem: { styleOverrides: { root: { minHeight: 44 } } },
+      MuiTextField: { defaultProps: { variant: 'outlined' } },
       MuiButton: {
         styleOverrides: {
           root: {
@@ -220,7 +225,7 @@ export function createAppTheme(mode) {
           },
           containedPrimary: {
             '&:hover': {
-              backgroundColor: brand.mataNoite,
+              backgroundColor: isDark ? brand.folhaSoft : brand.mataNoite,
             },
           },
         },

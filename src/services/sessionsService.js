@@ -1,7 +1,9 @@
+import { listDemoSessions, demoSessionMessages } from './mock/mockSessions';
+import { IS_DEMO } from '../config/runtime';
 import api from './api';
-import { getAuthHeaders } from './authService';
+import { getAuthHeaders, getCurrentUserId } from './authService';
 
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
+const USE_MOCK = IS_DEMO;
 
 /**
  * Conversas do chat — listagem e releitura.
@@ -42,7 +44,7 @@ function mapMessage(data) {
 export async function listSessions(limit = 50) {
   // Sem backend não há conversa persistida: lista vazia é o estado honesto
   // (o drawer mostra o empty state em vez do erro de rede).
-  if (USE_MOCK) return [];
+  if (USE_MOCK) return listDemoSessions(getCurrentUserId());
 
   try {
     const response = await api.get('/api/v1/sessions', {
@@ -62,7 +64,8 @@ export async function listSessions(limit = 50) {
  * @returns {Promise<Array<object>>} vazio quando a conversa não existe.
  */
 export async function getSessionMessages(sessionId) {
-  if (!sessionId || USE_MOCK) return [];
+  if (!sessionId) return [];
+  if (USE_MOCK) return demoSessionMessages(getCurrentUserId(), sessionId);
   try {
     const response = await api.get(`/api/v1/sessions/${sessionId}/messages`, {
       headers: getAuthHeaders(),
@@ -92,4 +95,11 @@ export async function closeSession(sessionId) {
   } catch {
     return null;
   }
+}
+
+export async function getPendingInterrupt(sessionId) {
+ if (USE_MOCK) return null;
+ const {data} = await api.get('/api/v1/chat/interrupts', {headers:getAuthHeaders()});
+ const info = (data || []).find(item=>item.session_id===sessionId)?.interrupt;
+ return info ? {...info, responseKind:info.response_kind} : null;
 }

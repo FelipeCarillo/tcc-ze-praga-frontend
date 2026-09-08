@@ -1,9 +1,11 @@
+import { IS_DEMO } from '../config/runtime';
+import { demoPlan } from '../config/demoPlan';
 import api from './api';
 
 const TOKEN_KEY = 'ze-praga-auth-token';
 const USER_KEY = 'ze-praga-auth-user';
 const EXPIRES_KEY = 'ze-praga-auth-expires-at';
-const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'api';
+
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const mockUser = {
@@ -12,6 +14,7 @@ const mockUser = {
   full_name: 'Produtor',
   created_at: new Date().toISOString(),
   subscription: null,
+  plan: demoPlan(),
   usage: {
     chat: { used: 2, limit: 10 },
     inference: { used: 1, limit: 5 },
@@ -81,23 +84,24 @@ export async function getSession() {
     return null;
   }
 
-  if (AUTH_MODE !== 'api') return { token, user };
+  if (IS_DEMO) return { token, user };
 
   const response = await api.get('/api/v1/users/me', { headers: apiHeaders() });
   return saveSession(token, { ...user, ...response.data });
 }
 
 export async function login({ email, password }) {
-  if (AUTH_MODE !== 'api') {
+  if (IS_DEMO) {
     return saveSession(`mock-token-${Date.now()}`, createMockUser({ email }));
   }
 
   const response = await api.post('/api/v1/auth/login', { email, password });
-  return saveSession(response.data.access_token, response.data.user);
+  saveSession(response.data.access_token, response.data.user);
+  return getSession();
 }
 
 export async function register({ full_name, email, password }) {
-  if (AUTH_MODE !== 'api') {
+  if (IS_DEMO) {
     return saveSession(`mock-token-${Date.now()}`, createMockUser({ full_name, email }));
   }
 
@@ -109,27 +113,28 @@ export async function register({ full_name, email, password }) {
     return { pendingVerification: true, email: response.data.email, user: null, token: null };
   }
 
-  return saveSession(response.data.access_token, response.data.user);
+  saveSession(response.data.access_token, response.data.user);
+  return getSession();
 }
 
 export async function resendVerification(email) {
-  if (AUTH_MODE !== 'api') return;
+  if (IS_DEMO) return;
   await api.post('/api/v1/auth/resend-verification', { email });
 }
 
 export async function forgotPassword(email) {
-  if (AUTH_MODE !== 'api') return;
+  if (IS_DEMO) return;
   // Sempre 202, exista a conta ou não — o backend não revela quem tem cadastro.
   await api.post('/api/v1/auth/forgot-password', { email });
 }
 
 export async function resetPassword({ token, password }) {
-  if (AUTH_MODE !== 'api') return;
+  if (IS_DEMO) return;
   await api.post('/api/v1/auth/reset-password', { token, password });
 }
 
 export async function updateProfile(values) {
-  if (AUTH_MODE !== 'api') {
+  if (IS_DEMO) {
     return saveSession(getAuthToken(), { ...readUser(), ...values });
   }
 
@@ -138,6 +143,7 @@ export async function updateProfile(values) {
 }
 
 export function logout() {
+  if (typeof caches !== 'undefined') caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('ze-praga-')).map(key => caches.delete(key)))).catch(() => {});
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(EXPIRES_KEY);

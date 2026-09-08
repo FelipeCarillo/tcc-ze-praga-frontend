@@ -15,7 +15,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useColorMode } from '../../hooks/useColorMode';
 
 function initialOf(user) {
-  const base = user?.name || user?.email || '';
+  const base = user?.full_name || user?.email || '';
   return base.trim().charAt(0).toUpperCase() || '?';
 }
 
@@ -60,7 +60,7 @@ function AvatarMenu() {
               width: 36,
               height: 36,
               bgcolor: 'primary.main',
-              color: (t) => t.palette.brand.milho,
+              color: 'primary.contrastText',
               fontWeight: 700,
               fontFamily: (t) => t.typography.fontFamilyDisplay,
               fontSize: '1rem',
@@ -84,7 +84,7 @@ function AvatarMenu() {
             <Typography
               sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, lineHeight: 1.2 }}
             >
-              {user.name || 'Compadre'}
+              {user.full_name || 'Compadre'}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
               {user.email}
@@ -109,6 +109,10 @@ function AvatarMenu() {
           </MenuItem>
         )}
 
+        <MenuItem component={Link} to="/sobre" onClick={close}>Sobre o projeto</MenuItem>
+        <MenuItem component={Link} to="/modelos" onClick={close}>Modelos e métricas</MenuItem>
+        <MenuItem component={Link} to="/api-docs" onClick={close}>Documentação da API</MenuItem>
+        <MenuItem component={Link} to="/planos" onClick={close}>Planos</MenuItem>
         <MenuItem onClick={handleToggleTheme}>
           <ListItemIcon>{isDark ? <Sun size={18} /> : <Moon size={18} />}</ListItemIcon>
           <ListItemText>{isDark ? 'Modo claro' : 'Modo noite'}</ListItemText>

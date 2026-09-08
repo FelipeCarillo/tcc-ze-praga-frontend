@@ -21,8 +21,24 @@ jobs:
           node-version: "22"
           cache: "npm"
 
+      # O lockfile foi gerado com npm 11. O npm 10 que acompanha o Node 22 trata
+      # peer dependencies opcionais de outro jeito e exige no lockfile um
+      # `yaml@2` que o npm 11 nao grava (peer opcional de postcss-load-config,
+      # via tailwindcss/react-scripts) — o `npm ci` quebra sem nenhuma mudanca
+      # de dependencia no repositorio. Fixar a major torna o CI reproduzivel.
+      - name: Pin npm
+        run: npm install -g npm@11
+
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run tests with coverage
-        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        run: npm test -- --coverage --watchAll=false --runInBand
+
+      - name: Build
+        run: npm run build
+        env:
+          GENERATE_SOURCEMAP: "false"
+          REACT_APP_AUTH_MODE: api
+          REACT_APP_USE_MOCK: "false"
+          REACT_APP_API_URL: http://127.0.0.1:8000
