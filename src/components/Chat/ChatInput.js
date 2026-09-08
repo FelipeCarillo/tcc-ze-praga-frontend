@@ -1,273 +1,411 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import Box from '@mui/material/Box';
-import InputBase from '@mui/material/InputBase';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import { Camera, ImageIcon, ArrowUp, Cpu, X, Mic, StopCircle, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { copy } from '../../copy/ze';
-import { useFeatures } from '../../contexts/FeaturesContext';
-import { MODELS, allowedModelIds, defaultModelId } from '../../data/diagnosisModels';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Collapse,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { ArrowUp, Camera, ImageIcon, Mic, Square, X } from "lucide-react";
+import { useFeatures } from "../../contexts/FeaturesContext";
+import {
+  MODELS,
+  allowedModelIds,
+  defaultModelId,
+} from "../../data/diagnosisModels";
+import { IMAGE_ACCEPT, validateImage } from "../../utils/imageUpload";
 
-// Maximum recording duration in milliseconds.
-const MAX_RECORDING_MS = 60_000;
-
-/**
- * Composer enxuto: camera + pill de texto + enviar.
- * onSend contract: (text: string, imageFile: File|null, model: string, audioFile: File|null) => void
- */
-function ChatInput({ onSend, disabled = false }) {
-  const [text, setText] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  // O plano decide o que está disponível. O backend rebaixa de qualquer jeito;
-  // aqui a UI evita oferecer o que o usuário não tem (ver data/diagnosisModels).
-  const features = useFeatures();
-  const allowed = useMemo(() => allowedModelIds(features), [features]);
+export default function ChatInput({
+  onSend,
+  disabled = false,
+  pendingFile,
+  onFileHandled,
+}) {
+  const features = useFeatures(),
+    allowed = useMemo(() => allowedModelIds(features), [features]);
   const [model, setModel] = useState(() => defaultModelId(features));
-
-  // As features chegam depois do primeiro render (vêm do /users/me). Quando
-  // chegarem, corrige a seleção se o default inicial não for permitido.
+  const [text, setText] = useState(""),
+    [file, setFile] = useState(null),
+    [preview, setPreview] = useState(""),
+    [error, setError] = useState(""),
+    [settings, setSettings] = useState(false);
+  const [recording, setRecording] = useState(false),
+    [audio, setAudio] = useState(null),
+    [audioUrl, setAudioUrl] = useState("");
+  useEffect(() => {
+    if (!audio) {
+      setAudioUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(audio);
+    setAudioUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [audio]);
+  const gallery = useRef(null),
+    camera = useRef(null),
+    recorder = useRef(null),
+    stream = useRef(null),
+    timer = useRef(null),
+    cancelled = useRef(false),
+    mounted = useRef(true),
+    sending = useRef(false);
   useEffect(() => {
     if (allowed && !allowed.has(model)) setModel(defaultModelId(features));
-  }, [allowed, features, model]);
-
-  const [camAnchor, setCamAnchor] = useState(null);
-  const [modelAnchor, setModelAnchor] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const galleryRef = useRef(null);
-  const cameraRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const recordingTimerRef = useRef(null);
-  const streamRef = useRef(null);
-
-  const currentModel = MODELS.find((m) => m.id === model);
-  const canSend = (text.trim() || imageFile) && !disabled && !isRecording;
-
-  const stageFile = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+  }, [allowed, model, features]);
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
+      return undefined;
     }
-    e.target.value = '';
-    setCamAnchor(null);
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  useEffect(() => {
+    if (pendingFile) {
+      const issue = validateImage(pendingFile);
+      setError(issue);
+      if (!issue) setFile(pendingFile);
+      onFileHandled?.();
+    }
+  }, [pendingFile, onFileHandled]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      cancelled.current = true;
+      clearTimeout(timer.current);
+      if (recorder.current?.state === "recording") recorder.current.stop();
+      stream.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+  const selectFile = (e) => {
+    const next = e.target.files?.[0];
+    e.target.value = "";
+    if (!next) return;
+    const issue = validateImage(next);
+    setError(issue);
+    if (!issue) setFile(next);
   };
-
-  const submit = (e) => {
+  const submit = async (e) => {
     e?.preventDefault();
-    if (!canSend) return;
-    onSend(text.trim(), imageFile, model, null);
-    setText('');
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  const onKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submit(e);
-    }
-  };
-
-  // --- Voice recording helpers ---
-
-  const stopTracks = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const startRecording = async () => {
-    if (disabled || isRecording) return;
+    if (
+      disabled ||
+      sending.current ||
+      recording ||
+      (!text.trim() && !file && !audio)
+    )
+      return;
+    sending.current = true;
+    setError("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      audioChunksRef.current = [];
-
-      const mr = new MediaRecorder(stream);
-      mediaRecorderRef.current = mr;
-
-      mr.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
+      const ok = await onSend(text.trim(), file, model, audio);
+      if (ok !== false) {
+        setText("");
+        setFile(null);
+        setAudio(null);
+      } else
+        setError(
+          "O envio não foi concluído. Sua foto e mensagem foram mantidas para tentar novamente.",
+        );
+    } catch {
+      setError("Não foi possível enviar. Tente novamente.");
+    } finally {
+      sending.current = false;
+    }
+  };
+  const stopRecording = (discard = false) => {
+    cancelled.current = discard;
+    clearTimeout(timer.current);
+    if (recorder.current?.state === "recording") recorder.current.stop();
+    stream.current?.getTracks().forEach((t) => t.stop());
+    setRecording(false);
+  };
+  const startRecording = async () => {
+    setError("");
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
+      setError(
+        "Este navegador não permite gravar áudio. Você pode escrever sua mensagem.",
+      );
+      return;
+    }
+    try {
+      const source = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!mounted.current) {
+        source.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      stream.current = source;
+      cancelled.current = false;
+      const chunks = [];
+      const r = new MediaRecorder(source);
+      recorder.current = r;
+      r.ondataavailable = (e) => {
+        if (e.data.size) chunks.push(e.data);
       };
-
-      mr.onstop = () => {
-        stopTracks();
-        clearTimeout(recordingTimerRef.current);
-
-        const mimeType = mr.mimeType || 'audio/webm';
-        const blob = new Blob(audioChunksRef.current, { type: mimeType });
-        const audioFile = new File([blob], 'voice.webm', { type: mimeType });
-        audioChunksRef.current = [];
-
-        setIsRecording(false);
-        onSend('', imageFile, model, audioFile);
-        setImageFile(null);
-        setImagePreview(null);
-      };
-
-      mr.start();
-      setIsRecording(true);
-
-      // Auto-stop after MAX_RECORDING_MS.
-      recordingTimerRef.current = setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-        }
-      }, MAX_RECORDING_MS);
-    } catch (err) {
-      // Permission denied or device unavailable -- fail silently; UI stays usable.
-      console.warn('[ChatInput] Microphone access error:', err);
-      stopTracks();
-      setIsRecording(false);
-    }
-  };
-
-  const stopRecording = () => {
-    clearTimeout(recordingTimerRef.current);
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  const handleMicClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  };
-
-  return (
-    <Box sx={{ px: { xs: 1.5, md: 2 }, pt: 1, pb: 'calc(10px + env(safe-area-inset-bottom))', backgroundColor: 'background.paper', borderTop: '1px solid', borderColor: 'divider' }}>
-      <input type="file" accept=".jpg,.jpeg,.png,.webp" ref={galleryRef} onChange={stageFile} hidden />
-      <input type="file" accept="image/*" capture="environment" ref={cameraRef} onChange={stageFile} hidden />
-
-      {imagePreview && (
-        <Box sx={{ mb: 1, display: 'inline-flex', position: 'relative' }}>
-          <Box component="img" src={imagePreview} alt="Preview" sx={{ height: 60, borderRadius: 2, border: '1px solid', borderColor: 'divider', objectFit: 'cover', display: 'block' }} />
-          <IconButton size="small" onClick={() => { setImageFile(null); setImagePreview(null); }} sx={{ position: 'absolute', top: -8, right: -8, width: 20, height: 20, bgcolor: 'secondary.main', color: '#fff', '&:hover': { bgcolor: 'secondary.dark' } }}>
-            <X size={11} />
-          </IconButton>
-        </Box>
-      )}
-
-      <Box component="form" onSubmit={submit} sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', maxWidth: 1100, mx: 'auto' }}>
-        <IconButton
-          aria-label="Adicionar foto"
-          onClick={(e) => setCamAnchor(e.currentTarget)}
-          disabled={disabled || isRecording}
-          sx={{ width: 44, height: 44, bgcolor: 'primary.main', color: (t) => t.palette.brand.milho, flexShrink: 0, '&:hover': { bgcolor: 'primary.dark' } }}
-        >
-          <Camera size={20} />
-        </IconButton>
-
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', bgcolor: (t) => t.palette.surface.sunken, borderRadius: 999, px: 2, py: 0.5 }}>
-          <InputBase
-            fullWidth
-            multiline
-            maxRows={4}
-            placeholder={isRecording ? 'Gravando...' : copy.chat.placeholder}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={onKeyDown}
-            disabled={disabled || isRecording}
-            sx={{ fontSize: '0.9rem' }}
-          />
-        </Box>
-
-        {/* Mic button */}
-        <IconButton
-          aria-label={isRecording ? 'Parar gravacao' : 'Gravar mensagem de voz'}
-          onClick={handleMicClick}
-          disabled={disabled}
-          sx={{
-            width: 44,
-            height: 44,
-            flexShrink: 0,
-            bgcolor: isRecording ? 'error.main' : 'action.selected',
-            color: isRecording ? '#fff' : 'text.secondary',
-            '&:hover': { bgcolor: isRecording ? 'error.dark' : 'action.hover' },
-          }}
-        >
-          {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
-        </IconButton>
-
-        <IconButton
-          type="submit"
-          aria-label="Enviar"
-          disabled={!canSend}
-          sx={{ width: 44, height: 44, flexShrink: 0, bgcolor: canSend ? 'secondary.main' : 'action.disabledBackground', color: canSend ? '#fff' : 'text.disabled', '&:hover': { bgcolor: canSend ? 'secondary.dark' : undefined } }}
-        >
-          <ArrowUp size={20} />
-        </IconButton>
-      </Box>
-
-      {/* seletor de modelo discreto */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 0.75 }}>
-        <Box
-          onClick={(e) => !disabled && !isRecording && setModelAnchor(e.currentTarget)}
-          sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: disabled || isRecording ? 'default' : 'pointer', color: 'text.disabled', px: 1 }}
-        >
-          <Cpu size={11} />
-          <Typography sx={{ fontSize: '0.66rem', fontWeight: 600 }}>{currentModel?.name}</Typography>
-        </Box>
-      </Box>
-
-      <Menu anchorEl={camAnchor} open={Boolean(camAnchor)} onClose={() => setCamAnchor(null)}>
-        <MenuItem onClick={() => cameraRef.current?.click()}>
-          <ListItemIcon><Camera size={18} /></ListItemIcon>
-          <ListItemText>Tirar foto</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={() => galleryRef.current?.click()}>
-          <ListItemIcon><ImageIcon size={18} /></ListItemIcon>
-          <ListItemText>Escolher da galeria</ListItemText>
-        </MenuItem>
-      </Menu>
-
-      <Menu anchorEl={modelAnchor} open={Boolean(modelAnchor)} onClose={() => setModelAnchor(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }} transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        {MODELS.map((m) => {
-          const locked = allowed ? !allowed.has(m.id) : false;
-          // Bloqueado vira link pros planos em vez de sumir: o usuário precisa
-          // saber que existe algo melhor, e por que não pode usar.
-          return (
-            <MenuItem
-              key={m.id}
-              selected={m.id === model}
-              component={locked ? Link : 'li'}
-              to={locked ? '/planos' : undefined}
-              onClick={() => {
-                if (!locked) setModel(m.id);
-                setModelAnchor(null);
-              }}
-              sx={locked ? { opacity: 0.55 } : undefined}
-            >
-              <ListItemText
-                primary={m.name}
-                secondary={locked ? 'Disponível nos planos pagos' : m.detail}
-                primaryTypographyProps={{ fontSize: '0.85rem' }}
-                secondaryTypographyProps={{ fontSize: '0.7rem' }}
-              />
-              {locked && (
-                <ListItemIcon sx={{ minWidth: 0, ml: 1.5 }}>
-                  <Lock size={13} />
-                </ListItemIcon>
-              )}
-            </MenuItem>
+      r.onstop = () => {
+        source.getTracks().forEach((t) => t.stop());
+        if (!cancelled.current && mounted.current) {
+          const type = r.mimeType || "audio/webm";
+          setAudio(
+            new File(chunks, type.includes("mp4") ? "voz.mp4" : "voz.webm", {
+              type,
+            }),
           );
-        })}
-      </Menu>
+        }
+        if (mounted.current) setRecording(false);
+      };
+      r.start();
+      setRecording(true);
+      timer.current = setTimeout(() => stopRecording(), 60000);
+    } catch {
+      setError(
+        "Não foi possível acessar o microfone. Confira a permissão do navegador ou escreva sua mensagem.",
+      );
+    }
+  };
+  return (
+    <Box
+      sx={{
+        px: { xs: 1.5, md: 3 },
+        pt: 1.5,
+        pb: "max(12px, env(safe-area-inset-bottom))",
+        bgcolor: "background.paper",
+        borderTop: "1px solid",
+        borderColor: "divider",
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        component="form"
+        onSubmit={submit}
+        sx={{ maxWidth: 850, mx: "auto" }}
+      >
+        {error && (
+          <Alert severity="error" onClose={() => setError("")} sx={{ mb: 1 }}>
+            {error}
+          </Alert>
+        )}
+        {file && (
+          <Box
+            sx={{
+              p: 1.5,
+              mb: 1.5,
+              bgcolor: "background.default",
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Stack direction="row" gap={2} alignItems="center">
+              <Box
+                component="img"
+                src={preview || undefined}
+                alt="Foto selecionada para conferir antes da análise"
+                sx={{
+                  width: 90,
+                  height: 100,
+                  objectFit: "contain",
+                  borderRadius: 2,
+                }}
+              />
+              <Box flex={1} minWidth={0}>
+                <Typography fontWeight={700}>Confira sua foto</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  A folha está nítida e bem iluminada?
+                </Typography>
+                <Typography noWrap variant="caption">
+                  {file.name}
+                </Typography>
+              </Box>
+              <IconButton
+                aria-label="Remover foto"
+                disabled={disabled}
+                onClick={() => setFile(null)}
+              >
+                <X size={20} />
+              </IconButton>
+            </Stack>
+            <Button
+              fullWidth
+              variant="contained"
+              type="submit"
+              disabled={disabled || recording}
+              sx={{ mt: 1.5 }}
+            >
+              {disabled ? "Analisando…" : "Analisar esta folha"}
+            </Button>
+          </Box>
+        )}
+        {audio && (
+          <Box
+            component="audio"
+            controls
+            src={audioUrl || undefined}
+            aria-label="Ouvir áudio antes de enviar"
+            sx={{ width: "100%", height: 40, mb: 1 }}
+          />
+        )}
+        {audio && (
+          <Alert
+            severity="info"
+            action={
+              <IconButton
+                aria-label="Descartar áudio"
+                disabled={disabled}
+                onClick={() => setAudio(null)}
+              >
+                <X size={18} />
+              </IconButton>
+            }
+          >
+            Áudio pronto. Envie para conferir a transcrição na conversa.
+          </Alert>
+        )}
+        {recording ? (
+          <Stack direction="row" gap={1} alignItems="center">
+            <Typography role="status" flex={1}>
+              Gravando · até 1 minuto
+            </Typography>
+            <Button onClick={() => stopRecording(true)}>Descartar</Button>
+            <Button
+              variant="contained"
+              startIcon={<Square size={16} />}
+              onClick={() => stopRecording()}
+            >
+              Concluir
+            </Button>
+          </Stack>
+        ) : (
+          <Stack direction="row" gap={0.5} alignItems="flex-end">
+            <IconButton
+              aria-label="Escolher foto da galeria"
+              disabled={disabled}
+              onClick={() => gallery.current.click()}
+            >
+              <ImageIcon size={21} />
+            </IconButton>
+            <IconButton
+              aria-label="Tirar foto"
+              disabled={disabled}
+              onClick={() => camera.current.click()}
+            >
+              <Camera size={21} />
+            </IconButton>
+            <TextField
+              fullWidth
+              multiline
+              maxRows={4}
+              size="small"
+              placeholder={
+                file
+                  ? "Acrescente uma observação (opcional)"
+                  : "Pergunte ao Zé…"
+              }
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={disabled}
+              slotProps={{
+                htmlInput: {
+                  "aria-label": "Mensagem para o Zé",
+                  maxLength: 10000,
+                },
+              }}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing &&
+                  window.matchMedia("(min-width: 900px)").matches
+                ) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+            />
+            {!text && !file && !audio ? (
+              <IconButton
+                aria-label="Gravar mensagem de voz"
+                disabled={disabled}
+                onClick={startRecording}
+              >
+                <Mic size={21} />
+              </IconButton>
+            ) : (
+              <IconButton
+                type="submit"
+                aria-label="Enviar mensagem"
+                disabled={disabled}
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                <ArrowUp size={22} />
+              </IconButton>
+            )}
+          </Stack>
+        )}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          gap={1}
+          mt={0.5}
+        >
+          <Typography variant="caption" color="text.secondary">
+            JPG, PNG ou WebP · até 10 MB
+          </Typography>
+          <Button
+            size="small"
+            onClick={() => setSettings((v) => !v)}
+            aria-expanded={settings}
+          >
+            Modelo: {MODELS.find((m) => m.id === model)?.name}
+          </Button>
+        </Stack>
+        <Collapse in={settings}>
+          <TextField
+            select
+            fullWidth
+            label="Modelo de análise"
+            value={model}
+            disabled={disabled}
+            onChange={(e) => setModel(e.target.value)}
+            sx={{ mt: 1, mb: 1 }}
+            helperText="Disponibilidade definida pelo seu plano."
+          >
+            {MODELS.filter((m) => !allowed || allowed.has(m.id)).map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.name} · {m.detail}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Collapse>
+        <input
+          ref={gallery}
+          type="file"
+          accept={IMAGE_ACCEPT}
+          hidden
+          onChange={selectFile}
+        />
+        <input
+          ref={camera}
+          type="file"
+          accept={IMAGE_ACCEPT}
+          capture="environment"
+          hidden
+          onChange={selectFile}
+        />
+      </Box>
     </Box>
   );
 }
-
-export default ChatInput;

@@ -11,8 +11,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const MODELS = [
-  { id: 'ensemble', name: 'Ensemble', detail: 'Os 3 modelos somados — mais preciso' },
-  { id: 'efficientnet', name: 'EfficientNet-B4', detail: 'Melhor modelo único' },
+  { id: 'ensemble', name: 'Ensemble', detail: 'Combina três modelos' },
+  { id: 'efficientnet', name: 'EfficientNet-B4', detail: 'Modelo convolucional' },
   { id: 'vit', name: 'ViT-B/16', detail: 'Transformer' },
   { id: 'resnet50', name: 'ResNet-50', detail: 'Mais leve' },
 ];
@@ -25,12 +25,12 @@ const PREFERENCE = ['ensemble', 'efficientnet', 'vit', 'resnet50'];
  * Modelos que o plano libera.
  *
  * @param {object|null} features `PlanFeatures` de `useFeatures()`.
- * @returns {Set<string>|null} ids permitidos, ou `null` quando não há gate
- *   (deslogado ou plano sem a lista) — nesse caso o backend decide.
+ * @returns {Set<string>} ids permitidos. Sem features, limita ao ResNet-50,
+ *   espelhando o fallback gratuito do backend.
  */
 export function allowedModelIds(features) {
   const list = features?.diagnosis_models;
-  if (!Array.isArray(list) || list.length === 0) return null;
+  if (!Array.isArray(list) || list.length === 0) return new Set(['resnet50']);
   return new Set(list);
 }
 
@@ -44,8 +44,7 @@ export function allowedModelIds(features) {
  */
 export function defaultModelId(features) {
   const allowed = allowedModelIds(features);
-  if (!allowed) return 'ensemble';
-  return PREFERENCE.find((id) => allowed.has(id)) || 'ensemble';
+  return PREFERENCE.find((id) => allowed.has(id)) || 'resnet50';
 }
 
 export default MODELS;

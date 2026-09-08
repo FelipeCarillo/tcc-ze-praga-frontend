@@ -19,7 +19,7 @@ export const copy = {
     takePhoto: 'Tirar foto agora',
     fromGallery: 'Escolher da galeria',
     seeHowItWorks: 'Ver como funciona',
-    seeRecipe: 'Ver receita',
+    seeRecipe: 'Ver orientações',
     anotherPhoto: 'Outra foto',
     save: 'Salvar',
   },
@@ -28,17 +28,17 @@ export const copy = {
     kicker: 'Oi, sou o Zé.',
     heroTitle: 'Manda a foto da folha. Eu te digo que praga é e o que fazer.',
     heroSubtitle:
-      'Consultor fitossanitário de bolso pra produtor de soja. Foto, diagnóstico em 5 segundos, plano de ação em português. Sem cadastro, sem instalar nada.',
+      'Consultor fitossanitário de bolso pra produtor de soja. Foto, hipótese de análise e orientações em português. Entre na sua conta para guardar os resultados.',
     steps: [
       { title: 'Manda a foto', desc: 'Direto da câmera ou da galeria. Folha aproximada, luz natural.' },
-      { title: 'Eu analiso', desc: 'Cinco segundos. Comparo com 30 mil imagens de pragas reais.' },
+      { title: 'Eu analiso', desc: 'O modelo analisa os padrões visuais da foto.' },
       { title: 'Você age', desc: 'Diagnóstico + receita prática + quando refazer a leitura.' },
     ],
   },
 
   chat: {
     greeting: 'Oi, compadre!',
-    prompt: 'Manda uma foto da folha aí que eu dou uma olhada. Em 5 segundos te digo o que é.',
+    prompt: 'Escolha uma foto da folha. Confira a imagem antes de começar a análise.',
     placeholder: 'Pergunta ou manda foto…',
     statusHere: 'aqui agora',
     statusLooking: 'olhando a foto…',
@@ -46,14 +46,14 @@ export const copy = {
     thinking: [
       'Deixa eu olhar com calma…',
       'Hmm, tem alguma coisa aí…',
-      'Comparando com o que já vi…',
+      'Analisando os sinais da imagem…',
       'Quase fechando…',
       'Olha que coisa interessante…',
-      'Pronto, achei.',
+      'A análise continua…',
     ],
     quickReplies: {
       save: 'Salvar',
-      fullRecipe: 'Receita completa',
+      fullRecipe: 'Orientações completas',
       anotherPhoto: 'Outra foto',
     },
     // O que mostrar quando o agente chama uma ferramenta. O stream manda o nome
@@ -95,7 +95,7 @@ export const copy = {
     sendLink: 'Entrar',
     sentTitle: 'Link voando pra você.',
     sentSignoff: 'Te espero por aqui.',
-    optionalNote: 'Não precisa de conta pra usar o chat.',
+    optionalNote: 'Sua conta mantém os registros associados ao seu perfil.',
   },
 
   plans: {

@@ -22,7 +22,15 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Run tests with coverage
-        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        run: npm test -- --coverage --watchAll=false --runInBand
+
+      - name: Build
+        run: npm run build
+        env:
+          GENERATE_SOURCEMAP: "false"
+          REACT_APP_AUTH_MODE: api
+          REACT_APP_USE_MOCK: "false"
+          REACT_APP_API_URL: http://127.0.0.1:8000

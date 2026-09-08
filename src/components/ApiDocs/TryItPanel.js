@@ -1,120 +1,124 @@
-import React, { useRef, useState } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import { Play, Upload, X } from 'lucide-react';
-import { analyzeImage } from '../../services/inferenceService';
-
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
-
-/**
- * Painel "Try it" FUNCIONAL (auditoria, seção 15): solta uma imagem → chama o
- * endpoint real de inferência (`POST /api/v1/inference` via inferenceService) →
- * mostra a resposta JSON inline. Em modo mock, usa a inferência simulada.
- */
-function TryItPanel() {
-  const inputRef = useRef(null);
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-
-  const pick = (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (f) {
-      setFile(f);
-      setPreview(URL.createObjectURL(f));
-      setResult(null);
-      setError(null);
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { analyzeImage } from "../../services/inferenceService";
+import { IMAGE_ACCEPT, validateImage } from "../../utils/imageUpload";
+import { useFeatures } from "../../contexts/FeaturesContext";
+import { defaultModelId } from "../../data/diagnosisModels";
+import { IS_DEMO } from "../../config/runtime";
+export default function TryItPanel() {
+  const input = useRef(null),
+    features = useFeatures();
+  const [file, setFile] = useState(null),
+    [preview, setPreview] = useState(""),
+    [result, setResult] = useState(null),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
+      return;
     }
-    e.target.value = '';
-  };
-
-  const run = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await analyzeImage(file, 'ensemble');
-      setResult(res);
-    } catch (err) {
-      setError(err?.response?.data?.detail || err?.message || 'Falha ao classificar.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const reset = () => {
-    setFile(null);
-    setPreview(null);
-    setResult(null);
-    setError(null);
-  };
-
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   return (
     <Box
       sx={{
-        borderRadius: 3,
-        overflow: 'hidden',
-        border: '1px solid',
-        borderColor: (t) => t.palette.brand.noite3,
-        backgroundColor: (t) => t.palette.brand.noite2,
-        color: (t) => t.palette.brand.creme,
+        p: 3,
+        bgcolor: "background.paper",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 4,
       }}
     >
-      <Box sx={{ p: 2.5 }}>
-        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.66rem', color: 'secondary.main', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5 }}>
-          Try it · POST /classify {USE_MOCK && '· (mock)'}
-        </Typography>
-        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 700, fontSize: '1.1rem', mb: 2 }}>
-          Roda de verdade
-        </Typography>
-
-        <input ref={inputRef} type="file" accept="image/*" hidden onChange={pick} />
-
-        {!preview ? (
-          <Box
-            onClick={() => inputRef.current?.click()}
-            sx={{ border: '1px dashed', borderColor: (t) => t.palette.brand.noite3, borderRadius: 2.5, p: 3, textAlign: 'center', cursor: 'pointer', '&:hover': { borderColor: 'secondary.main' } }}
-          >
-            <Upload size={22} />
-            <Typography sx={{ fontSize: '0.85rem', mt: 1, color: 'rgba(240,237,226,0.75)' }}>Solta uma foto da folha aqui</Typography>
-            <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.62rem', color: 'rgba(240,237,226,0.45)', mt: 0.5 }}>JPG/PNG · &lt;10MB</Typography>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <Box component="img" src={preview} alt="" sx={{ width: 64, height: 64, borderRadius: 2, objectFit: 'cover' }} />
-            <Typography sx={{ flex: 1, fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.72rem', color: 'rgba(240,237,226,0.7)', wordBreak: 'break-all' }}>{file?.name}</Typography>
-            <Button onClick={reset} size="small" startIcon={<X size={14} />} sx={{ color: 'rgba(240,237,226,0.7)' }}>Trocar</Button>
-          </Box>
-        )}
-
+      <Typography mb={2}>
+        {IS_DEMO
+          ? "Teste local com resposta simulada."
+          : "Este envio consome uma análise da sua cota."}
+      </Typography>
+      <input
+        ref={input}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        hidden
+        onChange={(e) => {
+          const next = e.target.files?.[0];
+          e.target.value = "";
+          if (!next) return;
+          const issue = validateImage(next);
+          setError(issue);
+          if (!issue) {
+            setFile(next);
+            setResult(null);
+          }
+        }}
+      />
+      {file && (
+        <Box
+          component="img"
+          src={preview}
+          alt="Foto selecionada para o teste da API"
+          sx={{ height: 160, maxWidth: "100%", objectFit: "contain", mb: 2 }}
+        />
+      )}
+      <Stack direction="row" gap={1} flexWrap="wrap">
         <Button
-          onClick={run}
-          disabled={!file || loading}
-          variant="contained"
-          color="secondary"
-          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <Play size={16} />}
-          sx={{ mt: 2, width: '100%' }}
+          variant="outlined"
+          disabled={loading}
+          onClick={() => input.current.click()}
         >
-          {loading ? 'Rodando…' : 'Rodar agora'}
+          {file ? "Trocar foto" : "Escolher foto"}
         </Button>
-      </Box>
-
-      {(result || error) && (
-        <Box sx={{ borderTop: '1px solid', borderColor: (t) => t.palette.brand.noite3, p: 2.5, backgroundColor: (t) => t.palette.brand.noite }}>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.62rem', color: error ? 'error.light' : 'secondary.main', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1 }}>
-            {error ? 'Erro' : 'Response · 200'}
-          </Typography>
-          <Box component="pre" sx={{ m: 0, fontFamily: (t) => t.typography.fontFamilyMono, fontSize: '0.72rem', color: (t) => t.palette.brand.folha, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 280, overflow: 'auto' }}>
-            {error ? error : JSON.stringify(result, null, 2)}
-          </Box>
+        <Button
+          variant="contained"
+          disabled={!file || loading}
+          onClick={async () => {
+            setLoading(true);
+            setError("");
+            try {
+              setResult(await analyzeImage(file, defaultModelId(features)));
+            } catch {
+              setError(
+                "Não foi possível executar a análise. Confira a API e sua cota.",
+              );
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          {loading ? "Executando…" : "Executar análise"}
+        </Button>
+      </Stack>
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {result && (
+        <Box
+          component="pre"
+          aria-label="Resposta da análise"
+          sx={{
+            mt: 2,
+            p: 2,
+            bgcolor: "background.default",
+            borderRadius: 2,
+            overflow: "auto",
+            maxHeight: 380,
+            fontSize: ".8rem",
+          }}
+        >
+          {JSON.stringify(
+            {
+              ...result,
+              imageUrl: result.imageUrl ? "[imagem disponível]" : null,
+            },
+            null,
+            2,
+          )}
         </Box>
       )}
     </Box>
   );
 }
-
-export default TryItPanel;

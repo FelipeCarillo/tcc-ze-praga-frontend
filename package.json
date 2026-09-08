@@ -32,7 +32,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "start:demo": "node scripts/local.cjs demo start",
+    "start:local": "node scripts/local.cjs api start",
+    "build:local": "node scripts/local.cjs api build"
   },
   "eslintConfig": {
     "extends": [

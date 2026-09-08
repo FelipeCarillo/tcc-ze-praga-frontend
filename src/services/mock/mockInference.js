@@ -1,3 +1,4 @@
+import { demoImagePreview } from './imagePreview';
 import { v4 as uuidv4 } from 'uuid';
 import { delay } from './delay';
 import { diseases } from './mockData';
@@ -67,7 +68,7 @@ export async function mockAnalyzeImage(imageFile, modelId = 'ensemble') {
     actionPlan: primary.actionPlan,
     top3,
     modelUsed: modelId,
-    imageUrl: URL.createObjectURL(imageFile),
+    imageUrl: await demoImagePreview(imageFile),
     imageName: imageFile.name,
     timestamp: new Date().toISOString(),
   };

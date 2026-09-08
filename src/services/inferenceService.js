@@ -1,7 +1,8 @@
+import { IS_DEMO } from '../config/runtime';
 import api from './api';
 import { mockAnalyzeImage } from './mock/mockInference';
 
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
+const USE_MOCK = IS_DEMO;
 
 function mapApiResponse(data) {
   return {

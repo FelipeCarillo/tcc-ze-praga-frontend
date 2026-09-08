@@ -88,7 +88,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
           display: 'flex',
           alignItems: 'flex-start',
           gap: 1,
-          maxWidth: '82%',
+          maxWidth: { xs: '100%', md: '82%' },
           flexDirection: isUser ? 'row-reverse' : 'row',
         }}
       >
@@ -145,7 +145,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
       </Box>
 
       {!isUser && message.diagnosis && (
-        <Box sx={{ maxWidth: '82%', width: '100%', pl: '38px' }}>
+        <Box sx={{ maxWidth: { xs: '100%', md: '82%' }, width: '100%', pl: { xs: 0, md: '38px' } }}>
           <DiagnosisCard diagnosis={message.diagnosis} onSave={onSaveDiagnosis} />
         </Box>
       )}
@@ -154,7 +154,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
         variant="caption"
         sx={{ color: 'text.disabled', fontSize: '0.66rem', mt: 0.5, px: isUser ? 0.5 : '38px' }}
       >
-        {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        {new Date(message.timestamp || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
       </Typography>
     </Box>
   );

@@ -40,7 +40,7 @@ function ActionPlan({ actions }) {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+      <Typography component="h2" variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
         Plano de Ação
       </Typography>
 
