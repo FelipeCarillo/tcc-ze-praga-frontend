@@ -4,21 +4,25 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { Camera } from 'lucide-react';
+import { Camera, Moon, Sun } from 'lucide-react';
 import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
-import QuotaDisplay from './QuotaDisplay';
 import AvatarMenu from './AvatarMenu';
 import { copy } from '../../copy/ze';
+import { useAuth } from '../../hooks/useAuth';
+import { useColorMode } from '../../hooks/useColorMode';
 
 const navLinks = [
-  { label: 'Diagnosticar', path: '/chat' },
-  { label: 'Histórico', path: '/historico' },
+  { label: 'Diagnosticar', path: '/chat', requiresAuth: true },
+  { label: 'Histórico', path: '/historico', requiresAuth: true },
   { label: 'Modelos', path: '/modelos' },
   { label: 'API', path: '/api-docs' },
   { label: 'Sobre', path: '/sobre' },
+  { label: 'Planos', path: '/planos' },
 ];
 
 function isActive(pathname, path) {
@@ -27,24 +31,37 @@ function isActive(pathname, path) {
 
 /**
  * Navbar enxuta (auditoria, seção 09).
- * - `variant='default'`: marca + 5 links centralizados + CTA "Mandar foto" + avatar.
+ * - `variant='default'`: marca + links prioritários + CTA "Mandar foto" + avatar.
  * - `variant='app'` (/chat): só marca + avatar (o chat tem header próprio).
  * Sem drawer hambúrguer: no mobile a navegação vive na <BottomNav/>.
  */
 function Navbar({ variant = 'default' }) {
   const location = useLocation();
+  const { user } = useAuth();
+  const { mode, toggleColorMode } = useColorMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isApp = variant === 'app';
   const showLinks = !isApp && !isMobile;
+  const visibleNavLinks = navLinks.filter((item) => !item.requiresAuth || user);
 
   return (
     <AppBar position="sticky" elevation={0}>
-      <Toolbar sx={{ maxWidth: 1200, width: '100%', mx: 'auto', px: { xs: 2, md: 3 }, gap: 1 }}>
+      <Toolbar
+        sx={{
+          maxWidth: 1200,
+          width: '100%',
+          minWidth: 0,
+          mx: 'auto',
+          px: { xs: 2, md: 3 },
+          gap: { xs: 0.5, md: 1 },
+          overflow: 'hidden',
+        }}
+      >
         <Box
           component={Link}
           to="/"
-          sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', flexShrink: 0 }}
         >
           <Marca style={{ width: 34, height: 34, display: 'block' }} />
           <Typography
@@ -54,6 +71,7 @@ function Navbar({ variant = 'default' }) {
               fontSize: '1.2rem',
               letterSpacing: '-0.02em',
               color: 'primary.main',
+              whiteSpace: 'nowrap',
             }}
           >
             {copy.brand.name}
@@ -61,8 +79,17 @@ function Navbar({ variant = 'default' }) {
         </Box>
 
         {showLinks ? (
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 3.5 }}>
-            {navLinks.map((item) => {
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              gap: { md: 2, lg: 2.5 },
+              overflow: 'hidden',
+            }}
+          >
+            {visibleNavLinks.map((item) => {
               const active = isActive(location.pathname, item.path);
               return (
                 <Typography
@@ -77,6 +104,8 @@ function Navbar({ variant = 'default' }) {
                     borderBottom: '2px solid',
                     borderColor: active ? 'secondary.main' : 'transparent',
                     pb: 0.25,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                     transition: 'color 0.15s',
                     '&:hover': { color: 'text.primary' },
                   }}
@@ -90,8 +119,7 @@ function Navbar({ variant = 'default' }) {
           <Box sx={{ flex: 1 }} />
         )}
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {!isMobile && !isApp && <QuotaDisplay />}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 1 }, flexShrink: 0 }}>
           {!isApp && (
             <Button
               component={Link}
@@ -104,6 +132,15 @@ function Navbar({ variant = 'default' }) {
               {copy.cta.sendPhotoShort}
             </Button>
           )}
+          <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo noite'}>
+            <IconButton
+              aria-label={mode === 'dark' ? 'Ativar modo claro' : 'Ativar modo noite'}
+              onClick={toggleColorMode}
+              sx={{ color: 'text.secondary' }}
+            >
+              {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </IconButton>
+          </Tooltip>
           <AvatarMenu />
         </Box>
       </Toolbar>

@@ -44,12 +44,12 @@ export const copy = {
     statusLooking: 'olhando a foto…',
     // microcopy do estado "Zé pensando" — rotacionar a cada ~1.2s
     thinking: [
-      'Deixa eu olhar com calma…',
-      'Hmm, tem alguma coisa aí…',
-      'Analisando os sinais da imagem…',
-      'Quase fechando…',
-      'Olha que coisa interessante…',
-      'A análise continua…',
+      'Deixa eu pensar com calma…',
+      'Estou organizando o que você contou…',
+      'Conectando os pontos…',
+      'Quase fechando uma resposta…',
+      'Encontrei algo útil para você…',
+      'Preparando os próximos passos…',
     ],
     quickReplies: {
       save: 'Salvar',

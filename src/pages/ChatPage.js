@@ -15,6 +15,7 @@ import ChatWindow from "../components/Chat/ChatWindow";
 import ChatInput from "../components/Chat/ChatInput";
 import SessionsDrawer from "../components/Chat/SessionsDrawer";
 import RuntimeNotice from "../components/common/RuntimeNotice";
+import QuotaDisplay from "../components/Layout/QuotaDisplay";
 import useChat from "../hooks/useChat";
 import { saveDiagnosis } from "../services/historyService";
 import { validateImage } from "../utils/imageUpload";
@@ -126,6 +127,16 @@ export default function ChatPage() {
                   : "Seu caderno de campo"}
             </Typography>
           </Box>
+          <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", textAlign: "center", fontWeight: 700, mb: 0.25 }}
+            >
+              LIMITES DE HOJE
+            </Typography>
+            <QuotaDisplay emphasis="prominent" />
+          </Box>
           <IconButton
             aria-label="Conversas anteriores"
             onClick={() => setSessions(true)}
@@ -143,6 +154,20 @@ export default function ChatPage() {
             <SquarePen size={21} />
           </IconButton>
         </Stack>
+        <Box
+          sx={{
+            display: { xs: "flex", sm: "none" },
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            pt: 0.75,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 0.25 }}>
+            LIMITES DE HOJE
+          </Typography>
+          <QuotaDisplay emphasis="prominent" />
+        </Box>
       </Box>
       <RuntimeNotice />
       <ChatWindow

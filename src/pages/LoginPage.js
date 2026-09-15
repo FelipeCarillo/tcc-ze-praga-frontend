@@ -19,6 +19,7 @@ function LoginPage() {
   // E-mail pendente de confirmação — preenchido quando o backend responde 202.
   const [pendingEmail, setPendingEmail] = useState("");
   const [resendMsg, setResendMsg] = useState("");
+  const [resendFailed, setResendFailed] = useState(false);
   // Modo "esqueci minha senha": troca o formulário por um pedido de e-mail.
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotMsg, setForgotMsg] = useState("");
@@ -41,6 +42,7 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     setResendMsg("");
+    setResendFailed(false);
     setSubmitting(true);
     try {
       if (isRegistering) {
@@ -92,12 +94,14 @@ function LoginPage() {
 
   const handleResend = async () => {
     setResendMsg("");
+    setResendFailed(false);
     try {
       await resendVerification(pendingEmail);
       setResendMsg(
         "Reenviei o link. Dá uma olhada na caixa de entrada e no spam.",
       );
     } catch {
+      setResendFailed(true);
       setResendMsg("Não consegui reenviar agora. Tenta de novo em instantes.");
     }
   };
@@ -271,7 +275,7 @@ function LoginPage() {
               olha no spam.
             </Alert>
             {resendMsg && (
-              <Alert severity="success" sx={{ mb: 2 }}>
+              <Alert severity={resendFailed ? "error" : "success"} sx={{ mb: 2 }}>
                 {resendMsg}
               </Alert>
             )}
@@ -291,6 +295,7 @@ function LoginPage() {
                 setPendingEmail("");
                 setIsRegistering(false);
                 setResendMsg("");
+                setResendFailed(false);
               }}
               sx={{ color: "primary.main" }}
             >

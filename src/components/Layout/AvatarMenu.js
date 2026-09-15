@@ -10,9 +10,8 @@ import Divider from '@mui/material/Divider';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
-import { LogIn, LogOut, Moon, Sun, UserRound } from 'lucide-react';
+import { LogIn, LogOut, UserRound } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useColorMode } from '../../hooks/useColorMode';
 
 function initialOf(user) {
   const base = user?.full_name || user?.email || '';
@@ -20,28 +19,19 @@ function initialOf(user) {
 }
 
 /**
- * Avatar circular com dropdown (substitui o chip de tier + Login + Sair + toggle
- * dark soltos da navbar antiga). Logado: Perfil / Modo noite / Sair. Deslogado:
- * Entrar / Modo noite. O toggle de tema mora aqui (auditoria, seção 09).
+ * Avatar circular com dropdown exclusivo da conta. Logado: Perfil / Sair.
+ * Deslogado: Entrar. O toggle de tema fica visível ao lado do avatar na barra.
  */
 function AvatarMenu() {
   const { user, logout } = useAuth();
-  const { mode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const close = () => setAnchorEl(null);
-  const isDark = mode === 'dark';
-
   const handleLogout = () => {
     close();
     logout();
     navigate('/');
-  };
-
-  const handleToggleTheme = () => {
-    toggleColorMode();
-    close();
   };
 
   return (
@@ -91,8 +81,6 @@ function AvatarMenu() {
             </Typography>
           </Box>
         )}
-        {user && <Divider />}
-
         {user ? (
           <MenuItem component={Link} to="/perfil" onClick={close}>
             <ListItemIcon>
@@ -108,15 +96,6 @@ function AvatarMenu() {
             <ListItemText>Entrar</ListItemText>
           </MenuItem>
         )}
-
-        <MenuItem component={Link} to="/sobre" onClick={close}>Sobre o projeto</MenuItem>
-        <MenuItem component={Link} to="/modelos" onClick={close}>Modelos e métricas</MenuItem>
-        <MenuItem component={Link} to="/api-docs" onClick={close}>Documentação da API</MenuItem>
-        <MenuItem component={Link} to="/planos" onClick={close}>Planos</MenuItem>
-        <MenuItem onClick={handleToggleTheme}>
-          <ListItemIcon>{isDark ? <Sun size={18} /> : <Moon size={18} />}</ListItemIcon>
-          <ListItemText>{isDark ? 'Modo claro' : 'Modo noite'}</ListItemText>
-        </MenuItem>
 
         {user && <Divider />}
         {user && (

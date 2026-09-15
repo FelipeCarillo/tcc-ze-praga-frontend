@@ -78,9 +78,12 @@ function ChatMessage({ message, onSaveDiagnosis }) {
   return (
     <Box
       component={motion.div}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={message.isStreaming ? { opacity: 0, y: 16, scale: 0.985 } : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: message.isStreaming ? 0.34 : 0.3,
+        ease: [0.22, 1, 0.36, 1],
+      }}
       sx={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', mb: 2 }}
     >
       <Box

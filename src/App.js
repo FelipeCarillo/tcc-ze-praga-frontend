@@ -4,12 +4,13 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import { MotionConfig } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { AuthContext } from "./AuthContext";
 import { FeaturesProvider } from "./contexts/FeaturesContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
@@ -64,6 +65,48 @@ function AuthExpiredListener({ onExpired }) {
   }, [navigate, onExpired, location.pathname, location.search]);
 
   return null;
+}
+
+const routeOrder = ["/", "/chat", "/historico", "/modelos", "/api-docs", "/sobre"];
+
+function routeIndex(pathname) {
+  if (pathname.startsWith("/historico/")) return routeOrder.indexOf("/historico");
+  if (pathname.startsWith("/planos")) return routeOrder.indexOf("/sobre") + 1;
+  const index = routeOrder.indexOf(pathname);
+  return index === -1 ? routeOrder.length : index;
+}
+
+const routeVariants = {
+  enter: (direction) => ({ opacity: 0, x: direction * 56 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction) => ({ opacity: 0, x: direction * -56 }),
+};
+
+function RouteTransition({ children }) {
+  const location = useLocation();
+  const previousPathname = useRef(location.pathname);
+  const direction = routeIndex(location.pathname) >= routeIndex(previousPathname.current) ? 1 : -1;
+
+  useEffect(() => {
+    previousPathname.current = location.pathname;
+  }, [location.pathname]);
+
+  return (
+    <AnimatePresence initial={false} mode="wait" custom={direction}>
+      <motion.div
+        key={location.pathname}
+        custom={direction}
+        variants={routeVariants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        style={{ willChange: "opacity, transform" }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
 }
 
 function App() {
@@ -125,7 +168,8 @@ function App() {
               <QuotaExceededModal />
               <InstallPrompt />
               <Suspense fallback={<PageLoader />}>
-                <Routes>
+                <RouteTransition>
+                  <Routes>
                   <Route
                     path="/"
                     element={
@@ -240,7 +284,8 @@ function App() {
                       </Layout>
                     }
                   />
-                </Routes>
+                  </Routes>
+                </RouteTransition>
               </Suspense>
             </BrowserRouter>
           </ErrorBoundary>

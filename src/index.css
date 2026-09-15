@@ -4,6 +4,13 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar {

@@ -3,17 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import { History, Home, MessageCircle, UserRound } from 'lucide-react';
+import { History, Home, MessageCircle, Sparkles, UserRound } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const items = [
   { label: 'Início', path: '/', icon: <Home size={22} /> },
-  { label: 'Analisar', path: '/chat', icon: <MessageCircle size={22} /> },
-  { label: 'Histórico', path: '/historico', icon: <History size={22} /> },
+  { label: 'Analisar', path: '/chat', icon: <MessageCircle size={22} />, requiresAuth: true },
+  { label: 'Histórico', path: '/historico', icon: <History size={22} />, requiresAuth: true },
+  { label: 'Planos', path: '/planos', icon: <Sparkles size={22} /> },
   { label: 'Perfil', path: '/perfil', icon: <UserRound size={22} /> },
 ];
 
-function currentValue(pathname) {
-  const found = items.find((i) =>
+function currentValue(pathname, visibleItems) {
+  const found = visibleItems.find((i) =>
     i.path === '/' ? pathname === '/' : pathname.startsWith(i.path)
   );
   return found ? found.path : false;
@@ -26,6 +28,8 @@ function currentValue(pathname) {
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const visibleItems = items.filter((item) => !item.requiresAuth || user);
 
   return (
     <Paper
@@ -44,7 +48,7 @@ function BottomNav() {
       }}
     >
       <BottomNavigation
-        value={currentValue(location.pathname)}
+        value={currentValue(location.pathname, visibleItems)}
         onChange={(_, value) => navigate(value)}
         showLabels
         sx={{
@@ -53,7 +57,7 @@ function BottomNav() {
           '& .Mui-selected': { color: 'primary.main', fontWeight: 700 },
         }}
       >
-        {items.map((i) => (
+        {visibleItems.map((i) => (
           <BottomNavigationAction key={i.path} label={i.label} value={i.path} icon={i.icon} />
         ))}
       </BottomNavigation>

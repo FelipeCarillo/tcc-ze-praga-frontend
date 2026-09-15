@@ -29,7 +29,7 @@ function formatCounter(feature) {
   return `${feature.used}/${limit}`;
 }
 
-function QuotaDisplay() {
+function QuotaDisplay({ layout = 'row', emphasis = 'default' }) {
   const { user } = useAuth();
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -71,7 +71,13 @@ function QuotaDisplay() {
 
   return (
     <Box
-      sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}
+      sx={{
+        display: 'flex',
+        flexDirection: layout === 'stacked' ? 'column' : 'row',
+        alignItems: layout === 'stacked' ? 'flex-start' : 'center',
+        gap: 0.75,
+        mr: layout === 'stacked' ? 0 : 0.5,
+      }}
       data-testid="quota-display"
     >
       <Tooltip title="Mensagens de chat hoje · reseta diariamente">
@@ -79,8 +85,8 @@ function QuotaDisplay() {
           icon={<MessageCircle size={14} />}
           label={`Chat ${formatCounter(chat)}`}
           color={chipColor(chat?.used, chat?.limit)}
-          size="small"
-          variant="outlined"
+          size={emphasis === 'prominent' ? 'medium' : 'small'}
+          variant={emphasis === 'prominent' ? 'filled' : 'outlined'}
           data-testid="quota-chip-chat"
           aria-busy={loading || undefined}
         />
@@ -90,8 +96,8 @@ function QuotaDisplay() {
           icon={<ScanLine size={14} />}
           label={`Inferência ${formatCounter(inference)}`}
           color={chipColor(inference?.used, inference?.limit)}
-          size="small"
-          variant="outlined"
+          size={emphasis === 'prominent' ? 'medium' : 'small'}
+          variant={emphasis === 'prominent' ? 'filled' : 'outlined'}
           data-testid="quota-chip-inference"
           aria-busy={loading || undefined}
         />

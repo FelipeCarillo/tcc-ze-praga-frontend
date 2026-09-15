@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 import { copy } from '../../copy/ze';
 
 /**
  * Skeleton do estado "Zé pensando" (auditoria, seção 11): bolha do Zé com um
- * spinner pequeno + microcopy rotativa (a cada ~1.2s) + placeholders de linha.
+ * spinner pequeno + microcopy em efeito de máquina de escrever + placeholders
+ * de linha. A frase aparece, pausa, apaga e então dá lugar à próxima.
  * Quebra a frieza de "Analisando…" e mantém a voz.
  *
  * Quando o agente está rodando uma ferramenta (`toolCall`), a microcopy genérica
@@ -18,20 +19,54 @@ import { copy } from '../../copy/ze';
  */
 function TypingIndicator({ toolCall = null }) {
   const [idx, setIdx] = useState(0);
+  const [typed, setTyped] = useState('');
+  const [phase, setPhase] = useState('typing');
+  const reducedMotion = useReducedMotion();
   const phrases = copy.chat.thinking;
 
   useEffect(() => {
-    // Com tool ativa o texto é fixo — rotacionar por cima dele confundiria.
-    if (toolCall) return undefined;
-    const id = setInterval(() => {
-      setIdx((i) => (i + 1) % phrases.length);
-    }, 1200);
-    return () => clearInterval(id);
-  }, [phrases.length, toolCall]);
+    // Uma tool descreve um trabalho específico; não devemos digitar/apagar
+    // esse estado real. Ao voltar ao modo genérico, recomeçamos o ciclo.
+    setIdx(0);
+    setTyped('');
+    setPhase('typing');
+  }, [toolCall]);
+
+  useEffect(() => {
+    if (toolCall || reducedMotion) return undefined;
+
+    const phrase = phrases[idx] || '';
+    let delay = 0;
+    let next = () => {};
+
+    if (phase === 'typing') {
+      if (typed.length < phrase.length) {
+        delay = 38;
+        next = () => setTyped(phrase.slice(0, typed.length + 1));
+      } else {
+        delay = 1300;
+        next = () => setPhase('deleting');
+      }
+    } else if (typed.length > 0) {
+      delay = 22;
+      next = () => setTyped(typed.slice(0, -1));
+    } else {
+      delay = 180;
+      next = () => {
+        setIdx((current) => (current + 1) % phrases.length);
+        setPhase('typing');
+      };
+    }
+
+    const timer = setTimeout(next, delay);
+    return () => clearTimeout(timer);
+  }, [idx, phase, phrases, reducedMotion, toolCall, typed]);
 
   const label = toolCall
     ? copy.chat.tools[toolCall] || copy.chat.tools._fallback
-    : phrases[idx];
+    : reducedMotion
+      ? phrases[idx]
+      : typed;
 
   return (
     <Box
@@ -71,8 +106,18 @@ function TypingIndicator({ toolCall = null }) {
               borderTopColor: 'transparent',
             }}
           />
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'secondary.main' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'secondary.main', minHeight: '1.15em' }}>
             {label}
+            {!toolCall && !reducedMotion && (
+              <Box
+                component={motion.span}
+                animate={{ opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                sx={{ display: 'inline-block', ml: '1px' }}
+              >
+                |
+              </Box>
+            )}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>

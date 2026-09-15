@@ -5,68 +5,93 @@ import {
   ArrowRight,
   Camera,
   History,
-  Leaf,
   ScanLine,
   Sprout,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { IS_DEMO } from "../config/runtime";
-function LeafIllustration() {
+import soybeanRust from "../assets/soybean-rust.jpg";
+
+function FieldPhoto() {
   return (
-    <svg
-      viewBox="0 0 460 480"
+    <Box
       role="img"
-      aria-label="Ilustração de uma folha de soja em uma área de enquadramento"
-      style={{ width: "100%", display: "block" }}
+      aria-label="Foto de campo com folhas de soja apresentando sinais visíveis"
+      sx={{
+        height: { xs: 300, md: 420 },
+        overflow: "hidden",
+        position: "relative",
+        "@keyframes field-photo-drift": {
+          from: { transform: "scale(1.02) translate3d(-1%, -1%, 0)" },
+          to: { transform: "scale(1.14) translate3d(2%, 1%, 0)" },
+        },
+        "@keyframes field-photo-light": {
+          from: { transform: "translateX(-130%) skewX(-16deg)", opacity: 0 },
+          "35%": { opacity: 0.22 },
+          to: { transform: "translateX(360%) skewX(-16deg)", opacity: 0 },
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "& *, &::after": { animation: "none !important" },
+        },
+      }}
     >
-      <defs>
-        <linearGradient id="leaf" x1="0" x2="1" y2="1">
-          <stop stopColor="#9ad8a0" />
-          <stop offset="1" stopColor="#2d7650" />
-        </linearGradient>
-      </defs>
-      <circle cx="230" cy="228" r="176" fill="#fff" opacity=".04" />
-      <circle
-        cx="230"
-        cy="228"
-        r="133"
-        fill="none"
-        stroke="#c7e8d4"
-        opacity=".17"
-        strokeDasharray="4 9"
+      <Box
+        component="img"
+        src={soybeanRust}
+        alt="Folhas de soja com sinais visíveis observadas no campo"
+        sx={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          objectFit: "cover",
+          objectPosition: "center",
+          animation: "field-photo-drift 16s ease-in-out infinite alternate",
+        }}
       />
-      <path
-        d="M230 383C235 302 194 211 262 99C367 136 383 286 230 383Z"
-        fill="url(#leaf)"
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: "absolute",
+          inset: 0,
+          bgcolor: "rgba(7, 28, 17, .12)",
+          background: "linear-gradient(180deg, rgba(7,28,17,.48), transparent 46%, rgba(7,28,17,.58))",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            inset: "-20% auto -20% 0",
+            width: "23%",
+            background: "linear-gradient(90deg, transparent, rgba(240,237,226,.72), transparent)",
+            animation: "field-photo-light 9s ease-in-out infinite",
+          },
+        }}
       />
-      <path
-        d="M231 381Q277 253 263 111M250 316L320 252M262 262L320 197M267 219L299 160M246 330L220 258M262 268L232 212M268 221L243 167"
-        fill="none"
-        stroke="#c7e8d4"
-        strokeWidth="2"
-        opacity=".65"
-      />
-      <path
-        d="M109 160V113H156M305 113H352V160M352 313V360H305M156 360H109V313"
-        fill="none"
-        stroke="#c7e8d4"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <circle cx="314" cy="222" r="5" fill="#F4C95D" />
-      <path d="M314 222H379" stroke="#F4C95D" opacity=".6" />
-      <text
-        x="230"
-        y="434"
-        textAnchor="middle"
-        fill="#c7e8d4"
-        fontSize="12"
-        fontFamily="sans-serif"
-        letterSpacing="3"
-      >
-        OBSERVAR É O PRIMEIRO PASSO
-      </text>
-    </svg>
+      <Box sx={{ position: "absolute", top: 26, left: 26 }}>
+        <Typography
+          component="span"
+          sx={{
+            bgcolor: "rgba(15,27,20,.78)",
+            color: "#f0ede2",
+            border: "1px solid rgba(199,232,212,.5)",
+            borderRadius: 999,
+            px: 1.6,
+            py: 0.8,
+            fontSize: "0.72rem",
+            fontWeight: 800,
+            letterSpacing: ".1em",
+          }}
+        >
+          FOTO DE CAMPO
+        </Typography>
+      </Box>
+      <Box sx={{ position: "absolute", left: 26, right: 26, bottom: 24 }}>
+        <Typography variant="overline" color="#c7e8d4" sx={{ letterSpacing: 2 }}>
+          OBSERVE COM CALMA
+        </Typography>
+        <Typography color="#f0ede2" fontWeight={700} sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+          Cor, manchas e textura contam uma história.
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 export default function LandingPage() {
@@ -146,19 +171,7 @@ export default function LandingPage() {
             maxHeight: { xs: 300, md: "none" },
           }}
         >
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            sx={{ position: "absolute", top: 22, left: 24, right: 24 }}
-          >
-            <Typography variant="overline" sx={{ letterSpacing: 2 }}>
-              Caderno de campo digital
-            </Typography>
-            <Leaf size={22} />
-          </Stack>
-          <Box sx={{ maxWidth: { xs: 300, md: 460 }, mx: "auto" }}>
-            <LeafIllustration />
-          </Box>
+          <FieldPhoto />
         </Box>
       </Box>
       <Box
