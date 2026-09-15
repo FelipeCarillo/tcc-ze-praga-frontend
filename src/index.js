@@ -69,4 +69,5 @@ root.render(
   </React.StrictMode>
 );
 
-serviceWorkerRegistration.register();
+if (process.env.NODE_ENV === 'production') serviceWorkerRegistration.register();
+else serviceWorkerRegistration.unregister();

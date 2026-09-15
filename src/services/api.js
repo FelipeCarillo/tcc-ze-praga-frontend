@@ -1,3 +1,4 @@
+import { API_ORIGIN } from '../config/runtime';
 import axios from 'axios';
 
 const TOKEN_KEY = 'ze-praga-auth-token';
@@ -5,7 +6,7 @@ const USER_KEY = 'ze-praga-auth-user';
 const EXPIRES_KEY = 'ze-praga-auth-expires-at';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: API_ORIGIN,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -30,14 +31,14 @@ api.interceptors.response.use(
     const status = error?.response?.status;
 
     if (typeof window !== 'undefined') {
-      if (status === 401) {
+      if (status === 401 && !error.config?.url?.includes('/auth/')) {
         window.localStorage.removeItem(TOKEN_KEY);
         window.localStorage.removeItem(USER_KEY);
         window.localStorage.removeItem(EXPIRES_KEY);
         window.dispatchEvent(new CustomEvent('auth-expired'));
       }
 
-      if (status === 429) {
+      if (status === 429 && !error.config?.url?.includes('/auth/')) {
         window.dispatchEvent(
           new CustomEvent('quota-exceeded', { detail: error.response?.data || null })
         );

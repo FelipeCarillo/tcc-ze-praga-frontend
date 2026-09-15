@@ -1,5 +1,15 @@
 # Zé Praga — Frontend
 
+## Revisão de UX e execução local — setembro de 2026
+
+Para explorar a interface sem serviços externos: `npm.cmd run start:demo` e abra
+http://127.0.0.1:3100/. O modo demonstração identifica os resultados simulados.
+Para ligar ao backend local: `npm.cmd run start:local`.
+
+Veja o [roteiro local, mudanças, testes e pendências para o TCC](docs/ENTREGA-UX-LOCAL-2026-09-08.md).
+Esses comandos definem as flags sem alterar `.env`. A inferência real e os serviços
+externos exigem validação separada da demonstração da interface.
+
 SPA em **React + Material UI** do **Zé Praga**, sistema de diagnóstico de doenças
 foliares de soja (TCC). Consome a API FastAPI (`tcc-ze-praga-backend`): autenticação,
 upload de imagem + diagnóstico (modelo ONNX), planos de ação, chat com agente

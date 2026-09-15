@@ -1,12 +1,8 @@
-import api from './api';
-import { getAuthHeaders, getCurrentUserId } from './authService';
-import * as mockHistory from './mock/mockHistory';
-
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
-
-const userId = () => getCurrentUserId();
-
-function mapDiagnosis(data) {
+import api from "./api";
+import { IS_DEMO } from "../config/runtime";
+import { getAuthHeaders, getCurrentUserId } from "./authService";
+import * as mockHistory from "./mock/mockHistory";
+export function mapDiagnosis(data) {
   if (!data) return null;
   return {
     id: data.id,
@@ -29,43 +25,76 @@ function mapDiagnosis(data) {
     timestamp: data.created_at ?? data.timestamp,
   };
 }
-
-export async function getDiagnoses() {
-  if (USE_MOCK) return mockHistory.getAll(userId());
-
-  const response = await api.get('/api/v1/diagnoses', { headers: getAuthHeaders() });
-  // O backend pagina: { items, total, page, limit }. `.map` num objeto lançava
-  // e a UI mostrava "Erro ao carregar histórico". Aceita também array cru
-  // (mock/legado).
-  const data = response.data;
-  const items = Array.isArray(data) ? data : data?.items || [];
-  return items.map(mapDiagnosis);
+export async function getDiagnosesPage({
+  page = 1,
+  limit = 12,
+  search = "",
+  severity,
+} = {}) {
+  if (IS_DEMO) {
+    let items = await mockHistory.getAll(getCurrentUserId());
+    if (search)
+      items = items.filter((d) =>
+        (d.disease + " " + d.scientificName)
+          .toLocaleLowerCase("pt-BR")
+          .includes(search.toLocaleLowerCase("pt-BR")),
+      );
+    if (severity) items = items.filter((d) => d.severity === severity);
+    return {
+      items: items.slice((page - 1) * limit, page * limit),
+      total: items.length,
+      page,
+      limit,
+    };
+  }
+  const { data } = await api.get("/api/v1/diagnoses", {
+    headers: getAuthHeaders(),
+    params: { page, limit, search: search || undefined, severity },
+  });
+  return {
+    items: (Array.isArray(data) ? data : data.items || []).map(mapDiagnosis),
+    total: Array.isArray(data) ? data.length : data.total,
+    page: data.page || page,
+    limit: data.limit || limit,
+  };
 }
-
+// Chamadores legados recebem a coleção completa; a tela principal usa páginas.
+export async function getDiagnoses(filters = {}) {
+  const first = await getDiagnosesPage({ ...filters, page: 1, limit: 100 });
+  const items = [...first.items];
+  for (let page = 2; items.length < first.total; page++) {
+    const next = await getDiagnosesPage({ ...filters, page, limit: 100 });
+    if (!next.items.length) break;
+    items.push(...next.items);
+  }
+  return items;
+}
 export async function getDiagnosisById(id) {
-  if (USE_MOCK) return mockHistory.getById(id, userId());
-
-  const response = await api.get(`/api/v1/diagnoses/${id}`, { headers: getAuthHeaders() });
-  return mapDiagnosis(response.data);
+  if (IS_DEMO) return mockHistory.getById(id, getCurrentUserId());
+  const { data } = await api.get(
+    "/api/v1/diagnoses/" + encodeURIComponent(id),
+    { headers: getAuthHeaders() },
+  );
+  return mapDiagnosis(data);
 }
-
 export async function saveDiagnosis(diagnosis) {
-  if (USE_MOCK) return mockHistory.save(diagnosis, userId());
-
-  // Backend persists diagnoses automatically when /inference or /chat is called.
-  // This call is kept for legacy callers; nothing to persist server-side.
+  if (IS_DEMO) return mockHistory.save(diagnosis, getCurrentUserId());
   return diagnosis;
 }
-
 export async function deleteDiagnosis(id) {
-  if (USE_MOCK) return mockHistory.remove(id, userId());
-
-  await api.delete(`/api/v1/diagnoses/${id}`, { headers: getAuthHeaders() });
+  if (IS_DEMO) return mockHistory.remove(id, getCurrentUserId());
+  await api.delete("/api/v1/diagnoses/" + encodeURIComponent(id), {
+    headers: getAuthHeaders(),
+  });
   return { id };
 }
-
 export async function clearAllDiagnoses() {
-  if (USE_MOCK) return mockHistory.clearAll(userId());
-
-  await api.delete('/api/v1/diagnoses', { headers: getAuthHeaders() });
+  if (IS_DEMO) return mockHistory.clearAll(getCurrentUserId());
+  const { data } = await api.delete("/api/v1/diagnoses", {
+    headers: getAuthHeaders(),
+    params: { confirm: true },
+  });
+  if (typeof data?.deleted !== "number")
+    throw new Error("O servidor não confirmou a exclusão do histórico.");
+  return data;
 }

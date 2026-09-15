@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import BottomNav from './BottomNav';
-import CameraFAB from './CameraFAB';
+import RuntimeNotice from '../common/RuntimeNotice';
 
 /**
  * Casca de navegação. No desktop: Navbar + conteúdo + Footer. No mobile:
@@ -22,14 +22,16 @@ function Layout({ children, showFooter = true }) {
 
   // O /chat é uma tela cheia com header e composer próprios (sem chrome global).
   if (isChat) {
-    return <Box sx={{ minHeight: '100vh' }}>{children}</Box>;
+    return <Box sx={{ minHeight: '100dvh' }}>{children}</Box>;
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+      <Box component="a" href="#main-content" sx={{position:"absolute",left:16,top:-100,zIndex:2000,p:2,bgcolor:"background.paper","&:focus":{top:8}}}>Ir para o conteúdo</Box>
       <Navbar variant="default" />
+      <RuntimeNotice />
       <Box
-        component="main"
+        component="main" id="main-content" tabIndex={-1}
         sx={{ flex: 1, pb: showMobileNav ? 'calc(64px + env(safe-area-inset-bottom))' : 0 }}
       >
         {children}
@@ -37,7 +39,7 @@ function Layout({ children, showFooter = true }) {
       {showFooter && !showMobileNav && <Footer />}
       {showMobileNav && (
         <>
-          <CameraFAB />
+          
           <BottomNav />
         </>
       )}

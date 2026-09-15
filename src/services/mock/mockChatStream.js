@@ -78,9 +78,9 @@ export async function mockSendMessageStream(
     if (onToolResult) onToolResult(JSON.stringify({ disease_id: result.diseaseId }));
 
     await streamText(
-      `Olhei com calma. Isso aí é **${result.disease}** (*${result.scientificName}*), ` +
+      `Neste exemplo simulado, a hipótese exibida é **${result.disease}** (*${result.scientificName}*), ` +
         `com ${(result.confidence * 100).toFixed(1)}% de confiança. ` +
-        'Abre o card aí embaixo que eu te mostro a receita.',
+        'Abra o resultado abaixo para conhecer as orientações do catálogo.',
       onToken
     );
 

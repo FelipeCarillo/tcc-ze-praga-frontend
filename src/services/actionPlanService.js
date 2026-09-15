@@ -1,8 +1,9 @@
+import { IS_DEMO } from '../config/runtime';
 import api from './api';
-import { getAuthHeaders } from './authService';
+import { getAuthHeaders, getCurrentUser } from './authService';
 import { diseases as mockDiseases } from './mock/mockData';
 
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
+const USE_MOCK = IS_DEMO;
 
 /**
  * Converte a resposta do backend para o formato que o componente `ActionPlan`
@@ -40,7 +41,11 @@ export async function getActionPlan(diseaseId) {
 
   if (USE_MOCK) {
     const found = mockDiseases.find((d) => d.id === diseaseId);
-    return found?.actionPlan || null;
+    const source = found?.actionPlan;
+    if (!source) return null;
+    const levels = getCurrentUser()?.plan?.features?.action_plan_levels || ['essencial'];
+    if (Array.isArray(source)) return source;
+    return Object.fromEntries(Object.entries(source).filter(([key])=>key === 'sources' || levels.includes(key)));
   }
 
   try {

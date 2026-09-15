@@ -1,179 +1,206 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import Tooltip from '@mui/material/Tooltip';
-import { Link, useLocation } from 'react-router-dom';
-import { History, SquarePen, ChevronLeft, MessagesSquare } from 'lucide-react';
-import { ReactComponent as Marca } from '../assets/brand/marca.svg';
-import ChatWindow from '../components/Chat/ChatWindow';
-import ChatInput from '../components/Chat/ChatInput';
-import DragDropOverlay from '../components/Chat/DragDropOverlay';
-import SessionsDrawer from '../components/Chat/SessionsDrawer';
-import useChat from '../hooks/useChat';
-import { useFeatures } from '../contexts/FeaturesContext';
-import { defaultModelId } from '../data/diagnosisModels';
-import { saveDiagnosis } from '../services/historyService';
-import { copy } from '../copy/ze';
-
-function ChatPage() {
-  // Usa o caminho de streaming (SSE) — sem o teto de 30s do axios, com
-  // session_id (memória server-side) e tokens incrementais. Aliasado como
-  // `send` porque a assinatura é idêntica à do `send` síncrono.
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  Snackbar,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft, History, MessagesSquare, SquarePen } from "lucide-react";
+import { ReactComponent as Marca } from "../assets/brand/marca.svg";
+import ChatWindow from "../components/Chat/ChatWindow";
+import ChatInput from "../components/Chat/ChatInput";
+import SessionsDrawer from "../components/Chat/SessionsDrawer";
+import RuntimeNotice from "../components/common/RuntimeNotice";
+import useChat from "../hooks/useChat";
+import { saveDiagnosis } from "../services/historyService";
+import { validateImage } from "../utils/imageUpload";
+export default function ChatPage() {
   const {
     messages,
     isLoading,
     pendingInterrupt,
-    sendStreaming: send,
+    sendStreaming,
     answerInterrupt,
     loadSession,
     clearChat,
     sessionId,
+    stop,
   } = useChat();
-  // CameraFAB e drag & drop entram sem passar pelo seletor de modelo.
-  const features = useFeatures();
-  const fallbackModel = defaultModelId(features);
-  const location = useLocation();
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [isDragging, setIsDragging] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
-  const dragCounter = useRef(0);
-
-  // Foto vinda do CameraFAB (state da navegação) — envia automaticamente uma vez.
-  const pendingHandled = useRef(false);
+  const location = useLocation(),
+    navigate = useNavigate();
+  const [file, setFile] = useState(null),
+    [notice, setNotice] = useState(""),
+    [sessions, setSessions] = useState(false),
+    [dragging, setDragging] = useState(false);
+  const counter = useRef(0);
+  const stage = useCallback(
+    (next) => {
+      if (isLoading || pendingInterrupt) {
+        setNotice("Conclua a resposta atual antes de escolher outra foto.");
+        return;
+      }
+      const error = validateImage(next);
+      if (error) setNotice(error);
+      else setFile(next);
+    },
+    [isLoading, pendingInterrupt],
+  );
+  const handled = useRef(null);
   useEffect(() => {
-    const file = location.state?.pendingFile;
-    if (file && !pendingHandled.current) {
-      pendingHandled.current = true;
-      send('', file, fallbackModel);
-      window.history.replaceState({}, '');
+    if (location.key === handled.current) return;
+    handled.current = location.key;
+    if (location.state?.pendingFile) {
+      stage(location.state.pendingFile);
+      navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location.state, send, fallbackModel]);
-
-  const handleSaveDiagnosis = useCallback(async (diagnosis) => {
-    try {
-      await saveDiagnosis(diagnosis);
-      setSnackbar({ open: true, message: copy.feedback.saved, severity: 'success' });
-      window.dispatchEvent(new CustomEvent('diagnosis-saved'));
-    } catch {
-      setSnackbar({ open: true, message: 'Erro ao salvar o diagnóstico.', severity: 'error' });
-    }
-  }, []);
-
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) setIsDragging(true);
+  }, [location, stage, navigate]);
+  const saved = async (diagnosis) => {
+    await saveDiagnosis(diagnosis);
+    setNotice("Resultado guardado no seu histórico.");
+    window.dispatchEvent(new CustomEvent("diagnosis-saved"));
   };
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    dragCounter.current--;
-    if (dragCounter.current === 0) setIsDragging(false);
+  const reset = () => {
+    setFile(null);
+    clearChat();
   };
-  const handleDragOver = (e) => e.preventDefault();
-  const handleDrop = (e) => {
-    e.preventDefault();
-    dragCounter.current = 0;
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file?.type.startsWith('image/')) send('', file, fallbackModel);
-  };
-
+  const fileHandled = useCallback(() => setFile(null), []);
   return (
     <Box
-      sx={{ height: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', width: '100%', backgroundColor: 'background.paper' }}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      sx={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        overflow: "hidden",
+      }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        counter.current++;
+        if (e.dataTransfer.types.includes("Files")) setDragging(true);
+      }}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        counter.current--;
+        if (counter.current <= 0) setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        counter.current = 0;
+        setDragging(false);
+        const next = e.dataTransfer.files?.[0];
+        if (next) stage(next);
+      }}
     >
-      <DragDropOverlay visible={isDragging} />
-
-      <SessionsDrawer
-        open={sessionsOpen}
-        onClose={() => setSessionsOpen(false)}
-        onSelect={loadSession}
-        onNew={clearChat}
-        currentSessionId={sessionId}
-      />
-
-      {/* Header slim */}
       <Box
+        component="header"
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          px: { xs: 1.5, md: 2 },
+          bgcolor: "background.paper",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          px: { xs: 1, md: 3 },
           py: 1,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          backgroundColor: 'background.paper',
-          flexShrink: 0,
         }}
       >
-        <IconButton component={Link} to="/" size="small" aria-label="Voltar" sx={{ color: 'text.secondary' }}>
-          <ChevronLeft size={20} />
-        </IconButton>
-        <Box sx={{ width: 32, height: 32, borderRadius: '9px', overflow: 'hidden', flexShrink: 0 }}>
-          <Marca style={{ width: 32, height: 32, display: 'block' }} />
-        </Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.1 }}>
-            Zé
-          </Typography>
-          <Typography sx={{ fontSize: '0.68rem', color: isLoading ? 'secondary.main' : 'success.main' }}>
-            ● {isLoading ? copy.chat.statusLooking : copy.chat.statusHere}
-          </Typography>
-        </Box>
-        <Tooltip title="Conversas anteriores">
+        <Stack
+          direction="row"
+          alignItems="center"
+          gap={1}
+          sx={{ maxWidth: 1200, mx: "auto" }}
+        >
+          <IconButton component={Link} to="/" aria-label="Voltar ao início">
+            <ChevronLeft size={22} />
+          </IconButton>
+          <Marca style={{ width: 35, height: 35 }} />
+          <Box flex={1} minWidth={0}>
+            <Typography fontWeight={800}>Zé Praga</Typography>
+            <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ fontSize: { xs: '.7rem', md: '.75rem' } }}>
+              {isLoading
+                ? "Analisando sua mensagem…"
+                : pendingInterrupt
+                  ? "Aguardando sua resposta"
+                  : "Seu caderno de campo"}
+            </Typography>
+          </Box>
           <IconButton
-            onClick={() => setSessionsOpen(true)}
-            size="small"
             aria-label="Conversas anteriores"
-            sx={{ color: 'text.secondary' }}
+            onClick={() => setSessions(true)}
           >
-            <MessagesSquare size={18} />
+            <MessagesSquare size={21} />
           </IconButton>
-        </Tooltip>
-        <Tooltip title="Histórico de diagnósticos">
-          <IconButton component={Link} to="/historico" size="small" sx={{ color: 'text.secondary' }}>
-            <History size={18} />
+          <IconButton
+            component={Link}
+            to="/historico"
+            aria-label="Histórico de análises"
+          >
+            <History size={21} />
           </IconButton>
-        </Tooltip>
-        <Tooltip title="Nova conversa">
-          <IconButton onClick={clearChat} size="small" sx={{ color: 'text.secondary' }}>
-            <SquarePen size={18} />
+          <IconButton aria-label="Nova conversa" onClick={reset}>
+            <SquarePen size={21} />
           </IconButton>
-        </Tooltip>
+        </Stack>
       </Box>
-
+      <RuntimeNotice />
       <ChatWindow
         messages={messages}
         isLoading={isLoading}
-        onSend={send}
-        onSaveDiagnosis={handleSaveDiagnosis}
+        onSelectFile={stage}
+        onSaveDiagnosis={saved}
         pendingInterrupt={pendingInterrupt}
         onAnswerInterrupt={answerInterrupt}
       />
-
-      {/* Com pergunta pendente o composer sai de cena: escrever ali mandaria
-          uma mensagem nova em vez de retomar o turno pausado. */}
-      <ChatInput onSend={send} disabled={isLoading || !!pendingInterrupt} />
-
+      {isLoading && (
+        <Box sx={{ textAlign: "center", bgcolor: "background.paper" }}>
+          <Button onClick={stop}>Interromper resposta</Button>
+        </Box>
+      )}
+      <ChatInput
+        onSend={sendStreaming}
+        disabled={isLoading || !!pendingInterrupt}
+        pendingFile={file}
+        onFileHandled={fileHandled}
+      />
+      <SessionsDrawer
+        open={sessions}
+        onClose={() => setSessions(false)}
+        onSelect={(id) => {
+          setFile(null);
+          loadSession(id);
+        }}
+        onNew={reset}
+        currentSessionId={sessionId}
+      />
+      {dragging && (
+        <Box
+          sx={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 10,
+            bgcolor: "background.paper",
+            opacity: 0.95,
+            display: "grid",
+            placeItems: "center",
+            pointerEvents: "none",
+            border: "3px dashed",
+            borderColor: "primary.main",
+          }}
+        >
+          <Typography variant="h5">Solte a foto para conferir</Typography>
+        </Box>
+      )}
       <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3500}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={!!notice}
+        autoHideDuration={6000}
+        onClose={() => setNotice("")}
       >
-        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 2.5, fontWeight: 500 }} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
-          {snackbar.message}
+        <Alert onClose={() => setNotice("")} severity="info">
+          {notice}
         </Alert>
       </Snackbar>
     </Box>
   );
 }
-
-export default ChatPage;

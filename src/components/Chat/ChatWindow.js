@@ -1,75 +1,151 @@
-import React, { useRef, useEffect } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import { AnimatePresence } from 'framer-motion';
-import { Camera, ImageIcon } from 'lucide-react';
-import ChatMessage from './ChatMessage';
-import TypingIndicator from './TypingIndicator';
-import InterruptPrompt from './InterruptPrompt';
-import { useFeatures } from '../../contexts/FeaturesContext';
-import { defaultModelId } from '../../data/diagnosisModels';
-
-function ChatWindow({
+import React, { useEffect, useRef, useState } from "react";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { ArrowDown, Camera, ImageIcon, Leaf } from "lucide-react";
+import ChatMessage from "./ChatMessage";
+import TypingIndicator from "./TypingIndicator";
+import InterruptPrompt from "./InterruptPrompt";
+import { IMAGE_ACCEPT } from "../../utils/imageUpload";
+export default function ChatWindow({
   messages,
   isLoading,
-  onSend,
+  onSelectFile,
   onSaveDiagnosis,
-  pendingInterrupt = null,
+  pendingInterrupt,
   onAnswerInterrupt,
 }) {
-  // Estes atalhos não passam pelo seletor do ChatInput — sem isto mandariam
-  // 'ensemble' fixo, que o backend rebaixaria para quem não é Enterprise.
-  const features = useFeatures();
-  const bottomRef = useRef(null);
-  const galleryRef = useRef(null);
-  const cameraRef = useRef(null);
-  const showWelcome = messages.length <= 1;
-  const lastMsg = messages[messages.length - 1];
-  // Com uma pergunta pendente, o proximo passo e responder, nao mandar foto.
-  const showQuickReplies =
-    !isLoading && !pendingInterrupt && lastMsg?.role === 'assistant' && !!lastMsg?.diagnosis;
-  // Enquanto o balão de stream já mostra texto, não duplica com o typing.
-  const streamingWithContent =
-    lastMsg?.role === 'assistant' && lastMsg?.isStreaming && !!lastMsg?.content;
-
+  const bottom = useRef(null),
+    nearBottom = useRef(true),
+    gallery = useRef(null),
+    camera = useRef(null);
+  const [away, setAway] = useState(false);
+  const welcome = messages.length <= 1,
+    last = messages[messages.length - 1];
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
-
-  const stageAndSend = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) onSend('', file, defaultModelId(features));
-    e.target.value = '';
+    if (nearBottom.current && !welcome)
+      bottom.current?.scrollIntoView({ behavior: "auto" });
+  }, [messages, isLoading, pendingInterrupt, welcome]);
+  const pick = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file && !isLoading && !pendingInterrupt) onSelectFile(file);
   };
-
   return (
     <Box
-      role="log"
-      aria-label="Mensagens do chat"
+      component="main"
+      id="main-content"
+      tabIndex={-1}
+      onScroll={(e) => {
+        const el = e.currentTarget;
+        nearBottom.current =
+          el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        setAway(!nearBottom.current);
+      }}
       sx={{
-        flexGrow: 1,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: (t) => t.palette.surface.sunken,
-        '&::-webkit-scrollbar': { width: 4 },
-        '&::-webkit-scrollbar-thumb': { borderRadius: 4, backgroundColor: 'divider' },
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        bgcolor: "background.default",
+        overscrollBehavior: "contain",
       }}
     >
-      <input type="file" accept=".jpg,.jpeg,.png,.webp" ref={galleryRef} onChange={stageAndSend} hidden />
-      <input type="file" accept="image/*" capture="environment" ref={cameraRef} onChange={stageAndSend} hidden />
-
-      <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', flex: 1, width: '100%', maxWidth: 1100, mx: 'auto' }}>
-        <AnimatePresence initial={false}>
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} onSaveDiagnosis={onSaveDiagnosis} />
-          ))}
-        </AnimatePresence>
-
-        {isLoading && !streamingWithContent && (
-          <TypingIndicator toolCall={lastMsg?.toolCall} />
+      <Box
+        sx={{
+          p: { xs: 2, md: 4 },
+          maxWidth: 900,
+          mx: "auto",
+          minHeight: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {welcome ? (
+          <Box
+            sx={{ maxWidth: 640, mx: "auto", width: "100%", my: "auto", py: 2 }}
+          >
+            <Chip
+              icon={<Leaf size={16} />}
+              label="Vamos começar pela folha"
+              variant="outlined"
+              sx={{ mb: 2 }}
+            />
+            <Typography
+              component="h1"
+              variant="h3"
+              sx={{
+                fontSize: { xs: "2rem", md: "2.8rem" },
+                letterSpacing: "-.04em",
+                mb: 2,
+              }}
+            >
+              Um olhar mais atento
+              <br />
+              para a sua soja.
+            </Typography>
+            <Typography color="text.secondary" mb={3}>
+              Escolha uma foto. Você vai poder conferir antes de iniciar a
+              análise.
+            </Typography>
+            <Stack gap={1.5}>
+              <Button
+                size="large"
+                variant="contained"
+                startIcon={<Camera size={21} />}
+                onClick={() => camera.current.click()}
+              >
+                Tirar foto da folha
+              </Button>
+              <Button
+                size="large"
+                variant="outlined"
+                startIcon={<ImageIcon size={21} />}
+                onClick={() => gallery.current.click()}
+              >
+                Escolher da galeria
+              </Button>
+            </Stack>
+            <Box
+              sx={{
+                mt: 3,
+                p: 2.5,
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 3,
+              }}
+            >
+              <Typography fontWeight={700} mb={1}>
+                Uma boa foto ajuda muito
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Use luz natural, aproxime a câmera e mantenha uma folha em foco.
+                Mostre as manchas, sem filtros.
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" mt={2}>
+              Também pode escrever uma dúvida abaixo. A análise apoia a
+              observação e precisa ser interpretada com o contexto da lavoura.
+            </Typography>
+          </Box>
+        ) : (
+          <Box
+            role="log"
+            aria-label="Mensagens do chat"
+            aria-live={isLoading ? "off" : "polite"}
+          >
+            {messages.map((m) => (
+              <ChatMessage
+                key={m.id}
+                message={m}
+                onSaveDiagnosis={onSaveDiagnosis}
+              />
+            ))}
+          </Box>
         )}
-
+        {isLoading && (
+          <Box role="status" aria-label="O Zé está analisando sua mensagem">
+            <TypingIndicator toolCall={last?.toolCall} />
+          </Box>
+        )}
         {pendingInterrupt && !isLoading && (
           <InterruptPrompt
             interrupt={pendingInterrupt}
@@ -77,30 +153,45 @@ function ChatWindow({
             disabled={isLoading}
           />
         )}
-
-        {showWelcome && !isLoading && (
-          <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pt: 3 }}>
-            <Button onClick={() => cameraRef.current?.click()} variant="contained" color="secondary" size="large" startIcon={<Camera size={20} />} sx={{ justifyContent: 'center' }}>
-              Tirar foto agora
-            </Button>
-            <Button onClick={() => galleryRef.current?.click()} variant="outlined" size="large" startIcon={<ImageIcon size={20} />} sx={{ justifyContent: 'center', borderColor: 'divider', color: 'text.primary', backgroundColor: 'background.paper' }}>
-              Escolher da galeria
-            </Button>
-          </Box>
+        {!isLoading && !pendingInterrupt && last?.diagnosis && (
+          <Button
+            sx={{ alignSelf: "flex-start", mt: 2 }}
+            startIcon={<Camera size={18} />}
+            onClick={() => gallery.current.click()}
+          >
+            Analisar outra folha
+          </Button>
         )}
-
-        {showQuickReplies && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pl: '38px', mt: -1, mb: 1 }}>
-            <Button onClick={() => cameraRef.current?.click()} size="small" variant="contained" color="secondary" startIcon={<Camera size={14} />} sx={{ borderRadius: 999, py: 0.5 }}>
-              Mandar outra foto
-            </Button>
-          </Box>
+        <div ref={bottom} />
+        {away && (
+          <Button
+            variant="contained"
+            startIcon={<ArrowDown size={16} />}
+            sx={{ position: "sticky", bottom: 8, alignSelf: "center" }}
+            onClick={() => {
+              nearBottom.current = true;
+              bottom.current?.scrollIntoView({ behavior: "auto" });
+            }}
+          >
+            Ir para a resposta mais recente
+          </Button>
         )}
       </Box>
-
-      <div ref={bottomRef} />
+      <input
+        type="file"
+        accept={IMAGE_ACCEPT}
+        hidden
+        ref={gallery}
+        onChange={pick}
+      />
+      <input
+        type="file"
+        accept={IMAGE_ACCEPT}
+        capture="environment"
+        hidden
+        ref={camera}
+        onChange={pick}
+      />
     </Box>
   );
 }
-
-export default ChatWindow;

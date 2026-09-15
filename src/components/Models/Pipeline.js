@@ -4,17 +4,17 @@ import Typography from '@mui/material/Typography';
 import { Camera, Settings2, BrainCircuit, BarChart3, MessageCircle, ArrowDown } from 'lucide-react';
 
 const STEPS = [
-  { icon: Camera, title: 'Upload', desc: 'Foto JPEG/PNG até 10 MB', tone: 'mata' },
-  { icon: Settings2, title: 'Preprocessing', desc: 'Resize 224–380, normalize ImageNet', tone: 'folha' },
-  { icon: BrainCircuit, title: 'Ensemble (3 redes)', desc: 'ResNet-50 + EfficientNet-B4 + ViT-B/16', tone: 'prod' },
-  { icon: BarChart3, title: 'Softmax + threshold', desc: '≥0.5 = diagnóstico; <0.5 = "não sei"', tone: 'cerrado' },
-  { icon: MessageCircle, title: 'Resposta do Zé', desc: 'Copy + receita por classe', tone: 'milho' },
+  { icon: Camera, title: 'Envio da foto', desc: 'JPEG, PNG ou WebP até 10 MB', tone: 'mata' },
+  { icon: Settings2, title: 'Preparação da imagem', desc: 'Redimensionamento e normalização para a rede', tone: 'folha' },
+  { icon: BrainCircuit, title: 'Modelo disponível no plano', desc: 'ResNet-50, EfficientNet-B4, ViT-B/16 ou ensemble', tone: 'prod' },
+  { icon: BarChart3, title: 'Hipóteses e pontuações', desc: 'Probabilidades entre as seis classes avaliadas', tone: 'cerrado' },
+  { icon: MessageCircle, title: 'Resposta do Zé', desc: 'Resultado e orientações do catálogo', tone: 'milho' },
 ];
 
 function toneSx(tone) {
   switch (tone) {
     case 'prod':
-      return { bg: 'primary.main', fg: (t) => t.palette.brand.milho, box: (t) => t.palette.brand.milho, boxFg: 'primary.main' };
+      return { bg: 'primary.main', fg: 'primary.contrastText', box: (t) => t.palette.brand.milho, boxFg: (t) => t.palette.brand.mata };
     case 'folha':
       return { bg: 'background.paper', fg: 'text.primary', box: (t) => t.palette.brand.folhaSoft, boxFg: 'primary.main' };
     case 'cerrado':

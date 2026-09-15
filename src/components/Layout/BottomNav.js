@@ -7,7 +7,7 @@ import { History, Home, MessageCircle, UserRound } from 'lucide-react';
 
 const items = [
   { label: 'Início', path: '/', icon: <Home size={22} /> },
-  { label: 'Chat', path: '/chat', icon: <MessageCircle size={22} /> },
+  { label: 'Analisar', path: '/chat', icon: <MessageCircle size={22} /> },
   { label: 'Histórico', path: '/historico', icon: <History size={22} /> },
   { label: 'Perfil', path: '/perfil', icon: <UserRound size={22} /> },
 ];

@@ -1,6 +1,7 @@
+import { IS_DEMO } from '../config/runtime';
 import { v4 as uuidv4 } from 'uuid';
 import api from './api';
-import { getAuthHeaders } from './authService';
+import { getAuthHeaders, getCurrentUserId } from './authService';
 
 /**
  * Serviço de Talhões.
@@ -9,22 +10,22 @@ import { getAuthHeaders } from './authService';
  * (GET/POST/DELETE /api/v1/talhoes). Caso contrário (dev/mock), usa localStorage
  * com a mesma assinatura — a UI funciona idêntica nos dois modos.
  */
-const AUTH_MODE = process.env.REACT_APP_AUTH_MODE || 'api';
-const STORAGE_KEY = 'zepraga-talhoes';
+
+const storageKey = () => 'zepraga-talhoes:' + getCurrentUserId();
 
 // ── camada local (mock/dev) ─────────────────────────────────────────────────
 function readLocal() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    return JSON.parse(localStorage.getItem(storageKey())) || [];
   } catch {
     return [];
   }
 }
 function writeLocal(list) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(storageKey(), JSON.stringify(list));
   } catch {
-    // ignore
+    throw new Error("Falha ao salvar no armazenamento local.");
   }
 }
 
@@ -42,7 +43,7 @@ function mapTalhao(t) {
 }
 
 export async function listTalhoes() {
-  if (AUTH_MODE !== 'api') return readLocal();
+  if (IS_DEMO) return readLocal();
   const response = await api.get('/api/v1/talhoes', { headers: getAuthHeaders() });
   return response.data.map(mapTalhao);
 }
@@ -56,7 +57,7 @@ export async function createTalhao(data) {
     data_semeadura: data.dataSemeadura || null,
   };
 
-  if (AUTH_MODE !== 'api') {
+  if (IS_DEMO) {
     const talhao = { id: uuidv4(), createdAt: new Date().toISOString(), ...data, ...payload, dataSemeadura: payload.data_semeadura };
     const list = readLocal();
     list.unshift(talhao);
@@ -69,7 +70,7 @@ export async function createTalhao(data) {
 }
 
 export async function deleteTalhao(id) {
-  if (AUTH_MODE !== 'api') {
+  if (IS_DEMO) {
     writeLocal(readLocal().filter((t) => t.id !== id));
     return;
   }

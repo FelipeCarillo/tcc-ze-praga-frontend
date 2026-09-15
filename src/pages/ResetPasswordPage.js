@@ -1,159 +1,103 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import { resetPassword } from '../services/authService';
-import { ReactComponent as Marca } from '../assets/brand/marca.svg';
-
-/**
- * Destino do link do e-mail de redefinição (TCC-092).
- *
- * Diferente da confirmação de conta — que é só um clique e por isso vai direto
- * pro backend — aqui o usuário precisa de uma tela pra digitar a senha nova.
- */
-function ResetPasswordPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const token = new URLSearchParams(location.search).get('token') || '';
-
-  const [form, setForm] = useState({ password: '', confirm: '' });
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
-
-  const handleSubmit = async (e) => {
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Alert, Box, Button, Stack, TextField } from "@mui/material";
+import Page from "../components/common/Page";
+import { resetPassword } from "../services/authService";
+export default function ResetPasswordPage() {
+  const token = new URLSearchParams(useLocation().search).get("token") || "";
+  const [password, setPassword] = useState(""),
+    [confirm, setConfirm] = useState(""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false),
+    [done, setDone] = useState(false);
+  const submit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (form.password !== form.confirm) {
-      setError('As duas senhas não são iguais.');
+    setError("");
+    if (password !== confirm) {
+      setError("As senhas precisam ser iguais.");
       return;
     }
-    if (form.password.length < 6) {
-      setError('A senha precisa ter pelo menos 6 caracteres.');
-      return;
-    }
-
-    setSubmitting(true);
+    setBusy(true);
     try {
-      await resetPassword({ token, password: form.password });
+      await resetPassword({ token, password });
       setDone(true);
-      // Leva pro login já com o aviso de sucesso, em vez de deixar o usuário
-      // parado numa tela que não serve mais.
-      setTimeout(() => navigate('/login?senha=redefinida', { replace: true }), 1600);
-    } catch (err) {
-      const status = err?.response?.status;
-      if (status === 429) {
-        setError('Muitas tentativas. Espera um pouco e tenta de novo.');
-      } else if (status === 401) {
-        setError('Esse link não vale mais — ou já foi usado, ou passou das 2 horas. Pede um novo.');
-      } else {
-        setError('Não consegui redefinir agora. Tenta de novo em instantes.');
-      }
+    } catch {
+      setError(
+        "Não foi possível redefinir. O link pode ter expirado ou já ter sido usado. Solicite um novo link na tela de entrada.",
+      );
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
   };
-
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        p: { xs: 3, md: 6 },
-        maxWidth: 440,
-        mx: 'auto',
-        width: '100%',
-        minHeight: { md: 'calc(100vh - 65px)' },
-      }}
+    <Page
+      eyebrow="Recuperação de acesso"
+      title="Uma nova senha para continuar."
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Marca style={{ width: 30, height: 30, display: 'block' }} />
-        <Typography
-          sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay, fontWeight: 800, color: 'primary.main' }}
-        >
-          Zé Praga
-        </Typography>
+      <Box
+        sx={{
+          maxWidth: 480,
+          p: 3,
+          bgcolor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 4,
+        }}
+      >
+        {done ? (
+          <>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Senha atualizada. Entre com a nova senha.
+            </Alert>
+            <Button
+              component={Link}
+              to="/login?senha=redefinida"
+              variant="contained"
+            >
+              Ir para a entrada
+            </Button>
+          </>
+        ) : !token ? (
+          <>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Abra o link de recuperação que você recebeu por e-mail.
+            </Alert>
+            <Button component={Link} to="/login">
+              Solicitar outro link
+            </Button>
+          </>
+        ) : (
+          <Box component="form" onSubmit={submit}>
+            <Stack gap={2}>
+              <TextField
+                required
+                label="Nova senha"
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                slotProps={{ htmlInput: { minLength: 6 } }}
+                helperText="Use pelo menos 6 caracteres."
+              />
+              <TextField
+                required
+                label="Repita a nova senha"
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+              {error && <Alert severity="error">{error}</Alert>}
+              <Button type="submit" variant="contained" disabled={busy}>
+                {busy ? "Atualizando…" : "Atualizar senha"}
+              </Button>
+              <Button component={Link} to="/login">
+                Voltar para a entrada
+              </Button>
+            </Stack>
+          </Box>
+        )}
       </Box>
-
-      <Typography variant="h3" sx={{ mb: 1 }}>
-        Nova senha
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Escolhe uma senha nova pra tua conta.
-      </Typography>
-
-      {!token && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Esse endereço veio sem o código de redefinição. Abre o link direto do e-mail que te
-          mandei.
-        </Alert>
-      )}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      {done && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Senha trocada! Te levando pro login…
-        </Alert>
-      )}
-
-      {!done && (
-        <Box component="form" onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            required
-            label="Nova senha"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            inputProps={{ minLength: 6 }}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            required
-            label="Repete a nova senha"
-            name="confirm"
-            type="password"
-            value={form.confirm}
-            onChange={handleChange}
-            inputProps={{ minLength: 6 }}
-            sx={{ mb: 2.5 }}
-          />
-          <Button
-            fullWidth
-            type="submit"
-            variant="contained"
-            color="secondary"
-            disabled={submitting || !token}
-            sx={{ py: 1.25 }}
-          >
-            {submitting ? 'Trocando…' : 'Trocar senha'}
-          </Button>
-        </Box>
-      )}
-
-      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 2 }}>
-        <Box
-          component={Link}
-          to="/login"
-          sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none' }}
-        >
-          Voltar pro login
-        </Box>
-      </Typography>
-    </Box>
+    </Page>
   );
 }
-
-export default ResetPasswordPage;
