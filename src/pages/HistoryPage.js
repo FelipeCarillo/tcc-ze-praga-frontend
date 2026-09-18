@@ -97,7 +97,7 @@ export default function HistoryPage() {
     <Page
       eyebrow="Seu caderno de campo"
       title="Cada folha conta uma história."
-      description="Reveja suas análises e acompanhe os registros da sua lavoura."
+      description="Foto, hipótese e data ficam juntos para você retomar cada observação."
       actions={
         <Button
           component={Link}
@@ -193,24 +193,20 @@ export default function HistoryPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2,1fr)",
-                lg: "repeat(3,1fr)",
-              },
-              gap: 2,
+              gridTemplateColumns: "1fr",
+              gap: 1,
             }}
           >
             {data.items.map((d) => (
               <Card
                 key={d.id}
                 variant="outlined"
-                sx={{ borderRadius: 4, boxShadow: "none" }}
+                sx={{ borderRadius: 1, boxShadow: "none" }}
               >
                 <CardActionArea
                   component={Link}
                   to={"/historico/" + d.id}
-                  sx={{ p: 2.5 }}
+                  sx={{ p: { xs: 1.5, md: 2 }, '&:hover': { bgcolor: 'surface.sunken' } }}
                 >
                   <Stack direction="row" gap={2} alignItems="center" mb={2}>
                     {d.imageUrl ? (

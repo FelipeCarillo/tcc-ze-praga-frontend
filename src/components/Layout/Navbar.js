@@ -17,7 +17,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useColorMode } from '../../hooks/useColorMode';
 
 const navLinks = [
-  { label: 'Diagnosticar', path: '/chat', requiresAuth: true },
+  { label: 'Analisar folha', path: '/chat', requiresAuth: true },
   { label: 'Histórico', path: '/historico', requiresAuth: true },
   { label: 'Modelos', path: '/modelos' },
   { label: 'API', path: '/api-docs' },
@@ -129,7 +129,7 @@ function Navbar({ variant = 'default' }) {
               startIcon={<Camera size={18} />}
               sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
-              {copy.cta.sendPhotoShort}
+              Analisar uma folha
             </Button>
           )}
           <Tooltip title={mode === 'dark' ? 'Modo claro' : 'Modo noite'}>

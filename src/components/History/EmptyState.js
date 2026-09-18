@@ -8,7 +8,7 @@ import { copy } from '../../copy/ze';
 
 function EmptyState() {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 8, px: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', py: 8, px: 3, borderTop: '1px solid', borderColor: 'divider' }}>
       <Box component="svg" viewBox="0 0 120 120" sx={{ width: 120, mb: 1.5 }} xmlns="http://www.w3.org/2000/svg">
         <circle cx="60" cy="60" r="54" fill="var(--papel-2)" />
         <defs>

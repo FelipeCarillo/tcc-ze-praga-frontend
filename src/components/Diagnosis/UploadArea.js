@@ -18,9 +18,10 @@ function UploadArea({ imagePreview, isAnalyzing, onImageSelect, onAnalyze, onRes
           textAlign: 'center',
           mb: 2,
           p: 2,
-          border: '1px solid #E5E7EB',
-          borderRadius: 3,
-          bgcolor: '#F8F9FA',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: 'surface.sunken',
         }}
       >
         <Box
@@ -31,7 +32,7 @@ function UploadArea({ imagePreview, isAnalyzing, onImageSelect, onAnalyze, onRes
             maxWidth: '100%',
             maxHeight: 350,
             objectFit: 'contain',
-            borderRadius: 2,
+            borderRadius: 1,
           }}
         />
       </Box>
@@ -44,7 +45,7 @@ function UploadArea({ imagePreview, isAnalyzing, onImageSelect, onAnalyze, onRes
           onClick={onAnalyze}
           disabled={isAnalyzing}
         >
-          {isAnalyzing ? 'Analisando...' : 'Analisar Imagem'}
+          {isAnalyzing ? 'Análise em andamento…' : 'Analisar esta folha'}
         </Button>
         <Button
           variant="outlined"
@@ -62,7 +63,7 @@ function UploadArea({ imagePreview, isAnalyzing, onImageSelect, onAnalyze, onRes
           color="text.secondary"
           sx={{ textAlign: 'center', mt: 2 }}
         >
-          O modelo esta analisando a imagem. Isso pode levar alguns segundos...
+          O serviço está processando a imagem. Esta tela não estima porcentagem nem tempo restante.
         </Typography>
       )}
     </Box>

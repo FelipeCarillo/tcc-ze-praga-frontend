@@ -39,8 +39,8 @@ export default function PlansPage() {
   return (
     <Page
       eyebrow="Recursos por perfil"
-      title="Um plano para cada nível de detalhe."
-      description="Compare os recursos disponíveis no protótipo do Zé Praga."
+      title="Recursos para cada etapa da observação."
+      description="Compare limites e capacidades do protótipo sem tratar a ativação como cobrança real."
     >
       <Alert severity="info" sx={{ mb: 4 }}>
         Demonstração acadêmica: ativação simulada, sem cobrança.
@@ -95,7 +95,9 @@ export default function PlansPage() {
                   bgcolor: "background.paper",
                   border: "1px solid",
                   borderColor: current ? "primary.main" : "divider",
-                  borderRadius: 4,
+                  borderRadius: 1,
+                  borderLeft: "4px solid",
+                  borderLeftColor: current ? "primary.main" : "transparent",
                   display: "flex",
                   flexDirection: "column",
                 }}

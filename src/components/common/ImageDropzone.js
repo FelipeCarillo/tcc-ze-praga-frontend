@@ -26,38 +26,38 @@ function ImageDropzone({ onImageSelect, disabled = false }) {
       {...getRootProps()}
       sx={{
         border: '2px dashed',
-        borderColor: isDragActive ? 'primary.main' : '#E5E7EB',
-        borderRadius: 3,
+        borderColor: isDragActive ? 'primary.main' : 'divider',
+        borderRadius: 1,
         p: 5,
         textAlign: 'center',
         cursor: disabled ? 'default' : 'pointer',
-        bgcolor: isDragActive ? 'rgba(45, 106, 79, 0.04)' : 'background.paper',
-        transition: 'all 0.2s ease',
+        bgcolor: isDragActive ? 'action.selected' : 'background.paper',
+        transition: 'border-color 0.2s ease, background-color 0.2s ease',
         opacity: disabled ? 0.6 : 1,
         '&:hover': disabled
           ? {}
           : {
               borderColor: 'primary.light',
-              bgcolor: 'rgba(45, 106, 79, 0.04)',
+              bgcolor: 'action.selected',
             },
       }}
     >
       <input {...getInputProps()} />
       {isDragActive ? (
         <>
-          <Image size={48} color="#2D6A4F" style={{ marginBottom: 8 }} />
+          <Image size={48} color="currentColor" style={{ marginBottom: 8 }} />
           <Typography variant="h6" color="primary">
             Solte a imagem aqui
           </Typography>
         </>
       ) : (
         <>
-          <CloudUpload size={48} color="#9CA3AF" style={{ marginBottom: 8 }} />
-          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
-            Arraste uma imagem ou clique para selecionar
+          <CloudUpload size={48} color="currentColor" style={{ marginBottom: 8, opacity: 0.65 }} />
+          <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>
+            Registre uma folha
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Formatos aceitos: JPG, PNG, WEBP
+            Arraste uma imagem ou clique para selecionar. JPG, PNG ou WEBP.
           </Typography>
         </>
       )}

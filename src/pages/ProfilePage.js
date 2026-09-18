@@ -245,8 +245,8 @@ export default function ProfilePage() {
   return (
     <Page
       eyebrow="Sua conta"
-      title="Seu espaço no Zé."
-      description="Cuide do seu perfil, dos seus registros e da aparência do aplicativo."
+      title="Seu caderno e suas configurações."
+      description="Organize o perfil, os registros, a aparência e os talhões cadastrados."
     >
       <Box
         sx={{
@@ -262,7 +262,7 @@ export default function ProfilePage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 4,
+              borderRadius: 1,
             }}
           >
             <Avatar
@@ -314,7 +314,7 @@ export default function ProfilePage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 4,
+              borderRadius: 1,
             }}
           >
             <Typography component="h2" variant="h6" mb={1}>
@@ -350,7 +350,7 @@ export default function ProfilePage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 4,
+              borderRadius: 1,
             }}
           >
             <Typography component="h2" variant="h6" mb={2}>
@@ -390,7 +390,7 @@ export default function ProfilePage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 4,
+              borderRadius: 1,
             }}
           >
             <Fields />

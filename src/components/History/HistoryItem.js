@@ -22,20 +22,20 @@ function HistoryItem({ diagnosis, onOpen, selectionMode, selected, onToggle }) {
         alignItems: 'center',
         p: 1.25,
         mb: 1,
-        borderRadius: 3,
+        borderRadius: 1,
         cursor: 'pointer',
         backgroundColor: 'background.paper',
         border: '1px solid',
         borderColor: selected ? 'primary.main' : 'divider',
-        transition: 'border-color 0.15s, transform 0.15s',
-        '&:hover': { transform: 'translateY(-1px)' },
+        transition: 'border-color 0.15s, background-color 0.15s',
+        '&:hover': { backgroundColor: 'surface.sunken' },
       }}
     >
       {selectionMode && (
         <Checkbox checked={!!selected} size="small" sx={{ p: 0.5 }} onClick={(e) => e.stopPropagation()} onChange={() => onToggle(diagnosis.id)} />
       )}
 
-      <Box sx={{ position: 'relative', width: 48, height: 48, borderRadius: 2, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(160deg,#74C69D,#1F5A3D)' }}>
+      <Box sx={{ position: 'relative', width: 48, height: 48, borderRadius: 1, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(160deg,#74C69D,#1F5A3D)' }}>
         {diagnosis.imageUrl && (
           <Box component="img" src={diagnosis.imageUrl} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         )}
@@ -51,7 +51,7 @@ function HistoryItem({ diagnosis, onOpen, selectionMode, selected, onToggle }) {
         <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary', mt: 0.25 }} noWrap>
           {[time, conf].filter(Boolean).join(' · ')}
         </Typography>
-        <Box sx={{ height: 3, bgcolor: 'rgba(28,42,32,0.06)', borderRadius: 999, mt: 0.75, overflow: 'hidden' }}>
+        <Box sx={{ height: 3, bgcolor: 'action.selected', mt: 0.75, overflow: 'hidden' }}>
           <Box sx={{ height: '100%', width: `${Math.min((diagnosis.confidence || 0) * 100, 100)}%`, bgcolor: (t) => t.palette.severity[token] }} />
         </Box>
       </Box>

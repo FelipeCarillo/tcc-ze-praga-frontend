@@ -19,10 +19,10 @@ const fmtLatency = (ms) =>
     : `${Math.round(ms)}ms`;
 
 const stats = [
-  { value: fmtPct(prod.accuracy), unit: "%", label: "Top-1 accuracy" },
+  { value: fmtPct(prod.accuracy), unit: "%", label: "Acurácia top-1" },
   { value: prod.f1.toFixed(2).replace(".", ","), unit: "", label: "F1 macro" },
   { value: fmtLatency(prod.latencyMs), unit: "", label: "Latência (CPU)" },
-  { value: String(prod.sizeMB), unit: "MB", label: "Checkpoints" },
+  { value: String(prod.sizeMB), unit: "MB", label: "Arquivo do modelo" },
 ];
 
 const matrixLabels = CONFUSION_LABELS;
@@ -120,7 +120,7 @@ function ArchitectureTable() {
       sx={{
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 3,
+        borderRadius: 1,
         overflow: "hidden",
       }}
     >
@@ -167,7 +167,7 @@ function ArchitectureTable() {
                   sx={{
                     px: 0.75,
                     py: 0.1,
-                    borderRadius: 999,
+                    borderRadius: 1,
                     fontSize: "0.6rem",
                     fontWeight: 700,
                     bgcolor: (t) => t.palette.brand.cerradoSoft,
@@ -266,16 +266,20 @@ function ModelsPage() {
       </Typography>
       <StatHero />
 
-      {/* Dataset chips */}
-      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 5 }}>
+      <Typography component="h2" variant="h5" sx={{ mb: 1.5 }}>
+        Recorte da avaliação
+      </Typography>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" }, borderTop: "1px solid", borderLeft: "1px solid", borderColor: "divider", mb: 5 }}>
         {dataset.map((d) => (
           <Box
             key={d.label}
             sx={{
-              px: 1.25,
-              py: 0.75,
-              borderRadius: 2,
+              px: 1.5,
+              py: 1.15,
               backgroundColor: (t) => t.palette.surface.sunken,
+              borderRight: "1px solid",
+              borderBottom: "1px solid",
+              borderColor: "divider",
             }}
           >
             <Typography
@@ -295,8 +299,11 @@ function ModelsPage() {
         ))}
       </Box>
 
-      <Typography component="h2" variant="h3" sx={{ mb: 2 }}>
+      <Typography component="h2" variant="h3" sx={{ mb: 0.5 }}>
         Comparação de arquiteturas
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Todas as opções abaixo foram comparadas no mesmo conjunto de teste; a disponibilidade no produto depende do plano e do backend.
       </Typography>
       <Box
         sx={{ overflowX: "auto" }}
@@ -352,7 +359,7 @@ function ModelsPage() {
             key={l.title}
             sx={{
               p: 2,
-              borderRadius: 3,
+              borderRadius: 1,
               backgroundColor: (t) =>
                 l.tone === "tijolo"
                   ? t.palette.brand.tijolo

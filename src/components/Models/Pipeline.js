@@ -41,7 +41,7 @@ function Pipeline() {
                 alignItems: 'center',
                 gap: 1.25,
                 p: 1.25,
-                borderRadius: 2.5,
+                borderRadius: 1,
                 border: '1px solid',
                 borderColor: 'divider',
                 backgroundColor: tone.bg,

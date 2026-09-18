@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <Box
       component="footer"
-      sx={{ borderTop: "1px solid", borderColor: "divider", mt: 4, py: 4 }}
+      sx={{ borderTop: "1px solid", borderColor: "divider", mt: 6, py: 4, bgcolor: "surface.sunken" }}
     >
       <Container maxWidth="lg">
         <Stack
@@ -14,18 +14,18 @@ export default function Footer() {
           gap={3}
         >
           <Box>
-            <Typography fontWeight={800}>Zé Praga</Typography>
+            <Typography fontWeight={800} sx={{ fontFamily: (t) => t.typography.fontFamilyDisplay }}>Zé Praga</Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ maxWidth: 430, mt: 1 }}
             >
-              Apoio à observação de doenças foliares de soja.
+              Caderno visual de observação de doenças foliares de soja.
               <br />
               Projeto de TCC · Instituto Mauá de Tecnologia · 2026.
             </Typography>
           </Box>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
+          <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="flex-start">
             <Button component={Link} to="/sobre">
               O projeto
             </Button>

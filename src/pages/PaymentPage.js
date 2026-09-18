@@ -67,13 +67,13 @@ export default function PaymentPage() {
   };
   return (
     <Page
-      eyebrow="Planos do protótipo"
+      eyebrow="Ativação demonstrativa"
       title={
         success
           ? "Plano ativado"
           : "Experimentar " + (plan?.display_name || "um plano")
       }
-      description="Demonstração acadêmica dos níveis de acesso."
+      description="Nenhum pagamento é processado nesta experiência acadêmica."
     >
       <Box
         sx={{
@@ -82,7 +82,9 @@ export default function PaymentPage() {
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 4,
+          borderRadius: 1,
+          borderLeft: "4px solid",
+          borderLeftColor: "primary.main",
         }}
       >
         {loading ? (

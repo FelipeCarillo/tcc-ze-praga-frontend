@@ -11,7 +11,7 @@ function ConfusionMatrix({ labels, matrix, shortLabels }) {
   const n = labels.length;
   const cols = shortLabels || labels;
   return (
-    <Box sx={{ overflowX: 'auto' }}>
+    <Box sx={{ overflowX: 'auto' }} role="region" aria-label="Matriz de confusão dos modelos" tabIndex={0}>
       <Box
         sx={{
           display: 'grid',
@@ -42,7 +42,7 @@ function ConfusionMatrix({ labels, matrix, shortLabels }) {
                     aspectRatio: '1',
                     display: 'grid',
                     placeItems: 'center',
-                    borderRadius: 1,
+                    borderRadius: 0,
                     fontSize: '0.66rem',
                     fontWeight: isDiag ? 700 : 500,
                     color: isDiag ? '#fff' : 'text.secondary',

@@ -19,14 +19,16 @@ export default function RuntimeNotice() {
           role="status"
           sx={{
             textAlign: "center",
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
+            bgcolor: "surface.sunken",
+            color: "text.secondary",
             py: 0.7,
             px: 2,
             fontSize: ".8rem",
+            borderBottom: "1px solid",
+            borderColor: "divider",
           }}
         >
-          Demonstração local · respostas e análises simuladas
+          Demonstração local · respostas e análises são simuladas; não representam uma inferência real.
         </Box>
       )}
       {offline && (

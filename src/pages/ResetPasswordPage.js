@@ -44,7 +44,9 @@ export default function ResetPasswordPage() {
           flexDirection: "column",
           justifyContent: "space-between",
           p: 6,
-          background: "linear-gradient(160deg, #1F5A3D, #0F3D27)",
+          backgroundColor: "primary.main",
+          backgroundImage: (t) =>
+            `linear-gradient(160deg, ${t.palette.primary.main}, ${t.palette.brand.mataNoite})`,
           color: (t) => t.palette.brand.creme,
         }}
       >
@@ -73,11 +75,11 @@ export default function ResetPasswordPage() {
             Recuperação de acesso
           </Typography>
           <Typography variant="h2" sx={{ color: (t) => t.palette.brand.creme }}>
-            Vamos colocar sua conta de pé de novo.
+            Volte ao seu caderno de campo.
           </Typography>
         </Box>
         <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          Escolha uma senha forte e guarde-a em segurança.
+          A troca de senha não altera seus registros nem suas análises.
         </Typography>
       </Box>
 
@@ -124,7 +126,7 @@ export default function ResetPasswordPage() {
           Crie uma nova senha
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Use uma senha com pelo menos 6 caracteres para voltar ao campo.
+          Use uma senha com pelo menos 6 caracteres. Seus registros permanecem associados à conta.
         </Typography>
         {done ? (
           <>

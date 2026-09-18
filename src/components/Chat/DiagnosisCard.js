@@ -34,13 +34,13 @@ export default function DiagnosisCard({ diagnosis, onSave }) {
         mt: 2,
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 4,
+        borderRadius: 1,
         overflow: "hidden",
         bgcolor: "background.paper",
         width: "100%",
       }}
     >
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <Box sx={{ p: { xs: 2, md: 3 }, borderLeft: '4px solid', borderColor: 'primary.main' }}>
         <Stack direction="row" gap={1} mb={2} flexWrap="wrap">
           <Chip
             size="small"
@@ -54,7 +54,8 @@ export default function DiagnosisCard({ diagnosis, onSave }) {
             variant="outlined"
           />
         </Stack>
-        <Typography component="h2" variant="h5" sx={{ mb: 0.5 }}>
+        <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>Hipótese da análise</Typography>
+        <Typography component="h2" variant="h4" sx={{ mb: 0.5 }}>
           {diagnosis.disease}
         </Typography>
         <Typography color="text.secondary" fontStyle="italic" variant="body2">
@@ -89,8 +90,7 @@ export default function DiagnosisCard({ diagnosis, onSave }) {
           </Box>
         )}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Compare os sinais com a lavoura e procure orientação agronômica antes
-          de decidir o manejo.
+          Compare os sinais com a lavoura antes de decidir o manejo. A saída do modelo não substitui a confirmação em campo.
         </Typography>
         {error && (
           <Alert severity="error" sx={{ mt: 1 }}>

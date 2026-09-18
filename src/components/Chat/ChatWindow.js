@@ -6,6 +6,32 @@ import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
 import InterruptPrompt from "./InterruptPrompt";
 import { IMAGE_ACCEPT } from "../../utils/imageUpload";
+
+function ObservationWorkspace({ messages, isLoading, pendingInterrupt }) {
+  const photoIndex = [...messages].map((message, index) => message.imageUrl ? index : -1).filter((index) => index >= 0).pop();
+  if (photoIndex === undefined) return null;
+  const photoMessage = messages[photoIndex];
+  const diagnosis = messages.slice(photoIndex + 1).find((message) => message.diagnosis)?.diagnosis;
+  return (
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: ".85fr 1.15fr" }, gap: 2, mb: 3, p: { xs: 1.5, md: 2 }, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>Folha em análise</Typography>
+        <Box component="img" src={photoMessage.imageUrl} alt="Foto da folha enviada nesta análise" sx={{ mt: .75, width: "100%", height: { xs: 180, md: 250 }, objectFit: "contain", bgcolor: "surface.sunken" }} />
+        <Typography variant="caption" color="text.secondary" display="block" mt={.75}>{photoMessage.content || "Foto enviada"}</Typography>
+      </Box>
+      <Stack spacing={1.25} justifyContent="center">
+        <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>Resultado da observação</Typography>
+        {pendingInterrupt ? (
+          <><Typography component="h2" variant="h5">Uma resposta sua é necessária.</Typography><Typography variant="body2" color="text.secondary">A pergunta está logo abaixo e continua visível durante esta análise.</Typography></>
+        ) : diagnosis ? (
+          <><Typography component="h2" variant="h4">{diagnosis.disease}</Typography><Typography variant="body2" color="text.secondary">Hipótese do modelo{diagnosis.modelUsed ? ` · ${diagnosis.modelUsed}` : ""}. Confira a ficha completa e os próximos cuidados na conversa.</Typography></>
+        ) : isLoading ? (
+          <><Typography component="h2" variant="h5">Análise em andamento</Typography><Typography variant="body2" color="text.secondary">Não há porcentagem disponível para esta etapa. Você pode interromper a resposta se precisar.</Typography></>
+        ) : <><Typography component="h2" variant="h5">Aguardando observação</Typography><Typography variant="body2" color="text.secondary">Envie uma pergunta ou uma foto para continuar. Uma hipótese só aparece quando o serviço devolve um diagnóstico estruturado.</Typography></>}
+      </Stack>
+    </Box>
+  );
+}
 export default function ChatWindow({
   messages,
   isLoading,
@@ -132,11 +158,12 @@ export default function ChatWindow({
             </Typography>
           </Box>
         ) : (
-          <Box
-            role="log"
-            aria-label="Mensagens do chat"
-            aria-live={isLoading ? "off" : "polite"}
-          >
+          <>
+            <ObservationWorkspace messages={messages} isLoading={isLoading} pendingInterrupt={pendingInterrupt} />
+            {pendingInterrupt && !isLoading && (
+              <InterruptPrompt interrupt={pendingInterrupt} onAnswer={onAnswerInterrupt} disabled={isLoading} />
+            )}
+            <Box role="log" aria-label="Conversa sobre esta análise" aria-live={isLoading ? "off" : "polite"}>
             {messages.map((m) => (
               <ChatMessage
                 key={m.id}
@@ -145,6 +172,7 @@ export default function ChatWindow({
               />
             ))}
           </Box>
+          </>
         )}
         <AnimatePresence initial={false}>
           {isLoading && !assistantHasStarted && (
@@ -162,7 +190,7 @@ export default function ChatWindow({
             </Box>
           )}
         </AnimatePresence>
-        {pendingInterrupt && !isLoading && (
+        {welcome && pendingInterrupt && !isLoading && (
           <InterruptPrompt
             interrupt={pendingInterrupt}
             onAnswer={onAnswerInterrupt}

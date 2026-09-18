@@ -87,6 +87,7 @@ function QuotaDisplay({ layout = 'row', emphasis = 'default' }) {
           color={chipColor(chat?.used, chat?.limit)}
           size={emphasis === 'prominent' ? 'medium' : 'small'}
           variant={emphasis === 'prominent' ? 'filled' : 'outlined'}
+          sx={{ borderRadius: 1, fontWeight: 700 }}
           data-testid="quota-chip-chat"
           aria-busy={loading || undefined}
         />
@@ -98,6 +99,7 @@ function QuotaDisplay({ layout = 'row', emphasis = 'default' }) {
           color={chipColor(inference?.used, inference?.limit)}
           size={emphasis === 'prominent' ? 'medium' : 'small'}
           variant={emphasis === 'prominent' ? 'filled' : 'outlined'}
+          sx={{ borderRadius: 1, fontWeight: 700 }}
           data-testid="quota-chip-inference"
           aria-busy={loading || undefined}
         />

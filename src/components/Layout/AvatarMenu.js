@@ -67,7 +67,7 @@ function AvatarMenu() {
         onClose={close}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 3 } } }}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 1, border: '1px solid', borderColor: 'divider' } } }}
       >
         {user && (
           <Box sx={{ px: 2, py: 1 }}>

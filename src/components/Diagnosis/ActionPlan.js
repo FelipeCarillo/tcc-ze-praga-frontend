@@ -40,8 +40,11 @@ function ActionPlan({ actions }) {
 
   return (
     <Box>
-      <Typography component="h2" variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-        Plano de Ação
+      <Typography component="h2" variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Próximos cuidados
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Orientações de apoio organizadas para esta hipótese; valide decisões no contexto da lavoura.
       </Typography>
 
       {isMultiLevel && (
@@ -61,7 +64,7 @@ function ActionPlan({ actions }) {
               '& .MuiToggleButtonGroup-grouped': {
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: '12px',
+                borderRadius: 0,
                 mx: 0,
               },
             }}
@@ -114,7 +117,7 @@ function ActionPlan({ actions }) {
         </Box>
       )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, borderLeft: '1px solid', borderColor: 'divider', pl: 2 }}>
         {currentActions.map((action, index) => {
           const isLongAction = action.includes(' - ') || action.length > 120;
           return (
@@ -138,9 +141,11 @@ function ActionPlan({ actions }) {
       <Box
         sx={{
           mt: 2.5,
-          p: 2,
-          backgroundColor: alpha(theme.palette.warning.main, 0.2),
-          borderRadius: 2,
+              p: 2,
+              borderLeft: '3px solid',
+              borderLeftColor: 'warning.main',
+              backgroundColor: alpha(theme.palette.warning.main, 0.2),
+              borderRadius: 0,
           display: 'flex',
           gap: 1,
           alignItems: 'flex-start',
@@ -176,7 +181,7 @@ function ActionPlan({ actions }) {
                 mt: 1,
                 p: 2,
                 backgroundColor: 'surface.sunken',
-                borderRadius: 2,
+                borderRadius: 0,
                 border: '1px solid',
                 borderColor: 'divider',
               }}

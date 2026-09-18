@@ -23,7 +23,7 @@ function currentValue(pathname, visibleItems) {
 
 /**
  * Navegação inferior fixa para mobile (substitui o drawer hambúrguer).
- * 4 destinos; o CTA de câmera é o <CameraFAB/> flutuante por cima.
+ * Os destinos preservam a análise como atalho primário sem esconder o histórico.
  */
 function BottomNav() {
   const location = useLocation();
@@ -45,6 +45,7 @@ function BottomNav() {
         borderRadius: 0,
         pb: 'env(safe-area-inset-bottom)',
         backgroundColor: 'background.paper',
+        boxShadow: (t) => `0 -8px 24px ${t.palette.action.hover}`,
       }}
     >
       <BottomNavigation
@@ -53,7 +54,7 @@ function BottomNav() {
         showLabels
         sx={{
           backgroundColor: 'transparent',
-          '& .MuiBottomNavigationAction-root': { color: 'text.secondary' },
+          '& .MuiBottomNavigationAction-root': { color: 'text.secondary', minWidth: 56, px: 0.5 },
           '& .Mui-selected': { color: 'primary.main', fontWeight: 700 },
         }}
       >

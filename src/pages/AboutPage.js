@@ -15,7 +15,7 @@ export default function AboutPage() {
     <Page
       eyebrow="TCC · Instituto Mauá de Tecnologia"
       title="Tecnologia que começa com uma observação."
-      description="O Zé Praga aproxima modelos de visão computacional das dúvidas que aparecem na lavoura."
+      description="Um TCC que organiza fotografia, hipótese do modelo e referências de manejo para apoiar a observação da soja."
     >
       <Box
         sx={{
@@ -45,7 +45,7 @@ export default function AboutPage() {
           </Button>
         </Box>
         <Box
-          sx={{ p: 4, bgcolor: "#123e2b", color: "#F0EDE2", borderRadius: 4 }}
+          sx={{ p: 4, bgcolor: "#123e2b", color: "#F0EDE2", borderLeft: "4px solid", borderColor: "secondary.main", borderRadius: 1 }}
         >
           <Leaf size={42} />
           <Typography variant="h4" mt={3} mb={2}>
@@ -63,6 +63,9 @@ export default function AboutPage() {
       <Typography color="text.secondary" mb={3}>
         Orientação: Profs. Alexsander Tressino de Carvalho e Gabriel de Souza
         Lima.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" mb={3}>
+        Fotografias de integrantes não são usadas nesta página sem autorização registrada. O brief de captura e o inventário de mídia estão em ASSETS.md.
       </Typography>
       <Box
         sx={{
@@ -86,7 +89,7 @@ export default function AboutPage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 3,
+              borderRadius: 1,
             }}
           >
             <Avatar

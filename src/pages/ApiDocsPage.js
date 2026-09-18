@@ -54,8 +54,8 @@ export default function ApiDocsPage() {
   return (
     <Page
       eyebrow="Integração"
-      title="A mesma análise, pela API."
-      description="Referência dos contratos usados por este aplicativo."
+      title="Contratos da observação, pela API."
+      description="Referência técnica dos contratos usados pelo aplicativo, com autenticação e limites aplicados pelo backend."
     >
       <Alert severity="info" sx={{ mb: 3 }}>
         {IS_DEMO
@@ -68,7 +68,9 @@ export default function ApiDocsPage() {
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 4,
+          borderRadius: 1,
+          borderLeft: "3px solid",
+          borderLeftColor: "primary.main",
           mb: 3,
         }}
       >
@@ -105,7 +107,9 @@ export default function ApiDocsPage() {
               bgcolor: "background.paper",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 3,
+              borderRadius: 1,
+              borderLeft: "3px solid",
+              borderLeftColor: method === "GET" ? "primary.main" : "secondary.main",
             }}
           >
             <Stack
@@ -140,7 +144,7 @@ export default function ApiDocsPage() {
           p: 3,
           bgcolor: "#0F1B14",
           color: "#F0EDE2",
-          borderRadius: 3,
+          borderRadius: 1,
           overflowX: "auto",
           fontSize: ".85rem",
         }}

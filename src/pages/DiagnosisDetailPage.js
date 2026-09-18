@@ -68,7 +68,7 @@ export default function DiagnosisDetailPage() {
   };
   return (
     <Page
-      eyebrow="Registro da análise"
+      eyebrow="Registro no caderno de campo"
       title={result?.disease || "Resultado da folha"}
       description={
         result ? new Date(result.timestamp).toLocaleString("pt-BR") : ""
@@ -109,7 +109,7 @@ export default function DiagnosisDetailPage() {
                   bgcolor: "background.paper",
                   border: "1px solid",
                   borderColor: "divider",
-                  borderRadius: 4,
+                  borderRadius: 1,
                   overflow: "hidden",
                   p: 2,
                 }}
@@ -135,8 +135,8 @@ export default function DiagnosisDetailPage() {
                     </Typography>
                   </Box>
                 )}
-                <Typography variant="caption" color="text.secondary">
-                  Foto enviada · {result.imageName || "sem nome"}
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  Foto associada a este registro · {result.imageName || "sem nome"}
                 </Typography>
               </Box>
               <Stack direction="row" gap={1} mt={2} flexWrap="wrap">
@@ -159,7 +159,7 @@ export default function DiagnosisDetailPage() {
               </Alert>
             </Box>
             <Box sx={{ order: { xs: 1, md: 2 } }}>
-              <Typography variant="overline" color="primary.main">
+              <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>
                 HIPÓTESE DO MODELO
               </Typography>
               <Typography variant="h4" component="h2" mb={0.5}>
@@ -209,7 +209,7 @@ export default function DiagnosisDetailPage() {
                     p: 2.5,
                     border: "1px solid",
                     borderColor: "divider",
-                    borderRadius: 3,
+                  borderRadius: 1,
                   }}
                 >
                   <Typography component="h2" variant="h6" mb={1}>

@@ -10,12 +10,12 @@
 export const copy = {
   brand: {
     name: 'Zé Praga',
-    tagline: 'Consulta de pragas',
+    tagline: 'Observação de doenças foliares de soja',
   },
 
   cta: {
-    sendPhoto: 'Mandar foto agora',
-    sendPhotoShort: 'Mandar foto',
+    sendPhoto: 'Analisar uma folha',
+    sendPhotoShort: 'Analisar folha',
     takePhoto: 'Tirar foto agora',
     fromGallery: 'Escolher da galeria',
     seeHowItWorks: 'Ver como funciona',
@@ -42,15 +42,7 @@ export const copy = {
     placeholder: 'Pergunta ou manda foto…',
     statusHere: 'aqui agora',
     statusLooking: 'olhando a foto…',
-    // microcopy do estado "Zé pensando" — rotacionar a cada ~1.2s
-    thinking: [
-      'Deixa eu pensar com calma…',
-      'Estou organizando o que você contou…',
-      'Conectando os pontos…',
-      'Quase fechando uma resposta…',
-      'Encontrei algo útil para você…',
-      'Preparando os próximos passos…',
-    ],
+    thinking: ['Análise em andamento…'],
     quickReplies: {
       save: 'Salvar',
       fullRecipe: 'Orientações completas',
@@ -64,19 +56,19 @@ export const copy = {
       analyze_image: 'Rodando o diagnóstico…',
       deep_diagnose: 'Analisando as fotos…',
       get_disease_info: 'Consultando o caderno de doenças…',
-      get_action_plan: 'Montando a receita…',
+      get_action_plan: 'Consultando próximos cuidados…',
       search_my_diagnoses: 'Procurando no seu histórico…',
       compare_diagnoses: 'Comparando os modelos…',
       search_web: 'Dando uma pesquisada…',
       search_scientific: 'Vendo o que dizem os artigos…',
       identify_crop: 'Vendo que cultura é essa…',
-      _fallback: 'Trabalhando nisso…',
+      _fallback: 'Análise em andamento…',
     },
   },
 
   diagnosis: {
-    recipeTitle: 'Receita do Zé',
-    explainsTitle: 'Como eu cheguei nisso',
+    recipeTitle: 'Próximos cuidados',
+    explainsTitle: 'Sobre esta hipótese',
     alternativesTitle: 'Pode ser outra coisa?',
     notMatch: 'Não bate',
   },
@@ -89,9 +81,9 @@ export const copy = {
   },
 
   login: {
-    kicker: 'Oi de novo!',
-    title: 'Quem é você, compadre?',
-    subtitle: 'Entra com seu email e senha pra eu guardar seu histórico.',
+    kicker: 'Caderno de campo',
+    title: 'Entre para guardar suas análises.',
+    subtitle: 'Use seu e-mail e senha para iniciar uma análise e consultar seus registros.',
     sendLink: 'Entrar',
     sentTitle: 'Link voando pra você.',
     sentSignoff: 'Te espero por aqui.',
@@ -99,7 +91,7 @@ export const copy = {
   },
 
   plans: {
-    title: 'O Zé sempre vai ser de graça pro produtor.',
+    title: 'Recursos para cada etapa da observação.',
     subtitle:
       'Quem quiser, ajuda a manter o Zé no ar com um apoio mensal. Quem não puder, usa de graça pra sempre.',
     supporterCta: 'Apoiar o Zé',

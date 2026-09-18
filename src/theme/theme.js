@@ -77,9 +77,9 @@ export function brandCssVariables(mode) {
     '--hand': FONT_HAND,
     // raios
     '--r-sm': '8px',
-    '--r-md': '14px',
-    '--r-lg': '22px',
-    '--r-xl': '32px',
+    '--r-md': '12px',
+    '--r-lg': '18px',
+    '--r-xl': '28px',
     '--r-full': '999px',
   };
 }
@@ -207,7 +207,7 @@ export function createAppTheme(mode) {
       },
     },
     shape: {
-      borderRadius: 14,
+      borderRadius: 12,
     },
     components: {
       MuiCssBaseline: { styleOverrides: { html: { scrollBehavior: 'auto' }, body: { overflowWrap: 'break-word' }, '*:focus-visible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 }, '@media (prefers-reduced-motion: reduce)': { '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important', scrollBehavior: 'auto !important' } } } },
@@ -220,8 +220,9 @@ export function createAppTheme(mode) {
           root: {
             textTransform: 'none',
             fontWeight: 700,
-            borderRadius: 999,
-            padding: '10px 22px',
+            borderRadius: 8,
+            minHeight: 44,
+            padding: '10px 18px',
           },
           containedPrimary: {
             '&:hover': {
@@ -236,7 +237,7 @@ export function createAppTheme(mode) {
             boxShadow: isDark
               ? '0 2px 12px rgba(0,0,0,0.32)'
               : '0 2px 12px rgba(28,42,32,0.06)',
-            borderRadius: 22,
+            borderRadius: 12,
             border: `1px solid ${isDark ? brand.noite3 : 'rgba(28,42,32,0.06)'}`,
           },
         },

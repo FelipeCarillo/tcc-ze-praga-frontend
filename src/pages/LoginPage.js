@@ -114,41 +114,16 @@ function LoginPage() {
         minHeight: { md: "calc(100vh - 65px)" },
       }}
     >
-      {IS_DEMO && (
-        <Box sx={{ gridColumn: "1 / -1", p: 2, textAlign: "center" }}>
-          <Typography mb={1}>
-            Explore o protótipo sem informar dados pessoais.
-          </Typography>
-          <Button
-            variant="contained"
-            disabled={submitting}
-            onClick={async () => {
-              setSubmitting(true);
-              try {
-                await login({ email: "demo@example.test", password: "demo" });
-                navigate(redirectTo, {
-                  replace: true,
-                  state: location.state?.fromState,
-                });
-              } catch {
-                setError("Não foi possível abrir a demonstração.");
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-          >
-            Entrar na demonstração
-          </Button>
-        </Box>
-      )}
-      {/* Lado mata (desktop) */}
+      {/* Contexto do caderno (desktop) */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
           flexDirection: "column",
           justifyContent: "space-between",
           p: 6,
-          background: "linear-gradient(160deg, #1F5A3D, #0F3D27)",
+          backgroundColor: "primary.main",
+          backgroundImage: (t) =>
+            `linear-gradient(160deg, ${t.palette.primary.main}, ${t.palette.brand.mataNoite})`,
           color: (t) => t.palette.brand.creme,
         }}
       >
@@ -176,13 +151,13 @@ function LoginPage() {
           >
             {copy.login.kicker}
           </Typography>
-          <Typography variant="h2" sx={{ color: (t) => t.palette.brand.creme }}>
-            Bom te ver por aqui, compadre.
+          <Typography variant="h2" sx={{ color: (t) => t.palette.brand.creme, maxWidth: 460 }}>
+            Entre para continuar o registro da lavoura.
           </Typography>
         </Box>
         <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          Não precisa de conta pra usar o chat — login é só pra guardar
-          histórico e API.
+          Uma conta é necessária para iniciar análises, guardar registros e usar
+          os recursos disponíveis para seu perfil.
         </Typography>
       </Box>
 
@@ -228,7 +203,7 @@ function LoginPage() {
         </Typography>
         <Typography component="h1" variant="h3" sx={{ mb: 1 }}>
           {pendingEmail
-            ? "Confirma teu e-mail"
+            ? "Confirme seu e-mail"
             : forgotMode
               ? "Esqueceu a senha?"
               : isRegistering
@@ -239,11 +214,54 @@ function LoginPage() {
           {pendingEmail
             ? "Falta só um passo pra tua conta ficar de pé."
             : forgotMode
-              ? "Põe teu e-mail que eu mando um link pra criar uma nova."
+              ? "Informe seu e-mail para receber o link de recuperação."
               : isRegistering
-                ? "Preenche os dados pra começar."
+                ? "Preencha os dados para criar seu caderno de campo."
                 : copy.login.subtitle}
         </Typography>
+
+        {IS_DEMO && !pendingEmail && !forgotMode && (
+          <Box
+            sx={{
+              mb: 2.5,
+              p: 1.5,
+              borderLeft: "3px solid",
+              borderColor: "secondary.main",
+              bgcolor: "surface.sunken",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{ display: "block", fontWeight: 800, letterSpacing: ".08em", mb: 0.5 }}
+            >
+              AMBIENTE DE DEMONSTRAÇÃO LOCAL
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
+              Esta entrada usa dados simulados; análises e respostas não são inferência real.
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await login({ email: "demo@example.test", password: "demo" });
+                  navigate(redirectTo, {
+                    replace: true,
+                    state: location.state?.fromState,
+                  });
+                } catch {
+                  setError("Não foi possível abrir a demonstração.");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              Entrar na demonstração
+            </Button>
+          </Box>
+        )}
 
         {verificado === "1" && (
           <Alert severity="success" sx={{ mb: 2 }}>

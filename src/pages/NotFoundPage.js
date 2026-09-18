@@ -6,8 +6,8 @@ export default function NotFoundPage() {
   return (
     <Page
       eyebrow="Caminho não encontrado"
-      title="Vamos voltar para a lavoura?"
-      description="Esta página não existe ou o endereço mudou."
+      title="Este caminho não está no caderno."
+      description="A página não existe ou o endereço mudou. Volte ao início para começar uma observação."
     >
       <Button component={Link} to="/" variant="contained">
         Voltar ao início

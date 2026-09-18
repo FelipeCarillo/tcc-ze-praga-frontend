@@ -118,13 +118,13 @@ export default function ChatPage() {
           </IconButton>
           <Marca style={{ width: 35, height: 35 }} />
           <Box flex={1} minWidth={0}>
-            <Typography fontWeight={800}>Zé Praga</Typography>
+            <Typography fontWeight={800}>Caderno de campo</Typography>
             <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ fontSize: { xs: '.7rem', md: '.75rem' } }}>
               {isLoading
-                ? "Analisando sua mensagem…"
+                ? "Análise em andamento"
                 : pendingInterrupt
                   ? "Aguardando sua resposta"
-                  : "Seu caderno de campo"}
+                  : "Foto, hipótese e próximos cuidados"}
             </Typography>
           </Box>
           <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
@@ -179,8 +179,8 @@ export default function ChatPage() {
         onAnswerInterrupt={answerInterrupt}
       />
       {isLoading && (
-        <Box sx={{ textAlign: "center", bgcolor: "background.paper" }}>
-          <Button onClick={stop}>Interromper resposta</Button>
+        <Box sx={{ textAlign: "center", bgcolor: "background.paper", borderTop: "1px solid", borderColor: "divider" }}>
+          <Button onClick={stop} color="inherit">Interromper resposta</Button>
         </Box>
       )}
       <ChatInput

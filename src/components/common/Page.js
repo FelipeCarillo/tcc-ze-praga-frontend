@@ -16,19 +16,19 @@ export default function Page({
   children,
 }) {
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 } }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 }, maxWidth: 1240 }}>
       <Stack
         direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between"
         gap={2}
-        sx={{ mb: 4 }}
+        sx={{ mb: { xs: 3, md: 5 }, pb: { xs: 2.5, md: 3 }, borderBottom: '1px solid', borderColor: 'divider' }}
       >
         <Box maxWidth={700}>
           {eyebrow && (
             <Typography
               variant="overline"
               color="primary.main"
-              sx={{ fontWeight: 800, letterSpacing: 2 }}
+              sx={{ fontWeight: 800, letterSpacing: 1.5, fontSize: '0.72rem' }}
             >
               {eyebrow}
             </Typography>
@@ -37,8 +37,8 @@ export default function Page({
             component="h1"
             variant="h3"
             sx={{
-              fontSize: { xs: "2rem", md: "2.8rem" },
-              letterSpacing: "-.04em",
+              fontSize: { xs: "2rem", md: "2.7rem" },
+              letterSpacing: "-.03em",
               mb: 1,
             }}
           >
