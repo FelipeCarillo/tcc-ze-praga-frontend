@@ -3,7 +3,7 @@
 | Caminho | Estado | Origem e crédito | Licença | Uso | Alt / foco |
 | --- | --- | --- | --- | --- |
 | `src/assets/soybean-rust-usda.jpg` | Liberado | USDA, via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Phakopsora_pachyrhizi.jpg), consultado em 17/09/2026 | Domínio público (obra do governo federal dos EUA) | exemplo documental de folha com ferrugem; nunca resultado do usuário | Folhas de soja com sinais de ferrugem; sinais nas folhas |
-| `src/assets/soybean-rust.jpg` | **Não usar como mídia editorial final** | origem e crédito não localizados no repositório | não verificada | legado; substituição pendente | — |
+| `src/assets/soybean-rust.jpg` | Uso restaurado na abertura a pedido do responsável; **não é mídia editorial final** | origem e crédito não localizados no repositório | não verificada | referência visual animada da abertura; não representa resultado, diagnóstico ou evidência | Folhas de soja com sinais visíveis; imagem de referência |
 
 ## Brief de captura pendente
 

@@ -4,13 +4,100 @@ import { Box, Button, Container, Divider, Stack, Typography } from "@mui/materia
 import { ArrowRight, Camera, CheckCircle2, Leaf } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { IS_DEMO } from "../config/runtime";
-import soybeanRustUsda from "../assets/soybean-rust-usda.jpg";
+import soybeanRust from "../assets/soybean-rust.jpg";
 
 const captureNotes = [
   ["Aproxime", "Uma folha por vez, em foco e com as manchas visíveis."],
   ["Use luz natural", "Evite filtros e reflexos que escondam a textura."],
   ["Confira antes", "Você revisa a imagem e decide quando enviar."],
 ];
+
+function AnimatedFieldPhoto() {
+  return (
+    <Box
+      role="img"
+      aria-label="Foto de referência visual com folhas de soja apresentando sinais visíveis"
+      sx={{
+        minHeight: { xs: 300, md: 460 },
+        overflow: "hidden",
+        position: "relative",
+        borderRadius: { xs: 3, md: 4 },
+        bgcolor: "#123e2b",
+        "@keyframes field-photo-drift": {
+          from: { transform: "scale(1.02) translate3d(-1%, -1%, 0)" },
+          to: { transform: "scale(1.14) translate3d(2%, 1%, 0)" },
+        },
+        "@keyframes field-photo-light": {
+          from: { transform: "translateX(-130%) skewX(-16deg)", opacity: 0 },
+          "35%": { opacity: 0.22 },
+          to: { transform: "translateX(360%) skewX(-16deg)", opacity: 0 },
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "& *, &::after": { animation: "none !important" },
+        },
+      }}
+    >
+      <Box
+        component="img"
+        src={soybeanRust}
+        alt="Folhas de soja com sinais visíveis observadas no campo"
+        sx={{
+          width: "100%",
+          height: "100%",
+          inset: 0,
+          position: "absolute",
+          display: "block",
+          objectFit: "cover",
+          objectPosition: "center",
+          animation: "field-photo-drift 16s ease-in-out infinite alternate",
+        }}
+      />
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(7,28,17,.48), transparent 46%, rgba(7,28,17,.58))",
+          "&::after": {
+            content: '\"\"',
+            position: "absolute",
+            inset: "-20% auto -20% 0",
+            width: "23%",
+            background:
+              "linear-gradient(90deg, transparent, rgba(240,237,226,.72), transparent)",
+            animation: "field-photo-light 9s ease-in-out infinite",
+          },
+        }}
+      />
+      <Box sx={{ position: "absolute", top: 24, left: 24 }}>
+        <Typography
+          component="span"
+          sx={{
+            bgcolor: "rgba(15,27,20,.78)",
+            color: "#f0ede2",
+            border: "1px solid rgba(199,232,212,.5)",
+            px: 1.4,
+            py: 0.7,
+            fontSize: "0.72rem",
+            fontWeight: 800,
+            letterSpacing: ".1em",
+          }}
+        >
+          FOTO DE REFERÊNCIA
+        </Typography>
+      </Box>
+      <Box sx={{ position: "absolute", left: 24, right: 24, bottom: 22 }}>
+        <Typography variant="overline" color="#c7e8d4" sx={{ letterSpacing: 2 }}>
+          OBSERVE COM CALMA
+        </Typography>
+        <Typography color="#f0ede2" fontWeight={700} sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+          Cor, manchas e textura contam uma história.
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -37,19 +124,7 @@ export default function LandingPage() {
           </Typography>
         </Stack>
 
-        <Box component="figure" sx={{ m: 0, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 3, overflow: "hidden" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "surface.sunken", borderBottom: "1px solid", borderColor: "divider" }}>
-            <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.25 }}>Exemplo documental</Typography>
-            <Typography component="h2" variant="h5">O que uma observação registra</Typography>
-          </Box>
-          <Box sx={{ minHeight: { xs: 245, md: 330 }, display: "grid", placeItems: "center", p: { xs: 2, md: 3 }, bgcolor: "#18261D" }}>
-            <Box component="img" src={soybeanRustUsda} alt="Folhas de soja com sinais de ferrugem asiática" sx={{ maxWidth: "100%", maxHeight: 290, width: "100%", objectFit: "contain" }} />
-          </Box>
-          <Box component="figcaption" sx={{ p: 2.25 }}>
-            <Typography variant="body2" color="text.secondary">Folhas com sinais visíveis: uma referência para observar foco, cor e textura. Esta imagem não é uma análise do usuário.</Typography>
-            <Typography variant="caption" color="text.secondary" display="block" mt={1}>USDA · domínio público · crédito e licença em ASSETS.md</Typography>
-          </Box>
-        </Box>
+        <AnimatedFieldPhoto />
       </Box>
 
       <Box sx={{ mt: { xs: 6, md: 9 }, display: "grid", gridTemplateColumns: { xs: "1fr", md: ".75fr 1.25fr" }, gap: { xs: 2, md: 6 }, alignItems: "start" }}>
