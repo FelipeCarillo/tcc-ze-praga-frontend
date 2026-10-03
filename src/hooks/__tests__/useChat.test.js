@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 jest.mock("../../services/chatService", () => ({
   sendMessage: jest.fn(),
   sendMessageStream: jest.fn(),
+  resumeMessage: jest.fn(),
   resumeMessageStream: jest.fn(),
 }));
 
@@ -29,6 +30,7 @@ if (typeof URL.createObjectURL === "undefined") {
 const {
   sendMessage,
   sendMessageStream,
+  resumeMessage,
   resumeMessageStream,
 } = require("../../services/chatService");
 const {
@@ -655,5 +657,155 @@ describe("useChat — conversas persistidas", () => {
     });
 
     expect(closeSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("useChat — chat síncrono (padrão na nuvem)", () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+    resumeMessage.mockReset();
+    resumeMessageStream.mockReset();
+  });
+
+  it("send usa POST /chat, guarda a sessão e reaproveita no turno seguinte", async () => {
+    sendMessage.mockResolvedValue({
+      content: "Oi!",
+      diagnosis: null,
+      sessionId: "sess-9",
+      transcript: null,
+      interrupt: null,
+    });
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.send("primeiro");
+    });
+    await act(async () => {
+      await result.current.send("segundo");
+    });
+
+    expect(sendMessageStream).not.toHaveBeenCalled();
+    expect(result.current.sessionId).toBe("sess-9");
+    // Só o turno atual vai no corpo: o histórico mora no checkpointer.
+    expect(sendMessage.mock.calls[1][0]).toEqual([
+      { role: "user", content: "segundo" },
+    ]);
+    expect(sendMessage.mock.calls[1][4]).toBe("sess-9");
+    expect(sendMessage.mock.calls[1][5]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.content).toBe("Oi!");
+    expect(last.isStreaming).toBe(false);
+  });
+
+  it("mostra o texto transcrito do áudio no balão do usuário", async () => {
+    sendMessage.mockResolvedValueOnce({
+      content: "Entendi.",
+      sessionId: "s-1",
+      transcript: "minha soja tá com pintas",
+    });
+    const { result } = renderHook(() => useChat());
+    const audio = new Blob(["x"], { type: "audio/webm" });
+
+    await act(async () => {
+      await result.current.send("", null, "ensemble", audio);
+    });
+
+    const user = result.current.messages.filter((m) => m.role === "user")[0];
+    expect(user.content).toBe("minha soja tá com pintas");
+    expect(user.isTranscript).toBe(true);
+  });
+
+  it("pergunta do agente no turno síncrono é respondida por POST /chat/resume", async () => {
+    sendMessage.mockResolvedValueOnce({
+      content: "",
+      sessionId: "sess-2",
+      interrupt: { question: "É soja?", responseKind: "boolean", options: null },
+    });
+    resumeMessage.mockResolvedValueOnce({
+      content: "Certo, soja.",
+      sessionId: "sess-2",
+      interrupt: null,
+    });
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.send("analisa");
+    });
+    expect(result.current.pendingInterrupt).toMatchObject({
+      question: "É soja?",
+      sessionId: "sess-2",
+      via: "sync",
+    });
+
+    await act(async () => {
+      await result.current.answerInterrupt("sim");
+    });
+
+    expect(resumeMessageStream).not.toHaveBeenCalled();
+    expect(resumeMessage).toHaveBeenCalledWith(
+      "sess-2",
+      "sim",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(result.current.pendingInterrupt).toBeNull();
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.content).toBe("Certo, soja.");
+  });
+
+  it("enquanto espera, o indicador avança pelas etapas do diagnóstico", async () => {
+    jest.useFakeTimers();
+    try {
+      let resolve;
+      sendMessage.mockImplementationOnce(
+        () => new Promise((r) => (resolve = r)),
+      );
+      const { result } = renderHook(() => useChat());
+      const foto = new File(["x"], "folha.jpg", { type: "image/jpeg" });
+
+      let pending;
+      act(() => {
+        pending = result.current.send("", foto);
+      });
+      const placeholder = () =>
+        result.current.messages[result.current.messages.length - 1];
+
+      act(() => jest.advanceTimersByTime(0));
+      expect(placeholder().toolCall).toBe("inspect_image");
+      act(() => jest.advanceTimersByTime(4000));
+      expect(placeholder().toolCall).toBe("analyze_image");
+
+      await act(async () => {
+        resolve({ content: "Ferrugem.", sessionId: "s" });
+        await pending;
+      });
+      act(() => jest.advanceTimersByTime(30000));
+      // Timers cancelados: a resposta final não ganha rótulo de etapa.
+      expect(placeholder().toolCall).toBeNull();
+      expect(placeholder().content).toBe("Ferrugem.");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe("progressSteps", () => {
+  const { progressSteps } = require("../useChat");
+
+  it("com foto segue a ordem do agente", () => {
+    expect(progressSteps({ hasImage: true }).map(([k]) => k)).toEqual([
+      "inspect_image",
+      "analyze_image",
+      "get_action_plan",
+      "_writing",
+    ]);
+  });
+
+  it("com áudio começa ouvindo e desloca o restante", () => {
+    const steps = progressSteps({ hasAudio: true });
+    expect(steps[0]).toEqual(["_listening", 0]);
+    expect(steps[1][1]).toBeGreaterThan(0);
   });
 });

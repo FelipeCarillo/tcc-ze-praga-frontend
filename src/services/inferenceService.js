@@ -1,6 +1,7 @@
 import { IS_DEMO } from '../config/runtime';
 import api from './api';
 import { mockAnalyzeImage } from './mock/mockInference';
+import { compressImage } from '../utils/compressImage';
 
 const USE_MOCK = IS_DEMO;
 
@@ -33,7 +34,7 @@ export async function analyzeImage(imageFile, modelId = 'ensemble') {
   }
 
   const formData = new FormData();
-  formData.append('image', imageFile);
+  formData.append('image', await compressImage(imageFile));
   formData.append('model', modelId);
 
   const response = await api.post('/api/v1/inference', formData, {

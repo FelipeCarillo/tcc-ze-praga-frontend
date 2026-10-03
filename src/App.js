@@ -19,18 +19,21 @@ import RequireAuth from "./components/common/RequireAuth";
 import NotFoundPage from "./pages/NotFoundPage";
 import Layout from "./components/Layout/Layout";
 import LandingPage from "./pages/LandingPage";
-import ChatPage from "./pages/ChatPage";
-import HistoryPage from "./pages/HistoryPage";
-import DiagnosisDetailPage from "./pages/DiagnosisDetailPage";
 import LoginPage from "./pages/LoginPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import PlansPage from "./pages/PlansPage";
-import PaymentPage from "./pages/PaymentPage";
-import ProfilePage from "./pages/ProfilePage";
 import QuotaExceededModal from "./components/common/QuotaExceededModal";
 import InstallPrompt from "./components/common/InstallPrompt";
 import * as authService from "./services/authService";
 
+// Fora a landing e o login (primeira tela de quem chega pelo celular), cada
+// página vira um chunk próprio: o bundle inicial encolhe e o 4G do campo baixa
+// só o que a pessoa abre. O service worker guarda os chunks para a próxima vez.
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const DiagnosisDetailPage = lazy(() => import("./pages/DiagnosisDetailPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const PlansPage = lazy(() => import("./pages/PlansPage"));
+const PaymentPage = lazy(() => import("./pages/PaymentPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 // Páginas institucionais / pesadas: carregadas sob demanda (auditoria, seção 21).
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));

@@ -21,17 +21,31 @@ export const MODELS = [
 // de `_MODEL_PREFERENCE` no backend. Usada para escolher o default do seletor.
 const PREFERENCE = ['ensemble', 'efficientnet', 'vit', 'resnet50'];
 
+// Modelos que o deploy carrega (`INFERENCE_MODELS` no backend), no vocabulário
+// do chat. Vazio = todos. Na nuvem enxuta só o EfficientNet-B4 sobe
+// (REACT_APP_DIAGNOSIS_MODELS=efficientnet): oferecer ResNet ou Ensemble
+// mostraria uma escolha que o servidor não tem como cumprir.
+export const DEPLOYED_MODELS = (process.env.REACT_APP_DIAGNOSIS_MODELS || '')
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
+
 /**
- * Modelos que o plano libera.
+ * Modelos que o plano libera, limitados aos que o deploy carrega.
  *
  * @param {object|null} features `PlanFeatures` de `useFeatures()`.
+ * @param {string[]} deployed modelos carregados no servidor (vazio = todos).
  * @returns {Set<string>} ids permitidos. Sem features, limita ao ResNet-50,
- *   espelhando o fallback gratuito do backend.
+ *   espelhando o fallback gratuito do backend. Se o plano não cobre nenhum
+ *   modelo carregado, vale o do deploy — é o que o servidor roda de fato.
  */
-export function allowedModelIds(features) {
+export function allowedModelIds(features, deployed = DEPLOYED_MODELS) {
   const list = features?.diagnosis_models;
-  if (!Array.isArray(list) || list.length === 0) return new Set(['resnet50']);
-  return new Set(list);
+  const plan =
+    !Array.isArray(list) || list.length === 0 ? ['resnet50'] : list;
+  if (!deployed.length) return new Set(plan);
+  const both = plan.filter((id) => deployed.includes(id));
+  return new Set(both.length ? both : deployed);
 }
 
 /**
@@ -42,9 +56,9 @@ export function allowedModelIds(features) {
  * @param {object|null} features `PlanFeatures` de `useFeatures()`.
  * @returns {string} id do modelo.
  */
-export function defaultModelId(features) {
-  const allowed = allowedModelIds(features);
-  return PREFERENCE.find((id) => allowed.has(id)) || 'resnet50';
+export function defaultModelId(features, deployed = DEPLOYED_MODELS) {
+  const allowed = allowedModelIds(features, deployed);
+  return PREFERENCE.find((id) => allowed.has(id)) || [...allowed][0] || 'resnet50';
 }
 
 export default MODELS;
