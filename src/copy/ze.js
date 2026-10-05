@@ -67,6 +67,24 @@ export const copy = {
       _writing: 'Escrevendo a resposta…',
       _fallback: 'Análise em andamento…',
     },
+    // Passos concluídos, no passado (m-Chat: "Olhei a foto", "Rodei o
+    // diagnóstico"). Nome desconhecido cai em _fallback.
+    toolsDone: {
+      inspect_image: 'Olhei a foto',
+      analyze_image: 'Rodei o diagnóstico',
+      deep_diagnose: 'Analisei as fotos',
+      get_disease_info: 'Consultei o caderno de doenças',
+      get_action_plan: 'Montei os próximos cuidados',
+      search_my_diagnoses: 'Procurei no seu histórico',
+      compare_diagnoses: 'Comparei os laudos',
+      search_web: 'Pesquisei na web',
+      search_scientific: 'Consultei artigos científicos',
+      identify_crop: 'Identifiquei a cultura',
+      ask_user: 'Fiz uma pergunta',
+      _listening: 'Ouvi seu áudio',
+      _writing: 'Escrevi a resposta',
+      _fallback: 'Etapa concluída',
+    },
   },
 
   // Aviso obrigatório: o Zé é um auxiliar, não fonte da verdade (rebrand 2026).

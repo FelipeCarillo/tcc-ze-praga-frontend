@@ -251,7 +251,7 @@ function App() {
                   <Route
                     path="/login"
                     element={
-                      <Layout>
+                      <Layout bottomNav={false} showFooter={false}>
                         <LoginPage />
                       </Layout>
                     }
@@ -259,7 +259,7 @@ function App() {
                   <Route
                     path="/redefinir-senha"
                     element={
-                      <Layout>
+                      <Layout bottomNav={false} showFooter={false}>
                         <ResetPasswordPage />
                       </Layout>
                     }
