@@ -19,6 +19,7 @@ import QuotaDisplay from "../components/Layout/QuotaDisplay";
 import useChat from "../hooks/useChat";
 import { saveDiagnosis } from "../services/historyService";
 import { validateImage } from "../utils/imageUpload";
+import TalhaoPicker from "../components/Talhao/TalhaoPicker";
 export default function ChatPage() {
   const {
     messages,
@@ -163,15 +164,20 @@ export default function ChatPage() {
             <SquarePen size={21} />
           </IconButton>
         </Stack>
-        <Box
-          sx={{
-            display: { xs: "flex", md: "none" },
-            justifyContent: "center",
-            pt: 0.5,
-          }}
+        {/* TCC-093: o laudo nasce no talhão escolhido aqui. */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={1}
+          sx={{ maxWidth: 1200, mx: "auto", pt: 0.75, px: { xs: 0.5, md: 0 } }}
         >
-          <QuotaDisplay />
-        </Box>
+          <TalhaoPicker disabled={isLoading} />
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            <QuotaDisplay />
+          </Box>
+        </Stack>
       </Box>
       <RuntimeNotice />
       <ChatWindow

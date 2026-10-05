@@ -13,6 +13,12 @@ import {
   getPendingInterrupt,
 } from "../services/sessionsService";
 import { getDiagnosisById } from "../services/historyService";
+import { getActiveTalhao } from "../services/activeTalhao";
+// TCC-093: o laudo nasce no talhão escolhido na tela do chat.
+function talhaoOptions() {
+  const talhao = getActiveTalhao();
+  return talhao ? { talhaoId: talhao.id, talhaoNome: talhao.nome } : {};
+}
 const initial = () => [
   {
     id: uuid(),
@@ -205,7 +211,7 @@ export default function useChat() {
               modelId,
               audioFile,
               sessionId,
-              { signal: ctrl.signal },
+              { signal: ctrl.signal, ...talhaoOptions() },
             ),
           );
         else
@@ -216,7 +222,7 @@ export default function useChat() {
             sessionId,
             audioFile,
             callbacks,
-            { signal: ctrl.signal },
+            { signal: ctrl.signal, ...talhaoOptions() },
           );
         update({ isStreaming: false, toolCall: null });
         return valid();

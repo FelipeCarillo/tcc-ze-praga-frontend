@@ -125,3 +125,15 @@ test("resume síncrono usa POST /chat/resume", async () => {
   expect(api.post.mock.calls[0][1]).toEqual({ thread_id: "s-1", response: "Soja" });
   expect(result).toMatchObject({ content: "ok", sessionId: "s-1", interrupt: null });
 });
+test("chat síncrono envia o talhão ativo (TCC-093)", async () => {
+  api.post.mockResolvedValueOnce({ data: { content: "ok", session_id: "s-1" } });
+  await sendMessage([{ role: "user", content: "oi" }], null, "ensemble", null, null, {
+    talhaoId: "t-1",
+  });
+  expect(api.post.mock.calls[0][1].get("talhao_id")).toBe("t-1");
+});
+test("sem talhão ativo, o campo não vai no formulário", async () => {
+  api.post.mockResolvedValueOnce({ data: { content: "ok", session_id: "s-1" } });
+  await sendMessage([{ role: "user", content: "oi" }], null, "ensemble", null, null, {});
+  expect(api.post.mock.calls[0][1].has("talhao_id")).toBe(false);
+});

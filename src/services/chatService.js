@@ -201,6 +201,7 @@ export async function sendMessage(
   if (audioFile)
     body.append("audio", audioFile, audioFile.name || "voice.webm");
   if (sessionId) body.append("session_id", sessionId);
+  if (options.talhaoId) body.append("talhao_id", options.talhaoId);
   const { data } = await api.post("/api/v1/chat", body, {
     headers: { "Content-Type": "multipart/form-data" },
     timeout: CHAT_TIMEOUT_MS,
@@ -246,8 +247,13 @@ export async function sendMessageStream(
         guarded.onToken?.(chunk);
       },
       onDiagnosis: (value) => {
-        diagnosis = value;
-        guarded.onDiagnosis?.(value);
+        // Demo: o laudo nasce no talhão ativo, como o backend faria.
+        diagnosis = value && {
+          ...value,
+          talhaoId: options.talhaoId ?? null,
+          talhaoNome: options.talhaoNome ?? null,
+        };
+        guarded.onDiagnosis?.(diagnosis);
       },
       onDone: () => {},
     });
@@ -270,6 +276,7 @@ export async function sendMessageStream(
   if (audioFile)
     body.append("audio", audioFile, audioFile.name || "voice.webm");
   if (sessionId) body.append("session_id", sessionId);
+  if (options.talhaoId) body.append("talhao_id", options.talhaoId);
   return streamRequest("/api/v1/chat/stream", body, callbacks, options);
 }
 export function resumeMessageStream(
