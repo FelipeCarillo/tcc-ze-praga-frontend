@@ -60,7 +60,7 @@ function AnimatedFieldPhoto() {
           background:
             "linear-gradient(180deg, rgba(7,28,17,.48), transparent 46%, rgba(7,28,17,.58))",
           "&::after": {
-            content: '\"\"',
+            content: '""',
             position: "absolute",
             inset: "-20% auto -20% 0",
             width: "23%",
