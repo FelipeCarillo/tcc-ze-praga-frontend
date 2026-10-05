@@ -45,7 +45,7 @@ export default function AboutPage() {
           </Button>
         </Box>
         <Box
-          sx={{ p: 4, bgcolor: "#123e2b", color: "#F0EDE2", borderLeft: "4px solid", borderColor: "secondary.main", borderRadius: 1 }}
+          sx={{ p: 4, bgcolor: "#0B1510", color: "#EEF2E8", borderLeft: "4px solid", borderColor: "secondary.main", borderRadius: 1 }}
         >
           <Leaf size={42} />
           <Typography variant="h4" mt={3} mb={2}>

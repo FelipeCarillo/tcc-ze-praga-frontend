@@ -7,7 +7,8 @@ import Collapse from '@mui/material/Collapse';
 import Button from '@mui/material/Button';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, Zap, Map, GraduationCap, BookOpen, ExternalLink, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { CheckCircle2, Zap, Map, GraduationCap, BookOpen, ExternalLink, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import AuxiliarNotice from '../common/AuxiliarNotice';
 
 const levels = [
   { id: 'essencial', label: 'Essencial', icon: Zap, description: 'Ações imediatas' },
@@ -138,25 +139,7 @@ function ActionPlan({ actions }) {
         })}
       </Box>
 
-      <Box
-        sx={{
-          mt: 2.5,
-              p: 2,
-              borderLeft: '3px solid',
-              borderLeftColor: 'warning.main',
-              backgroundColor: alpha(theme.palette.warning.main, 0.2),
-              borderRadius: 0,
-          display: 'flex',
-          gap: 1,
-          alignItems: 'flex-start',
-          color: 'warning.dark',
-        }}
-      >
-        <AlertTriangle size={16} style={{ marginTop: 2, flexShrink: 0 }} />
-        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
-          Consulte sempre um engenheiro agrônomo para orientação profissional.
-        </Typography>
-      </Box>
+      <AuxiliarNotice sx={{ mt: 2 }} />
 
       {sources && sources.length > 0 && (
         <Box sx={{ mt: 2 }}>

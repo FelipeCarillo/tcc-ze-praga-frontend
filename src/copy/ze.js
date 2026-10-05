@@ -69,6 +69,13 @@ export const copy = {
     },
   },
 
+  // Aviso obrigatório: o Zé é um auxiliar, não fonte da verdade (rebrand 2026).
+  notice: {
+    title: 'O Zé é um auxiliar, não a palavra final.',
+    body: 'Esta é uma hipótese automática; confirme com um engenheiro-agrônomo antes de aplicar qualquer produto.',
+    short: 'Sou um auxiliar, não fonte da verdade. Confirme com seu agrônomo.',
+  },
+
   diagnosis: {
     recipeTitle: 'Próximos cuidados',
     explainsTitle: 'Sobre esta hipótese',

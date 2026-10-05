@@ -16,6 +16,8 @@ import { getDiagnosisById } from "../services/historyService";
 import { useActionPlan } from "../hooks/useActionPlan";
 import { useFeatures } from "../contexts/FeaturesContext";
 import { IS_DEMO } from "../config/runtime";
+import AuxiliarNotice from "../components/common/AuxiliarNotice";
+
 export default function DiagnosisDetailPage() {
   const { id } = useParams(),
     features = useFeatures();
@@ -152,11 +154,7 @@ export default function DiagnosisDetailPage() {
               <Typography color="text.secondary">
                 {result.description || "Não há descrição cadastrada."}
               </Typography>
-              <Alert severity="info" sx={{ mt: 3 }}>
-                A análise é uma hipótese baseada na imagem. A severidade da
-                lesão não é medida por este sistema. Confirme o contexto com um
-                profissional de agronomia.
-              </Alert>
+              <AuxiliarNotice sx={{ mt: 3 }} />
             </Box>
             <Box sx={{ order: { xs: 1, md: 2 } }}>
               <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>

@@ -1,21 +1,6 @@
-
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs>
-    <linearGradient id="lf" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#74C69D"></stop>
-      <stop offset="100%" stop-color="#1F5A3D"></stop>
-    </linearGradient>
-  </defs>
-  
-  <rect x="2" y="2" width="60" height="60" rx="16" fill="#1F5A3D"></rect>
-  
-  <g transform="translate(32 30)">
-    <path d="M 0 -16 Q -12 -8 -13 4 Q -12 14 0 16 Q 12 14 13 4 Q 12 -8 0 -16 Z" fill="url(#lf)" stroke="#F4C95D" stroke-width="1"></path>
-    <path d="M 0 -14 Q 0 0 0 14" stroke="#F4C95D" stroke-width="0.8" fill="none" opacity="0.7"></path>
-  </g>
-  
-  <g transform="translate(42 42)" fill="none" stroke="#F4C95D" stroke-width="2.4" stroke-linecap="round">
-    <circle cx="0" cy="0" r="7"></circle>
-    <line x1="6" y1="6" x2="12" y2="12"></line>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Zé Praga">
+  <rect width="48" height="48" rx="12" fill="#C8F169"/>
+  <path d="M10 17V10h7M31 10h7v7M38 31v7h-7M17 38h-7v-7" stroke="#0F1A13" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M15 33c0-11 7-18 18-18 0 11-7 18-18 18z" fill="#1B4D2E"/>
+  <path d="M15 33l10-10" stroke="#C8F169" stroke-width="2" stroke-linecap="round"/>
 </svg>

@@ -10,7 +10,7 @@ import RuntimeNotice from '../common/RuntimeNotice';
 
 /**
  * Casca de navegação. No desktop: Navbar + conteúdo + Footer. No mobile:
- * Navbar enxuta + BottomNav fixa + CameraFAB (sem footer). O /chat usa a navbar
+ * Navbar enxuta + BottomNav fixa com a câmera no centro (sem footer). O /chat usa a navbar
  * em modo `app` e não mostra bottom nav (tem header/composer próprios).
  */
 function Layout({ children, showFooter = true }) {
@@ -32,7 +32,7 @@ function Layout({ children, showFooter = true }) {
       <RuntimeNotice />
       <Box
         component="main" id="main-content" tabIndex={-1}
-        sx={{ flex: 1, pb: showMobileNav ? 'calc(64px + env(safe-area-inset-bottom))' : 0 }}
+        sx={{ flex: 1, pb: showMobileNav ? 'calc(84px + env(safe-area-inset-bottom))' : 0 }}
       >
         {children}
       </Box>

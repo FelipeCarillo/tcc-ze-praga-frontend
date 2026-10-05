@@ -25,6 +25,7 @@ import {
   clearAllDiagnoses,
 } from "../services/historyService";
 import { useFeatures } from "../contexts/FeaturesContext";
+import AuxiliarNotice from "../components/common/AuxiliarNotice";
 export default function HistoryPage() {
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(""),
@@ -190,6 +191,7 @@ export default function HistoryPage() {
             {data.total}{" "}
             {data.total === 1 ? "registro encontrado" : "registros encontrados"}
           </Typography>
+          <AuxiliarNotice sx={{ mb: 2 }} />
           <Box
             sx={{
               display: "grid",

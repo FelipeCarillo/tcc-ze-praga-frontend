@@ -1,99 +1,181 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Box, Button, Container, Divider, Stack, Typography } from "@mui/material";
-import { ArrowRight, Camera, CheckCircle2, Leaf } from "lucide-react";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import { ArrowRight, Camera } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { IS_DEMO } from "../config/runtime";
-import soybeanRust from "../assets/soybean-rust.jpg";
+import { DATASET, MODELS } from "../data/modelMetrics";
+import AuxiliarNotice from "../components/common/AuxiliarNotice";
+import lavoura from "../assets/field/lavoura-rs.jpg";
+import ferrugem from "../assets/field/ferrugem-macro.jpg";
+import cercospora from "../assets/field/cercospora.jpg";
+import produtor from "../assets/field/produtor.jpg";
 
-const captureNotes = [
-  ["Aproxime", "Uma folha por vez, em foco e com as manchas visíveis."],
-  ["Use luz natural", "Evite filtros e reflexos que escondam a textura."],
-  ["Confira antes", "Você revisa a imagem e decide quando enviar."],
+// Rebrand 2026 — landing baseada no canvas de design aprovado: lavoura em tela
+// cheia, mira com varredura, faixa com as 6 condições e números abertos.
+
+const CONDITIONS = [
+  "Ferrugem-asiática",
+  "Cercosporiose",
+  "Mancha-alvo",
+  "Mancha-olho-de-rã",
+  "Míldio",
+  "Folha saudável",
 ];
 
-function AnimatedFieldPhoto() {
+const STEPS = [
+  {
+    img: cercospora,
+    alt: "Folhas de soja na lavoura",
+    title: "Fotografa a folha",
+    text: "Folha inteira, de perto, luz natural. Pode mandar mais de uma foto do mesmo talhão.",
+  },
+  {
+    img: ferrugem,
+    alt: "Close de pústulas de ferrugem-asiática",
+    title: "O Zé analisa",
+    text: "Redes neurais treinadas em fotos de soja apontam a hipótese, e o Zé explica na conversa.",
+  },
+  {
+    img: produtor,
+    alt: "Produtor em lavoura de soja",
+    title: "Você decide com o agrônomo",
+    text: "Plano de ação em camadas, histórico por talhão e laudo para levar ao seu engenheiro-agrônomo.",
+    position: "70% 30%",
+  },
+];
+
+const PLAN_BY_MODEL = {
+  ensemble: "Enterprise",
+  efficientnet_b4: "Pro",
+  vit_b16: "Pro",
+  resnet50: "Gratuito",
+};
+
+const pct = (v) =>
+  `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+
+const motionSx = {
+  "@keyframes zpUp": {
+    from: { opacity: 0, transform: "translateY(18px)" },
+    to: { opacity: 1, transform: "none" },
+  },
+  "@keyframes zpKen": {
+    from: { transform: "scale(1.03)" },
+    to: { transform: "scale(1.14) translate(-2%, -1%)" },
+  },
+  "@keyframes zpScan": {
+    "0%": { top: "4%" },
+    "50%": { top: "94%" },
+    "100%": { top: "4%" },
+  },
+  "@keyframes zpFloat": {
+    "0%, 100%": { transform: "translateY(0) rotate(2deg)" },
+    "50%": { transform: "translateY(-10px) rotate(1deg)" },
+  },
+  "@keyframes zpPop": {
+    "0%": { opacity: 0, transform: "scale(.6)" },
+    "70%": { opacity: 1, transform: "scale(1.05)" },
+    "100%": { opacity: 1, transform: "scale(1)" },
+  },
+  "@keyframes zpMarq": {
+    from: { transform: "translateX(0)" },
+    to: { transform: "translateX(-50%)" },
+  },
+  "@media (prefers-reduced-motion: reduce)": {
+    "& *": { animation: "none !important" },
+  },
+};
+
+const up = (delay = 0) => ({
+  animation: `zpUp .8s ${delay}s cubic-bezier(.2,.7,.2,1) both`,
+});
+
+function Corner({ pos }) {
+  const v = pos.includes("t") ? { top: 16 } : { bottom: 16 };
+  const h = pos.includes("l") ? { left: 16 } : { right: 16 };
+  const side = (s) => `4px solid ${s ? "#C8F169" : "transparent"}`;
   return (
     <Box
-      role="img"
-      aria-label="Foto de referência visual com folhas de soja apresentando sinais visíveis"
+      aria-hidden="true"
       sx={{
-        minHeight: { xs: 300, md: 460 },
-        overflow: "hidden",
-        position: "relative",
-        borderRadius: { xs: 3, md: 4 },
-        bgcolor: "#123e2b",
-        "@keyframes field-photo-drift": {
-          from: { transform: "scale(1.02) translate3d(-1%, -1%, 0)" },
-          to: { transform: "scale(1.14) translate3d(2%, 1%, 0)" },
-        },
-        "@keyframes field-photo-light": {
-          from: { transform: "translateX(-130%) skewX(-16deg)", opacity: 0 },
-          "35%": { opacity: 0.22 },
-          to: { transform: "translateX(360%) skewX(-16deg)", opacity: 0 },
-        },
-        "@media (prefers-reduced-motion: reduce)": {
-          "& *, &::after": { animation: "none !important" },
-        },
+        position: "absolute",
+        ...v,
+        ...h,
+        width: 34,
+        height: 34,
+        borderTop: side(pos.includes("t")),
+        borderBottom: side(pos.includes("b")),
+        borderLeft: side(pos.includes("l")),
+        borderRight: side(pos.includes("r")),
+        borderRadius: "10px",
       }}
-    >
+    />
+  );
+}
+
+function ScanCard() {
+  return (
+    <Box sx={{ position: "relative", height: { xs: 340, md: 440 }, width: "100%", maxWidth: 380, mx: "auto" }}>
       <Box
-        component="img"
-        src={soybeanRust}
-        alt="Folhas de soja com sinais visíveis observadas no campo"
-        sx={{
-          width: "100%",
-          height: "100%",
-          inset: 0,
-          position: "absolute",
-          display: "block",
-          objectFit: "cover",
-          objectPosition: "center",
-          animation: "field-photo-drift 16s ease-in-out infinite alternate",
-        }}
-      />
-      <Box
-        aria-hidden="true"
         sx={{
           position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(7,28,17,.48), transparent 46%, rgba(7,28,17,.58))",
-          "&::after": {
-            content: '""',
-            position: "absolute",
-            inset: "-20% auto -20% 0",
-            width: "23%",
-            background:
-              "linear-gradient(90deg, transparent, rgba(240,237,226,.72), transparent)",
-            animation: "field-photo-light 9s ease-in-out infinite",
-          },
+          inset: { xs: "0 16px 56px 16px", md: "0 20px 48px 20px" },
+          borderRadius: "28px",
+          overflow: "hidden",
+          border: "5px solid #FFFFFF",
+          boxShadow: "0 30px 60px rgba(0,0,0,.4)",
+          animation: "zpFloat 7s ease-in-out infinite",
         }}
-      />
-      <Box sx={{ position: "absolute", top: 24, left: 24 }}>
-        <Typography
-          component="span"
+      >
+        <Box
+          component="img"
+          src={ferrugem}
+          alt="Folha de soja com pústulas de ferrugem-asiática"
+          sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+        {["tl", "tr", "bl", "br"].map((p) => (
+          <Corner key={p} pos={p} />
+        ))}
+        <Box
+          aria-hidden="true"
           sx={{
-            bgcolor: "rgba(15,27,20,.78)",
-            color: "#f0ede2",
-            border: "1px solid rgba(199,232,212,.5)",
-            px: 1.4,
-            py: 0.7,
-            fontSize: "0.72rem",
-            fontWeight: 800,
-            letterSpacing: ".1em",
+            position: "absolute",
+            left: 10,
+            right: 10,
+            height: 2,
+            bgcolor: "#C8F169",
+            boxShadow: "0 0 16px 3px rgba(200,241,105,.85)",
+            animation: "zpScan 3s ease-in-out infinite",
           }}
-        >
-          FOTO DE REFERÊNCIA
-        </Typography>
+        />
       </Box>
-      <Box sx={{ position: "absolute", left: 24, right: 24, bottom: 22 }}>
-        <Typography variant="overline" color="#c7e8d4" sx={{ letterSpacing: 2 }}>
-          OBSERVE COM CALMA
-        </Typography>
-        <Typography color="#f0ede2" fontWeight={700} sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
-          Cor, manchas e textura contam uma história.
-        </Typography>
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: "#FFFFFF",
+          color: "#0F1A13",
+          borderRadius: "20px",
+          p: 2,
+          boxShadow: "0 16px 36px rgba(0,0,0,.3)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          animation: "zpPop .6s 1.6s cubic-bezier(.2,.7,.2,1) both",
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Typography sx={{ fontWeight: 800, fontStretch: "110%", fontSize: "1.125rem" }}>
+            Ferrugem-asiática
+          </Typography>
+          <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontWeight: 600 }}>
+            exemplo
+          </Typography>
+        </Stack>
+        <AuxiliarNotice compact />
       </Box>
     </Box>
   );
@@ -101,51 +183,238 @@ function AnimatedFieldPhoto() {
 
 export default function LandingPage() {
   const { user } = useAuth();
+  const models = [...MODELS].sort((a, b) => a.accuracy - b.accuracy);
+
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 6 }, maxWidth: 1240 }}>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.05fr .95fr" }, gap: { xs: 4, md: 7 }, alignItems: "start" }}>
-        <Stack spacing={3} sx={{ pt: { md: 2 } }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Leaf size={18} aria-hidden="true" />
-            <Typography variant="overline" color="primary.main" sx={{ letterSpacing: 1.5, fontWeight: 800 }}>Caderno de campo para soja</Typography>
+    <Box sx={motionSx}>
+      <Box
+        component="section"
+        sx={{ position: "relative", overflow: "hidden", bgcolor: "#0B1510", color: "#FFFFFF" }}
+      >
+        <Box
+          component="img"
+          src={lavoura}
+          alt=""
+          sx={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            animation: "zpKen 22s ease-in-out infinite alternate",
+          }}
+        />
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            background: {
+              xs: "linear-gradient(180deg, rgba(11,21,16,.55) 0%, rgba(11,21,16,.92) 60%)",
+              md: "linear-gradient(90deg, rgba(11,21,16,.92) 0%, rgba(11,21,16,.6) 45%, rgba(11,21,16,.1) 100%)",
+            },
+          }}
+        />
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: "relative",
+            py: { xs: 5, md: 12 },
+            display: "flex",
+            flexWrap: "wrap",
+            gap: { xs: 4, md: 6 },
+            alignItems: "center",
+          }}
+        >
+          <Stack spacing={3} sx={{ flex: "1 1 480px", minWidth: 0 }}>
+            <Typography
+              sx={{
+                ...up(0),
+                fontFamily: (t) => t.typography.fontFamilyMono,
+                fontSize: "0.875rem",
+                letterSpacing: ".08em",
+                color: "#C8F169",
+              }}
+            >
+              SEU AGRÔNOMO DE BOLSO
+            </Typography>
+            <Typography
+              component="h1"
+              variant="h1"
+              sx={{ ...up(0.15), color: "#FFFFFF", fontSize: { xs: "2.4rem", sm: "3rem", md: "4.5rem" }, lineHeight: 0.98 }}
+            >
+              Manda a foto da folha. O Zé diz o que é e o que fazer.
+            </Typography>
+            <Typography sx={{ ...up(0.3), color: "#D6E4D3", fontSize: { xs: "1.0625rem", md: "1.1875rem" }, lineHeight: 1.55, maxWidth: 560 }}>
+              Diagnóstico de doenças foliares da soja por foto, plano de ação em português e histórico por talhão.
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={up(0.45)}>
+              <Button
+                component={Link}
+                to="/chat"
+                size="large"
+                startIcon={<Camera size={22} />}
+                sx={{
+                  bgcolor: "cta.main",
+                  color: "cta.contrastText",
+                  fontWeight: 800,
+                  minHeight: 56,
+                  px: 3.5,
+                  "&:hover": { bgcolor: "cta.hover" },
+                }}
+              >
+                Analisar uma folha
+              </Button>
+              <Button
+                component={Link}
+                to={user ? "/historico" : "/sobre"}
+                size="large"
+                variant="outlined"
+                endIcon={<ArrowRight size={18} />}
+                sx={{ minHeight: 56, color: "#EEF2E8", borderColor: "rgba(238,242,232,.7)", "&:hover": { borderColor: "#EEF2E8", bgcolor: "rgba(238,242,232,.08)" } }}
+              >
+                {user ? "Abrir meu histórico" : "Conhecer o projeto"}
+              </Button>
+            </Stack>
+            <Typography variant="body2" sx={{ color: "#B7C2B4", ...up(0.6) }}>
+              {IS_DEMO
+                ? "Demonstração local: respostas e análises simuladas são identificadas."
+                : "Entre na sua conta para analisar e guardar seus laudos."}
+            </Typography>
           </Stack>
-          <Typography component="h1" variant="h1" sx={{ maxWidth: 650, fontSize: { xs: "2.8rem", md: "4.35rem" } }}>
-            Olhe de perto. <Box component="span" color="primary.main">Entenda os sinais.</Box>
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560, fontSize: { xs: "1rem", md: "1.125rem" } }}>
-            Envie uma foto da folha para consultar uma hipótese de doença e orientações de manejo. A análise usa modelos computacionais e apoia a observação — não confirma um diagnóstico em campo.
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} alignItems={{ sm: "center" }}>
-            <Button component={Link} to="/chat" variant="contained" size="large" startIcon={<Camera size={20} />}>Analisar uma folha</Button>
-            <Button component={Link} to={user ? "/historico" : "/sobre"} endIcon={<ArrowRight size={18} />}>{user ? "Abrir meu caderno" : "Conhecer o projeto"}</Button>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {IS_DEMO ? "Demonstração local: respostas e análises simuladas são identificadas." : "Entre na sua conta antes de iniciar uma análise e guardar o registro."}
-          </Typography>
-        </Stack>
-
-        <AnimatedFieldPhoto />
+          <Box sx={{ flex: "0 1 380px", width: "100%" }}>
+            <ScanCard />
+          </Box>
+        </Container>
       </Box>
 
-      <Box sx={{ mt: { xs: 6, md: 9 }, display: "grid", gridTemplateColumns: { xs: "1fr", md: ".75fr 1.25fr" }, gap: { xs: 2, md: 6 }, alignItems: "start" }}>
-        <Box>
-          <Typography variant="overline" color="primary.main" sx={{ letterSpacing: 1.5, fontWeight: 800 }}>Antes de enviar</Typography>
-          <Typography component="h2" variant="h2" sx={{ mt: 1 }}>Fotografe para conseguir enxergar.</Typography>
+      <Box
+        aria-label="Condições reconhecidas"
+        sx={{ bgcolor: "cta.main", color: "cta.contrastText", overflow: "hidden", py: 1.75, whiteSpace: "nowrap" }}
+      >
+        <Box sx={{ display: "flex", gap: 6, width: "max-content", animation: "zpMarq 30s linear infinite" }}>
+          {[...CONDITIONS, ...CONDITIONS].map((c, i) => (
+            <Typography
+              key={`${c}-${i}`}
+              aria-hidden={i >= CONDITIONS.length ? "true" : undefined}
+              sx={{ fontWeight: 800, fontStretch: "112%", fontSize: "1.125rem", textTransform: "uppercase" }}
+            >
+              {c} ·
+            </Typography>
+          ))}
         </Box>
-        <Stack divider={<Divider flexItem />} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
-          {captureNotes.map(([title, text], index) => <Stack key={title} direction="row" spacing={2} sx={{ py: 2.25 }}>
-            <Typography color="primary.main" sx={{ fontFamily: "monospace", fontWeight: 800 }}>{String(index + 1).padStart(2, "0")}</Typography>
-            <Box><Typography component="h3" variant="h6">{title}</Typography><Typography variant="body2" color="text.secondary">{text}</Typography></Box>
-          </Stack>)}
-        </Stack>
       </Box>
 
-      <Box sx={{ mt: { xs: 6, md: 9 }, p: { xs: 3, md: 4 }, borderLeft: "4px solid", borderColor: "primary.main", bgcolor: "surface.sunken" }}>
-        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={3} alignItems={{ md: "center" }}>
-          <Box><Typography component="h2" variant="h4">Do campo para o registro.</Typography><Typography color="text.secondary" sx={{ mt: 1, maxWidth: 680 }}>Depois da conversa, a foto, a hipótese e os próximos cuidados continuam juntos no histórico.</Typography></Box>
-          <Button component={Link} to="/modelos" startIcon={<CheckCircle2 size={18} />}>Ver método e limites</Button>
-        </Stack>
-      </Box>
-    </Container>
+      <Container maxWidth="lg" component="section" id="como" sx={{ py: { xs: 7, md: 12 } }}>
+        <Typography component="h2" variant="h2" sx={{ mb: { xs: 3, md: 5 } }}>
+          Três passos, no meio da lavoura
+        </Typography>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 2.5 }}>
+          {STEPS.map((s, i) => (
+            <Box
+              key={s.title}
+              sx={{
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: "24px",
+                overflow: "hidden",
+                transition: "transform .25s ease, box-shadow .25s ease",
+                "&:hover": { transform: "translateY(-6px)", boxShadow: "0 18px 36px rgba(15,26,19,.14)" },
+                "&:hover img": { transform: "scale(1.06)" },
+              }}
+            >
+              <Box sx={{ height: 200, overflow: "hidden" }}>
+                <Box
+                  component="img"
+                  src={s.img}
+                  alt={s.alt}
+                  loading="lazy"
+                  sx={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: s.position || "center", transition: "transform .6s ease", display: "block" }}
+                />
+              </Box>
+              <Box sx={{ p: 2.75 }}>
+                <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, color: "primary.main", fontWeight: 600 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </Typography>
+                <Typography component="h3" variant="h4" sx={{ mt: 0.5, fontSize: "1.375rem" }}>
+                  {s.title}
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 1 }}>
+                  {s.text}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Container>
+
+      <Container maxWidth="lg" component="section" id="modelos" sx={{ pb: { xs: 7, md: 12 } }}>
+        <Box
+          sx={{
+            bgcolor: "#0B1510",
+            color: "#EEF2E8",
+            borderRadius: "28px",
+            p: { xs: 3, md: 5 },
+            display: "flex",
+            gap: { xs: 3, md: 5 },
+            flexWrap: "wrap",
+          }}
+        >
+          <Stack spacing={1.5} sx={{ flex: "1 1 300px" }}>
+            <Typography component="h2" variant="h3" sx={{ color: "#FFFFFF" }}>
+              Números abertos, testados em {DATASET.split.test.toLocaleString("pt-BR")} fotos
+            </Typography>
+            <Typography sx={{ color: "#B7C2B4" }}>
+              Dataset {DATASET.name}, {DATASET.classes} classes, separação {DATASET.split.ratio}. Mesmo com esses números, o Zé dá uma hipótese, não um laudo oficial.
+            </Typography>
+            <Box>
+              <Button component={Link} to="/modelos" endIcon={<ArrowRight size={18} />} sx={{ color: "#C8F169", px: 0 }}>
+                Ver método e limites
+              </Button>
+            </Box>
+          </Stack>
+          <Box sx={{ flex: "1 1 480px", overflowX: "auto" }}>
+            <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9375rem" }}>
+              <thead>
+                <Box component="tr" sx={{ textAlign: "left", color: "#8A9B86", fontSize: "0.8125rem" }}>
+                  {["Modelo", "Acurácia", "F1-macro", "Plano"].map((h) => (
+                    <Box component="th" key={h} sx={{ py: 1.25, px: 1, fontWeight: 600 }}>
+                      {h}
+                    </Box>
+                  ))}
+                </Box>
+              </thead>
+              <tbody>
+                {models.map((m) => (
+                  <Box
+                    component="tr"
+                    key={m.id}
+                    sx={{ borderTop: "1px solid #22362A", color: m.prod ? "#C8F169" : "inherit" }}
+                  >
+                    <Box component="td" sx={{ py: 1.5, px: 1, fontWeight: m.prod ? 800 : 500 }}>
+                      {m.name}
+                    </Box>
+                    <Box component="td" sx={{ py: 1.5, px: 1, fontFamily: (t) => t.typography.fontFamilyMono }}>
+                      {pct(m.accuracy)}
+                    </Box>
+                    <Box component="td" sx={{ py: 1.5, px: 1, fontFamily: (t) => t.typography.fontFamilyMono }}>
+                      {pct(m.f1)}
+                    </Box>
+                    <Box component="td" sx={{ py: 1.5, px: 1 }}>
+                      {PLAN_BY_MODEL[m.id] || "—"}
+                    </Box>
+                  </Box>
+                ))}
+              </tbody>
+            </Box>
+          </Box>
+        </Box>
+        <AuxiliarNotice sx={{ mt: 3 }} />
+        <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 2 }}>
+          Fotos: Wikimedia Commons — L. Kibisz (CC BY-SA 4.0), FDACS-DPI (CC BY 3.0 US), F. Sautua (CC BY-SA 4.0), United Soybean Board (CC BY 2.0).
+        </Typography>
+      </Container>
+    </Box>
   );
 }

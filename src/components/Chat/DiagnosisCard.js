@@ -14,6 +14,8 @@ import { ArrowRight, ChevronDown, Leaf } from "lucide-react";
 import ActionPlan from "../Diagnosis/ActionPlan";
 import { useActionPlan } from "../../hooks/useActionPlan";
 import { IS_DEMO } from "../../config/runtime";
+import AuxiliarNotice from "../common/AuxiliarNotice";
+
 export default function DiagnosisCard({ diagnosis, onSave }) {
   const [expanded, setExpanded] = useState(false),
     [saving, setSaving] = useState(false),
@@ -89,9 +91,7 @@ export default function DiagnosisCard({ diagnosis, onSave }) {
             </Typography>
           </Box>
         )}
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Compare os sinais com a lavoura antes de decidir o manejo. A saída do modelo não substitui a confirmação em campo.
-        </Typography>
+        <AuxiliarNotice sx={{ mt: 2 }} />
         {error && (
           <Alert severity="error" sx={{ mt: 1 }}>
             {error}

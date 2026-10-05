@@ -116,26 +116,35 @@ export default function ChatPage() {
           <IconButton component={Link} to="/" aria-label="Voltar ao início">
             <ChevronLeft size={22} />
           </IconButton>
-          <Marca style={{ width: 35, height: 35 }} />
+          <Marca style={{ width: 40, height: 40, flexShrink: 0 }} />
           <Box flex={1} minWidth={0}>
-            <Typography fontWeight={800}>Caderno de campo</Typography>
-            <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ fontSize: { xs: '.7rem', md: '.75rem' } }}>
-              {isLoading
-                ? "Análise em andamento"
-                : pendingInterrupt
-                  ? "Aguardando sua resposta"
-                  : "Foto, hipótese e próximos cuidados"}
+            <Typography fontWeight={800} sx={{ fontSize: "1.0625rem", lineHeight: 1.2 }}>
+              Zé
             </Typography>
+            <Stack direction="row" alignItems="center" gap={0.75}>
+              <Box
+                aria-hidden="true"
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  bgcolor: isLoading ? "warning.main" : "success.main",
+                  animation: isLoading ? "zpBlink 1.4s ease-in-out infinite" : "none",
+                  "@keyframes zpBlink": { "0%,100%": { opacity: 1 }, "50%": { opacity: 0.3 } },
+                }}
+              />
+              <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ fontSize: ".8125rem" }}>
+                {isLoading
+                  ? "Analisando…"
+                  : pendingInterrupt
+                    ? "Aguardando sua resposta"
+                    : "Foto, hipótese e próximos cuidados"}
+              </Typography>
+            </Stack>
           </Box>
-          <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", textAlign: "center", fontWeight: 700, mb: 0.25 }}
-            >
-              LIMITES DE HOJE
-            </Typography>
-            <QuotaDisplay emphasis="prominent" />
+          <Box sx={{ display: { xs: "none", md: "block" }, flexShrink: 0 }}>
+            <QuotaDisplay />
           </Box>
           <IconButton
             aria-label="Conversas anteriores"
@@ -156,17 +165,12 @@ export default function ChatPage() {
         </Stack>
         <Box
           sx={{
-            display: { xs: "flex", sm: "none" },
-            flexDirection: "column",
-            alignItems: "center",
+            display: { xs: "flex", md: "none" },
             justifyContent: "center",
-            pt: 0.75,
+            pt: 0.5,
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 0.25 }}>
-            LIMITES DE HOJE
-          </Typography>
-          <QuotaDisplay emphasis="prominent" />
+          <QuotaDisplay />
         </Box>
       </Box>
       <RuntimeNotice />
