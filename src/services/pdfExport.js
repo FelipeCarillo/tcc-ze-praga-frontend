@@ -1,7 +1,8 @@
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 import { IS_DEMO } from "../config/runtime";
-const GREEN = "#1F5A3D";
+import { copy } from "../copy/ze";
+const GREEN = "#1B4D2E";
 const clean = (value) =>
   String(value ?? "")
     .replace(/[\u2010-\u2015]/g, "-")
@@ -23,7 +24,7 @@ function footer(doc) {
     doc.setFontSize(8);
     doc.setTextColor("#59665C");
     doc.text(
-      "Zé Praga - IMT | Apoio à observação, sem confirmação em campo.",
+      "Zé Praga - IMT | O Zé é um auxiliar, não fonte da verdade. Confirme com um engenheiro-agrônomo.",
       18,
       284,
     );
@@ -35,7 +36,7 @@ function writer(doc) {
   const text = (value, size = 11, bold = false) => {
     doc.setFont("helvetica", bold ? "bold" : "normal");
     doc.setFontSize(size);
-    doc.setTextColor(bold ? GREEN : "#1C2A20");
+    doc.setTextColor(bold ? GREEN : "#0F1A13");
     const lines = doc.splitTextToSize(clean(value), 174);
     const height = size * 0.45 + 1;
     // Mantém parágrafos curtos juntos e reserva espaço após um título.
@@ -129,7 +130,7 @@ export function exportDiagnosisPdf(diagnosis, { save = true } = {}) {
   w.space();
   w.text("Próximo passo", 13, true);
   w.text(
-    "Compare os sinais com o contexto da lavoura e procure um profissional de agronomia antes de decidir o manejo. Resultados em bases de avaliação não garantem desempenho em campo.",
+    copy.notice.title + " " + copy.notice.body + " Resultados em bases de avaliação não garantem desempenho em campo.",
   );
   footer(doc);
   if (save)

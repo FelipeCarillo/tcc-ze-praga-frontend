@@ -7,6 +7,7 @@ import { Mic } from 'lucide-react';
 import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 import DiagnosisCard from './DiagnosisCard';
 import Markdown from '../common/Markdown';
+import AuxiliarNotice from '../common/AuxiliarNotice';
 import { copy } from '../../copy/ze';
 
 function ChatMessage({ message, onSaveDiagnosis }) {
@@ -57,7 +58,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
             flexShrink: 0,
           }}
         />
-        <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: 'secondary.main' }}>
+        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'secondary.main' }}>
           {label}
         </Typography>
       </Box>
@@ -69,7 +70,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
     // Renderiza Markdown também durante o streaming — o react-markdown lida bem
     // com conteúdo parcial, então o texto formata ao vivo em vez de só no fim.
     return (
-      <Box sx={{ lineHeight: 1.6, fontSize: '0.9rem' }}>
+      <Box sx={{ lineHeight: 1.55, fontSize: '1rem' }}>
         <Markdown>{message.content}</Markdown>
       </Box>
     );
@@ -105,12 +106,12 @@ function ChatMessage({ message, onSaveDiagnosis }) {
           sx={{
             px: 2,
             py: 1.25,
-            borderRadius: isUser ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+            borderRadius: isUser ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
             backgroundColor: isUser ? 'primary.main' : 'background.paper',
             color: isUser ? '#FFFFFF' : 'text.primary',
             border: isUser ? 'none' : '1px solid',
             borderColor: 'divider',
-            boxShadow: isUser ? 'none' : (t) => `0 1px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(28,42,32,0.06)'}`,
+            boxShadow: isUser ? 'none' : (t) => `0 1px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(15,26,19,0.06)'}`,
           }}
         >
           {message.imageUrl && (
@@ -118,7 +119,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
               component="img"
               src={message.imageUrl}
               alt="Imagem enviada"
-              sx={{ maxWidth: '100%', maxHeight: 200, borderRadius: '10px', display: 'block', mb: message.content ? 1 : 0, objectFit: 'cover' }}
+              sx={{ maxWidth: '100%', maxHeight: 220, borderRadius: '15px', display: 'block', mb: message.content ? 1 : 0, objectFit: 'cover' }}
             />
           )}
           {isUser ? (
@@ -132,7 +133,7 @@ function ChatMessage({ message, onSaveDiagnosis }) {
                 <Typography
                   variant="body2"
                   component="div"
-                  sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '0.9rem' }}
+                  sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '1rem' }}
                 >
                   {message.content}
                 </Typography>
@@ -146,6 +147,13 @@ function ChatMessage({ message, onSaveDiagnosis }) {
           )}
         </Box>
       </Box>
+
+      {/* Toda resposta concluída do Zé carrega o aviso de auxiliar. */}
+      {!isUser && !message.isStreaming && message.content && (
+        <Box sx={{ maxWidth: { xs: '100%', md: '82%' }, pl: '38px', mt: 0.75 }}>
+          <AuxiliarNotice compact />
+        </Box>
+      )}
 
       {!isUser && message.diagnosis && (
         <Box sx={{ maxWidth: { xs: '100%', md: '82%' }, width: '100%', pl: { xs: 0, md: '38px' } }}>

@@ -309,6 +309,14 @@ export default function ChatInput({
                   ? "Acrescente uma observação (opcional)"
                   : "Pergunte ao Zé…"
               }
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "24px",
+                  minHeight: 48,
+                  fontSize: "1rem",
+                  bgcolor: "background.default",
+                },
+              }}
               value={text}
               onChange={(e) => setText(e.target.value)}
               disabled={disabled}
@@ -335,6 +343,14 @@ export default function ChatInput({
                 aria-label="Gravar mensagem de voz"
                 disabled={disabled}
                 onClick={startRecording}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  flexShrink: 0,
+                  bgcolor: "cta.main",
+                  color: "cta.contrastText",
+                  "&:hover": { bgcolor: "cta.hover" },
+                }}
               >
                 <Mic size={21} />
               </IconButton>
@@ -344,6 +360,9 @@ export default function ChatInput({
                 aria-label="Enviar mensagem"
                 disabled={disabled}
                 sx={{
+                  width: 48,
+                  height: 48,
+                  flexShrink: 0,
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
                   "&:hover": { bgcolor: "primary.dark" },
@@ -361,13 +380,14 @@ export default function ChatInput({
           gap={1}
           mt={0.5}
         >
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" noWrap sx={{ minWidth: 0 }}>
             JPG, PNG ou WebP · até 10 MB
           </Typography>
           <Button
             size="small"
             onClick={() => setSettings((v) => !v)}
             aria-expanded={settings}
+            sx={{ whiteSpace: "nowrap", minHeight: 36, flexShrink: 0 }}
           >
             Modelo: {MODELS.find((m) => m.id === model)?.name}
           </Button>

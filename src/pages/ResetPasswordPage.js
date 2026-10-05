@@ -66,9 +66,9 @@ export default function ResetPasswordPage() {
         <Box>
           <Typography
             sx={{
-              fontFamily: (t) => t.typography.fontFamilyHand,
+              fontFamily: (t) => t.typography.fontFamilyMono,
               color: (t) => t.palette.brand.milho,
-              fontSize: "1.8rem",
+              fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
               mb: 1,
             }}
           >
@@ -115,9 +115,9 @@ export default function ResetPasswordPage() {
         </Box>
         <Typography
           sx={{
-            fontFamily: (t) => t.typography.fontFamilyHand,
+            fontFamily: (t) => t.typography.fontFamilyMono,
             color: "secondary.main",
-            fontSize: "1.5rem",
+            fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
           }}
         >
           Recuperação de acesso

@@ -10,6 +10,7 @@ import { useAuth } from "../hooks/useAuth";
 import { resendVerification, forgotPassword } from "../services/authService";
 import { ReactComponent as Marca } from "../assets/brand/marca.svg";
 import { copy } from "../copy/ze";
+import lavoura from "../assets/field/lavoura-rs.jpg";
 
 function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -121,9 +122,10 @@ function LoginPage() {
           flexDirection: "column",
           justifyContent: "space-between",
           p: 6,
-          backgroundColor: "primary.main",
-          backgroundImage: (t) =>
-            `linear-gradient(160deg, ${t.palette.primary.main}, ${t.palette.brand.mataNoite})`,
+          backgroundColor: "#0B1510",
+          backgroundImage: `linear-gradient(180deg, rgba(11,21,16,.55), rgba(11,21,16,.9)), url(${lavoura})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           color: (t) => t.palette.brand.creme,
         }}
       >
@@ -143,9 +145,9 @@ function LoginPage() {
         <Box>
           <Typography
             sx={{
-              fontFamily: (t) => t.typography.fontFamilyHand,
+              fontFamily: (t) => t.typography.fontFamilyMono,
               color: (t) => t.palette.brand.milho,
-              fontSize: "1.8rem",
+              fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
               mb: 1,
             }}
           >
@@ -194,9 +196,9 @@ function LoginPage() {
         </Box>
         <Typography
           sx={{
-            fontFamily: (t) => t.typography.fontFamilyHand,
+            fontFamily: (t) => t.typography.fontFamilyMono,
             color: "secondary.main",
-            fontSize: "1.5rem",
+            fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
           }}
         >
           {copy.login.kicker}

@@ -119,9 +119,15 @@ export default function ChatWindow({
             <Stack gap={1.5}>
               <Button
                 size="large"
-                variant="contained"
                 startIcon={<Camera size={21} />}
                 onClick={() => camera.current.click()}
+                sx={{
+                  minHeight: 56,
+                  bgcolor: "cta.main",
+                  color: "cta.contrastText",
+                  fontWeight: 800,
+                  "&:hover": { bgcolor: "cta.hover" },
+                }}
               >
                 Tirar foto da folha
               </Button>

@@ -142,8 +142,8 @@ export default function ApiDocsPage() {
         component="pre"
         sx={{
           p: 3,
-          bgcolor: "#0F1B14",
-          color: "#F0EDE2",
+          bgcolor: "#0B1510",
+          color: "#EEF2E8",
           borderRadius: 1,
           overflowX: "auto",
           fontSize: ".85rem",
