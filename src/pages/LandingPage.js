@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import { ArrowRight, Camera } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { IS_DEMO } from "../config/runtime";
-import { DATASET, MODELS } from "../data/modelMetrics";
+import { DATASET, MODELS, prodModel } from "../data/modelMetrics";
+import BrandLockup from "../components/Brand/BrandLockup";
 import AuxiliarNotice from "../components/common/AuxiliarNotice";
 import lavoura from "../assets/field/lavoura-rs.jpg";
 import ferrugem from "../assets/field/ferrugem-macro.jpg";
@@ -55,6 +55,17 @@ const PLAN_BY_MODEL = {
 const pct = (v) =>
   `${(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
+// Os 3 números do m-Landing. O "5/dia" é o limite do plano Gratuito
+// (inference_daily_limit no seed do backend, scripts/seed_action_plans.py).
+const STATS = [
+  { value: String(DATASET.classes), label: "condições da folha" },
+  {
+    value: (prodModel.accuracy * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%",
+    label: "acerto no teste (ensemble)",
+  },
+  { value: "5/dia", label: "análises grátis" },
+];
+
 const motionSx = {
   "@keyframes zpUp": {
     from: { opacity: 0, transform: "translateY(18px)" },
@@ -78,6 +89,16 @@ const motionSx = {
     "70%": { opacity: 1, transform: "scale(1.05)" },
     "100%": { opacity: 1, transform: "scale(1)" },
   },
+  "@keyframes zpPulse": {
+    "0%": { boxShadow: "0 0 0 0 rgba(200,241,105,.75)" },
+    "70%": { boxShadow: "0 0 0 14px rgba(200,241,105,0)" },
+    "100%": { boxShadow: "0 0 0 0 rgba(200,241,105,0)" },
+  },
+  "@keyframes zpChip": {
+    "0%": { opacity: 0, transform: "translateX(-50%) scale(.6)" },
+    "70%": { opacity: 1, transform: "translateX(-50%) scale(1.06)" },
+    "100%": { opacity: 1, transform: "translateX(-50%) scale(1)" },
+  },
   "@keyframes zpMarq": {
     from: { transform: "translateX(0)" },
     to: { transform: "translateX(-50%)" },
@@ -91,9 +112,10 @@ const up = (delay = 0) => ({
   animation: `zpUp .8s ${delay}s cubic-bezier(.2,.7,.2,1) both`,
 });
 
-function Corner({ pos }) {
-  const v = pos.includes("t") ? { top: 16 } : { bottom: 16 };
-  const h = pos.includes("l") ? { left: 16 } : { right: 16 };
+function Corner({ pos, small = false }) {
+  const off = small ? 12 : 16;
+  const v = pos.includes("t") ? { top: off } : { bottom: off };
+  const h = pos.includes("l") ? { left: off } : { right: off };
   const side = (s) => `4px solid ${s ? "#C8F169" : "transparent"}`;
   return (
     <Box
@@ -102,8 +124,8 @@ function Corner({ pos }) {
         position: "absolute",
         ...v,
         ...h,
-        width: 34,
-        height: 34,
+        width: small ? 24 : 34,
+        height: small ? 24 : 34,
         borderTop: side(pos.includes("t")),
         borderBottom: side(pos.includes("b")),
         borderLeft: side(pos.includes("l")),
@@ -114,7 +136,25 @@ function Corner({ pos }) {
   );
 }
 
-function ScanCard() {
+function ScanCard({ compact = false }) {
+  // m-Landing: mira de 198 px com a etiqueta logo abaixo. A "porcentagem" do
+  // canvas virou "exemplo": é uma foto ilustrativa, não um laudo de verdade.
+  if (compact)
+    return (
+      <Box sx={{ position: "relative", height: 230 }}>
+        <Box sx={{ position: "relative", width: 198, height: 198, borderRadius: "22px", overflow: "hidden", border: "4px solid #FFFFFF", boxShadow: "0 20px 40px rgba(0,0,0,.35)", animation: "zpFloat 6s ease-in-out infinite" }}>
+          <Box component="img" src={ferrugem} alt="Folha de soja com pústulas de ferrugem-asiática" sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          {["tl", "tr", "bl", "br"].map((p) => (
+            <Corner key={p} pos={p} small />
+          ))}
+          <Box aria-hidden="true" sx={{ position: "absolute", left: 6, right: 6, height: 2, bgcolor: "#C8F169", boxShadow: "0 0 14px 3px rgba(200,241,105,.8)", animation: "zpScan 2.8s ease-in-out infinite" }} />
+        </Box>
+        <Box sx={{ position: "absolute", left: "50%", top: 186, transform: "translateX(-50%)", bgcolor: "#C8F169", color: "#0F1A13", fontWeight: 800, fontSize: "0.875rem", px: 1.75, py: 1, borderRadius: 999, whiteSpace: "nowrap", boxShadow: "0 8px 20px rgba(0,0,0,.3)", display: "flex", alignItems: "center", gap: 1, animation: "zpChip .6s 1.6s cubic-bezier(.2,.7,.2,1) both" }}>
+          <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#B42318" }} />
+          Ferrugem-asiática · exemplo
+        </Box>
+      </Box>
+    );
   return (
     <Box sx={{ position: "relative", height: { xs: 340, md: 440 }, width: "100%", maxWidth: 380, mx: "auto" }}>
       <Box
@@ -187,108 +227,98 @@ export default function LandingPage() {
 
   return (
     <Box sx={motionSx}>
-      <Box
-        component="section"
-        sx={{ position: "relative", overflow: "hidden", bgcolor: "#0B1510", color: "#FFFFFF" }}
-      >
-        <Box
-          component="img"
-          src={lavoura}
-          alt=""
-          sx={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            animation: "zpKen 22s ease-in-out infinite alternate",
-          }}
-        />
-        <Box
-          aria-hidden="true"
-          sx={{
-            position: "absolute",
-            inset: 0,
-            background: {
-              xs: "linear-gradient(180deg, rgba(11,21,16,.55) 0%, rgba(11,21,16,.92) 60%)",
-              md: "linear-gradient(90deg, rgba(11,21,16,.92) 0%, rgba(11,21,16,.6) 45%, rgba(11,21,16,.1) 100%)",
-            },
-          }}
-        />
-        <Container
-          maxWidth="lg"
-          sx={{
-            position: "relative",
-            py: { xs: 5, md: 12 },
-            display: "flex",
-            flexWrap: "wrap",
-            gap: { xs: 4, md: 6 },
-            alignItems: "center",
-          }}
-        >
-          <Stack spacing={3} sx={{ flex: "1 1 480px", minWidth: 0 }}>
-            <Typography
-              sx={{
-                ...up(0),
-                fontFamily: (t) => t.typography.fontFamilyMono,
-                fontSize: "0.875rem",
-                letterSpacing: ".08em",
-                color: "#C8F169",
-              }}
-            >
-              SEU AGRÔNOMO DE BOLSO
-            </Typography>
-            <Typography
-              component="h1"
-              variant="h1"
-              sx={{ ...up(0.15), color: "#FFFFFF", fontSize: { xs: "2.4rem", sm: "3rem", md: "4.5rem" }, lineHeight: 0.98 }}
-            >
+      {/* ── Mobile: m-Landing ─────────────────────────────────────────── */}
+      <Box sx={{ display: { xs: "block", md: "none" } }}>
+        <Box component="section" sx={{ position: "relative", height: 540, overflow: "hidden", bgcolor: "#0B1510", color: "#FFFFFF" }}>
+          <Box component="img" src={lavoura} alt="" sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", animation: "zpKen 20s ease-in-out infinite alternate" }} />
+          <Box aria-hidden="true" sx={{ position: "absolute", inset: 0, bgcolor: "rgba(11,21,16,0.28)" }} />
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ position: "absolute", left: 0, right: 0, top: 0, px: 2.5, py: 2, zIndex: 1 }}>
+            <BrandLockup size={32} tone="light" />
+            {user ? null : (
+              <Box component={Link} to="/login" sx={{ color: "#0F1A13", bgcolor: "#F2F4EE", fontWeight: 700, fontSize: "0.9375rem", textDecoration: "none", px: 2, py: 1.25, borderRadius: 999 }}>
+                Entrar
+              </Box>
+            )}
+          </Stack>
+          <Box sx={{ position: "absolute", left: "50%", top: 96, width: 198, transform: "translateX(-50%)" }}>
+            <ScanCard compact />
+          </Box>
+          <Box sx={{ position: "absolute", left: 0, right: 0, bottom: 0, px: 2.5, pt: 9, pb: 3, background: "linear-gradient(180deg, rgba(11,21,16,0) 0%, rgba(11,21,16,.85) 45%, #0B1510 100%)" }}>
+            <Typography component="h1" sx={{ ...up(0), m: 0, color: "#FFFFFF", fontSize: "2.125rem", fontWeight: 800, fontStretch: "112%", lineHeight: 1.02, letterSpacing: "-0.02em" }}>
               Manda a foto da folha. O Zé diz o que é e o que fazer.
             </Typography>
-            <Typography sx={{ ...up(0.3), color: "#D6E4D3", fontSize: { xs: "1.0625rem", md: "1.1875rem" }, lineHeight: 1.55, maxWidth: 560 }}>
-              Diagnóstico de doenças foliares da soja por foto, plano de ação em português e histórico por talhão.
+          </Box>
+        </Box>
+        <Stack gap={1.5} sx={{ p: 2.5 }}>
+          <Typography sx={{ ...up(0.15), fontSize: "1rem", lineHeight: 1.5, color: "text.secondary" }}>
+            Diagnóstico de doenças foliares da soja, com plano de ação em português e histórico por talhão.
+          </Typography>
+          <Box component={Link} to={user ? "/camera" : "/login"} state={user ? undefined : { from: "/camera" }} sx={{ ...up(0.3), height: 56, borderRadius: "16px", bgcolor: "cta.main", color: "cta.contrastText", fontWeight: 800, fontSize: "1.0625rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 1.25, textDecoration: "none" }}>
+            <Box component="span" sx={{ display: "flex", borderRadius: "10px", animation: "zpPulse 2.4s 2s infinite" }}>
+              <Camera size={22} strokeWidth={2.2} aria-hidden="true" />
+            </Box>
+            Fotografar folha
+          </Box>
+          <Box component="a" href="#como" sx={{ ...up(0.45), height: 52, borderRadius: "16px", border: "1.5px solid", borderColor: "text.primary", color: "text.primary", fontWeight: 700, fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
+            Ver como funciona
+          </Box>
+          <Box sx={{ ...up(0.6), display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1, mt: 0.5 }}>
+            {STATS.map((st) => (
+              <Box key={st.label} sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "14px", p: 1.5 }}>
+                <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, fontSize: "1.125rem", fontWeight: 600 }}>{st.value}</Typography>
+                <Typography sx={{ fontSize: "0.75rem", lineHeight: 1.35, color: "text.secondary" }}>{st.label}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* ── Desktop: d-Landing (a barra de topo vem do Layout, por cima) ── */}
+      <Box
+        component="section"
+        sx={{ display: { xs: "none", md: "block" }, position: "relative", minHeight: 720, overflow: "hidden", bgcolor: "#0B1510", color: "#FFFFFF" }}
+      >
+        <Box component="img" src={lavoura} alt="" sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", animation: "zpKen 22s ease-in-out infinite alternate" }} />
+        <Box aria-hidden="true" sx={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(11,21,16,.92) 0%, rgba(11,21,16,.6) 45%, rgba(11,21,16,.1) 100%)" }} />
+        <Box sx={{ position: "relative", maxWidth: 1240, mx: "auto", px: 4, pt: 22, pb: 10, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <Stack spacing={3} sx={{ flex: "1 1 520px", minWidth: 0 }}>
+            <Typography sx={{ ...up(0), fontFamily: (t) => t.typography.fontFamilyMono, fontSize: "0.875rem", letterSpacing: ".08em", color: "#C8F169" }}>
+              SEU AGRÔNOMO DE BOLSO
             </Typography>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={up(0.45)}>
+            <Typography component="h1" sx={{ ...up(0.15), m: 0, color: "#FFFFFF", fontSize: "clamp(40px, 5.4vw, 76px)", fontWeight: 800, fontStretch: "115%", letterSpacing: "-0.025em", lineHeight: 0.98 }}>
+              Manda a foto da folha. O Zé diz o que é e o que fazer.
+            </Typography>
+            <Typography sx={{ ...up(0.3), color: "#D6E4D3", fontSize: "1.1875rem", lineHeight: 1.55, maxWidth: 560 }}>
+              Diagnóstico de doenças foliares da soja por foto, plano de ação em português e histórico por talhão. No celular, no campo; no computador, no escritório.
+            </Typography>
+            <Stack direction="row" spacing={1.5} sx={up(0.45)}>
               <Button
                 component={Link}
-                to="/chat"
+                to={user ? "/chat" : "/login"}
                 size="large"
                 startIcon={<Camera size={22} />}
-                sx={{
-                  bgcolor: "cta.main",
-                  color: "cta.contrastText",
-                  fontWeight: 800,
-                  minHeight: 56,
-                  px: 3.5,
-                  "&:hover": { bgcolor: "cta.hover" },
-                }}
+                sx={{ bgcolor: "cta.main", color: "cta.contrastText", fontWeight: 800, minHeight: 58, px: 3.5, borderRadius: "16px", fontSize: "1.0625rem", "&:hover": { bgcolor: "cta.hover" } }}
               >
-                Analisar uma folha
+                Analisar uma folha grátis
               </Button>
               <Button
-                component={Link}
-                to={user ? "/historico" : "/sobre"}
+                href="#como"
                 size="large"
                 variant="outlined"
-                endIcon={<ArrowRight size={18} />}
-                sx={{ minHeight: 56, color: "#EEF2E8", borderColor: "rgba(238,242,232,.7)", "&:hover": { borderColor: "#EEF2E8", bgcolor: "rgba(238,242,232,.08)" } }}
+                sx={{ minHeight: 58, px: 3, borderRadius: "16px", fontSize: "1.0625rem", color: "#EEF2E8", borderColor: "#EEF2E8", "&:hover": { borderColor: "#FFFFFF", bgcolor: "rgba(238,242,232,.08)" } }}
               >
-                {user ? "Abrir meu histórico" : "Conhecer o projeto"}
+                Ver como funciona
               </Button>
             </Stack>
-            <Typography variant="body2" sx={{ color: "#B7C2B4", ...up(0.6) }}>
-              {IS_DEMO
-                ? "Demonstração local: respostas e análises simuladas são identificadas."
-                : "Entre na sua conta para analisar e guardar seus laudos."}
-            </Typography>
           </Stack>
-          <Box sx={{ flex: "0 1 380px", width: "100%" }}>
+          <Box sx={{ flex: "0 1 360px", width: "100%" }}>
             <ScanCard />
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       <Box
+        id="doencas"
         aria-label="Condições reconhecidas"
         sx={{ bgcolor: "cta.main", color: "cta.contrastText", overflow: "hidden", py: 1.75, whiteSpace: "nowrap" }}
       >

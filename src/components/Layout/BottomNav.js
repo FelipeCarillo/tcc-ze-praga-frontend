@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -34,8 +34,8 @@ const itemSx = {
 /**
  * Navegação inferior fixa (mobile) — rebrand 2026.
  * A câmera é o item central, elevado e em verde-broto (padrão "câmera em 1
- * toque" do benchmark): abre a câmera traseira e entrega o arquivo ao /chat.
- * Sem login, leva para /login com o destino preservado.
+ * toque" do benchmark): abre a tela de câmera do Zé (/camera, com mira e
+ * checagens). Sem login, leva para /login com o destino preservado.
  *
  * Renderizada num Portal: a transição de rota (App.RouteTransition) anima cada
  * página com `transform`, o que prende `position: fixed` ao container animado e
@@ -45,20 +45,13 @@ function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const inputRef = useRef(null);
 
   const openCamera = () => {
     if (!user) {
-      navigate("/login", { state: { from: "/chat" } });
+      navigate("/login", { state: { from: "/camera" } });
       return;
     }
-    if (inputRef.current) inputRef.current.click();
-  };
-
-  const handleFile = (e) => {
-    const file = e.target.files && e.target.files[0];
-    navigate("/chat", file ? { state: { pendingFile: file } } : undefined);
-    e.target.value = "";
+    navigate("/camera");
   };
 
   return (
@@ -82,15 +75,6 @@ function BottomNav() {
           pt: 0.75,
         }}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          hidden
-          onChange={handleFile}
-          data-testid="bottomnav-camera-input"
-        />
         {items.map((item) => {
           if (item.camera) {
             return (

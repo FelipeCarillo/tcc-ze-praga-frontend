@@ -10,7 +10,7 @@ import React, {
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import { AuthContext } from "./AuthContext";
 import { FeaturesProvider } from "./contexts/FeaturesContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
@@ -28,6 +28,8 @@ import * as authService from "./services/authService";
 // página vira um chunk próprio: o bundle inicial encolhe e o 4G do campo baixa
 // só o que a pessoa abre. O service worker guarda os chunks para a próxima vez.
 const ChatPage = lazy(() => import("./pages/ChatPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const CameraPage = lazy(() => import("./pages/CameraPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const DiagnosisDetailPage = lazy(() => import("./pages/DiagnosisDetailPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
@@ -70,7 +72,22 @@ function AuthExpiredListener({ onExpired }) {
   return null;
 }
 
-const routeOrder = ["/", "/chat", "/historico", "/modelos", "/api-docs", "/sobre"];
+// Logado, o "/" é o Início (m-Home); deslogado, a landing com a barra de
+// topo transparente sobre o hero (d-Landing / m-Landing).
+function RootPage() {
+  const { user } = React.useContext(AuthContext);
+  return user ? (
+    <Layout>
+      <HomePage />
+    </Layout>
+  ) : (
+    <Layout topBar="overlay" bottomNav={false}>
+      <LandingPage />
+    </Layout>
+  );
+}
+
+const routeOrder = ["/", "/camera", "/chat", "/historico", "/modelos", "/api-docs", "/sobre"];
 
 function routeIndex(pathname) {
   if (pathname.startsWith("/historico/")) return routeOrder.indexOf("/historico");
@@ -78,12 +95,6 @@ function routeIndex(pathname) {
   const index = routeOrder.indexOf(pathname);
   return index === -1 ? routeOrder.length : index;
 }
-
-const routeVariants = {
-  enter: (direction) => ({ opacity: 0, x: direction * 56 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction) => ({ opacity: 0, x: direction * -56 }),
-};
 
 function RouteTransition({ children }) {
   const location = useLocation();
@@ -94,21 +105,20 @@ function RouteTransition({ children }) {
     previousPathname.current = location.pathname;
   }, [location.pathname]);
 
+  // Só a animação de ENTRADA. A versão anterior usava AnimatePresence
+  // mode="wait" com saída, mas a saída nunca terminava: a página antiga ficava
+  // montada e renderizava a rota nova (a página "nova" nunca montava de fato).
+  // Efeito colateral visível: o /chat que aparecia era essa cópia, e o arquivo
+  // vindo da câmera se perdia na troca. Remontar por chave, sem saída, resolve.
   return (
-    <AnimatePresence initial={false} mode="wait" custom={direction}>
-      <motion.div
-        key={location.pathname}
-        custom={direction}
-        variants={routeVariants}
-        initial="enter"
-        animate="center"
-        exit="exit"
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        style={{ willChange: "opacity, transform" }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, x: direction * 56 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -173,11 +183,14 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <RouteTransition>
                   <Routes>
+                  <Route path="/" element={<RootPage />} />
                   <Route
-                    path="/"
+                    path="/camera"
                     element={
                       <Layout>
-                        <LandingPage />
+                        <RequireAuth>
+                          <CameraPage />
+                        </RequireAuth>
                       </Layout>
                     }
                   />

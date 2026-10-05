@@ -198,6 +198,7 @@ export default function ChatPage() {
         disabled={isLoading || !!pendingInterrupt}
         pendingFile={file}
         onFileHandled={fileHandled}
+        autoRecord={Boolean(location.state?.startAudio)}
       />
       <SessionsDrawer
         open={sessions}

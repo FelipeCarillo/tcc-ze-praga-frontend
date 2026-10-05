@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const titles = {
-  '/': 'Início', '/chat': 'Analisar uma folha', '/historico': 'Histórico',
+  '/': 'Início', '/camera': 'Câmera', '/chat': 'Analisar uma folha', '/historico': 'Histórico',
   '/perfil': 'Meu perfil', '/login': 'Entrar', '/modelos': 'Modelos e métricas',
   '/api-docs': 'API', '/sobre': 'O projeto', '/planos': 'Planos',
   '/redefinir-senha': 'Redefinir senha',

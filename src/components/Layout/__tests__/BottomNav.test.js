@@ -40,7 +40,7 @@ describe('BottomNav (rebrand 2026)', () => {
     render(<BottomNav />);
     expect(screen.queryByRole('link', { name: /Histórico/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Fotografar folha' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/login', { state: { from: '/chat' } });
+    expect(mockNavigate).toHaveBeenCalledWith('/login', { state: { from: '/camera' } });
   });
 
   it('marca a página atual com aria-current', () => {
@@ -51,13 +51,10 @@ describe('BottomNav (rebrand 2026)', () => {
     expect(screen.getByRole('link', { name: /Início/ })).not.toHaveAttribute('aria-current');
   });
 
-  it('com login, a foto da câmera vai para o /chat', () => {
+  it('com login, a câmera abre a tela de câmera do Zé', () => {
     mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
     render(<BottomNav />);
-    const input = screen.getByTestId('bottomnav-camera-input');
-    expect(input).toHaveAttribute('capture', 'environment');
-    const file = new File(['x'], 'folha.jpg', { type: 'image/jpeg' });
-    fireEvent.change(input, { target: { files: [file] } });
-    expect(mockNavigate).toHaveBeenCalledWith('/chat', { state: { pendingFile: file } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fotografar folha' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/camera');
   });
 });

@@ -74,6 +74,8 @@ export const copy = {
     title: 'O Zé é um auxiliar, não a palavra final.',
     body: 'Esta é uma hipótese automática; confirme com um engenheiro-agrônomo antes de aplicar qualquer produto.',
     short: 'Sou um auxiliar, não fonte da verdade. Confirme com seu agrônomo.',
+    footer:
+      'O Zé Praga é uma ferramenta de apoio. Não é fonte da verdade e não substitui a recomendação de um engenheiro-agrônomo.',
   },
 
   diagnosis: {

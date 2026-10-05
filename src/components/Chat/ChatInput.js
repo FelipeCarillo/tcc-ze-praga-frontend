@@ -24,6 +24,7 @@ export default function ChatInput({
   disabled = false,
   pendingFile,
   onFileHandled,
+  autoRecord = false,
 }) {
   const features = useFeatures(),
     allowed = useMemo(() => allowedModelIds(features), [features]);
@@ -171,6 +172,17 @@ export default function ChatInput({
       );
     }
   };
+  // Atalho "Perguntar por áudio" do Início: abre o chat já gravando.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoRecord && !autoStarted.current && !disabled) {
+      autoStarted.current = true;
+      startRecording();
+    }
+    // startRecording é recriada a cada render; o atalho dispara uma vez só.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRecord, disabled]);
+
   return (
     <Box
       sx={{
