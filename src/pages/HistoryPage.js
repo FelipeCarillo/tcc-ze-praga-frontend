@@ -14,16 +14,31 @@ import {
   Pagination,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { ArrowUpRight, Camera, Download, Leaf, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Camera,
+  Download,
+  LayoutGrid,
+  Leaf,
+  List as ListIcon,
+  MapPin,
+  Trash2,
+  X,
+} from "lucide-react";
 import Page, { LoadingState, ErrorState } from "../components/common/Page";
 import {
   getDiagnosesPage,
   getDiagnoses,
+  getDiagnosesByTalhao,
   deleteDiagnosis,
   clearAllDiagnoses,
+  SEM_TALHAO,
 } from "../services/historyService";
+import HistoryByTalhao from "../components/History/HistoryByTalhao";
 import { useFeatures } from "../contexts/FeaturesContext";
 import AuxiliarNotice from "../components/common/AuxiliarNotice";
 export default function HistoryPage() {
@@ -36,8 +51,21 @@ export default function HistoryPage() {
     [version, setVersion] = useState(0),
     [removing, setRemoving] = useState(null),
     [busy, setBusy] = useState(false),
-    [exporting, setExporting] = useState(false);
+    [exporting, setExporting] = useState(false),
+    // TCC-093: "talhao" agrupa por talhão (padrão, como no design); "lista"
+    // é a lista paginada com busca, opcionalmente filtrada por um talhão.
+    [view, setView] = useState("talhao"),
+    [talhaoFilter, setTalhaoFilter] = useState(null),
+    [groups, setGroups] = useState([]);
   const features = useFeatures();
+  const showAll = (group) => {
+    setTalhaoFilter({
+      id: group.talhaoId || SEM_TALHAO,
+      nome: group.talhaoNome || "Sem talhão",
+    });
+    setPage(1);
+    setView("lista");
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(search.trim());
@@ -49,7 +77,34 @@ export default function HistoryPage() {
     let active = true;
     setLoading(true);
     setError("");
-    getDiagnosesPage({ page, limit: 12, search: query })
+    if (view === "talhao") {
+      getDiagnosesByTalhao()
+        .then((result) => {
+          if (!active) return;
+          setGroups(result);
+          const total = result.reduce((n, g) => n + g.total, 0);
+          setData({ items: [], total });
+        })
+        .catch((err) => {
+          if (!active) return;
+          // Backend anterior ao TCC-093 não tem /por-talhao: cai na lista em
+          // vez de quebrar, assim front e back podem subir em qualquer ordem.
+          if (err?.response?.status === 404) setView("lista");
+          else setError("Não foi possível carregar o histórico.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }
+    getDiagnosesPage({
+      page,
+      limit: 12,
+      search: query,
+      talhaoId: talhaoFilter?.id,
+    })
       .then((result) => {
         if (active) {
           setData(result);
@@ -65,7 +120,7 @@ export default function HistoryPage() {
     return () => {
       active = false;
     };
-  }, [page, query, version]);
+  }, [page, query, version, view, talhaoFilter]);
   const remove = async () => {
     setBusy(true);
     try {
@@ -85,7 +140,10 @@ export default function HistoryPage() {
     setExporting(true);
     setError("");
     try {
-      const all = await getDiagnoses({ search: query });
+      const all = await getDiagnoses({
+        search: view === "lista" ? query : "",
+        talhaoId: view === "lista" ? talhaoFilter?.id : undefined,
+      });
       const { exportHistoryPdf } = await import("../services/pdfExport");
       await exportHistoryPdf(all);
     } catch {
@@ -116,14 +174,38 @@ export default function HistoryPage() {
         alignItems={{ sm: "center" }}
         mb={3}
       >
-        <TextField
-          label="Buscar doença"
-          placeholder="Ex.: ferrugem"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+        <ToggleButtonGroup
+          exclusive
           size="small"
-          sx={{ flex: 1 }}
-        />
+          value={view}
+          onChange={(_, next) => {
+            if (!next) return;
+            if (next === "talhao") setTalhaoFilter(null);
+            setPage(1);
+            setView(next);
+          }}
+          aria-label="Como mostrar o histórico"
+          sx={{ "& .MuiToggleButton-root": { px: 2, minHeight: 40, gap: 0.75, fontWeight: 700, textTransform: "none" } }}
+        >
+          <ToggleButton value="talhao" aria-label="Agrupar por talhão">
+            <LayoutGrid size={16} aria-hidden="true" /> Por talhão
+          </ToggleButton>
+          <ToggleButton value="lista" aria-label="Lista de laudos">
+            <ListIcon size={16} aria-hidden="true" /> Lista
+          </ToggleButton>
+        </ToggleButtonGroup>
+        {view === "lista" ? (
+          <TextField
+            label="Buscar doença"
+            placeholder="Ex.: ferrugem"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
+            sx={{ flex: 1 }}
+          />
+        ) : (
+          <Box sx={{ flex: 1 }} />
+        )}
         <Button
           startIcon={<Download size={18} />}
           disabled={
@@ -140,6 +222,18 @@ export default function HistoryPage() {
           <Link to="/planos">planos Pro e Enterprise</Link>.
         </Typography>
       )}
+      {view === "lista" && talhaoFilter && (
+        <Chip
+          icon={<MapPin size={15} />}
+          label={"Talhão: " + talhaoFilter.nome}
+          onDelete={() => {
+            setTalhaoFilter(null);
+            setPage(1);
+          }}
+          deleteIcon={<X size={15} aria-label="Remover filtro de talhão" />}
+          sx={{ mb: 2, fontWeight: 700 }}
+        />
+      )}
       {error && (
         <Box mb={2}>
           <ErrorState
@@ -150,6 +244,11 @@ export default function HistoryPage() {
       )}
       {loading ? (
         <LoadingState label="Buscando suas análises…" />
+      ) : view === "talhao" && data.total > 0 ? (
+        <>
+          <AuxiliarNotice sx={{ mb: 2 }} />
+          <HistoryByTalhao groups={groups} onShowAll={showAll} />
+        </>
       ) : !data.items.length ? (
         <Box
           sx={{
@@ -252,6 +351,10 @@ export default function HistoryPage() {
                         sx={{ lineHeight: 1.3 }}
                       >
                         {d.disease}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <MapPin size={13} aria-hidden="true" />
+                        {d.talhaoNome || "Sem talhão"}
                       </Typography>
                     </Box>
                     <ArrowUpRight size={20} />

@@ -17,6 +17,7 @@ import { useActionPlan } from "../hooks/useActionPlan";
 import { useFeatures } from "../contexts/FeaturesContext";
 import { IS_DEMO } from "../config/runtime";
 import AuxiliarNotice from "../components/common/AuxiliarNotice";
+import TalhaoAssign from "../components/Talhao/TalhaoAssign";
 
 export default function DiagnosisDetailPage() {
   const { id } = useParams(),
@@ -92,6 +93,9 @@ export default function DiagnosisDetailPage() {
             onRetry={() => setVersion((v) => v + 1)}
           />
         </Box>
+      )}
+      {!loading && result && (
+        <TalhaoAssign diagnosis={result} onChange={setResult} />
       )}
       {loading ? (
         <LoadingState label="Abrindo sua análise…" />
