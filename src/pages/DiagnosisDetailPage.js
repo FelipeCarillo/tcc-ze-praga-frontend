@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Box, Button, Portal, Skeleton, Snackbar, Typography } from "@mui/material";
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Portal, Skeleton, Snackbar, Typography } from "@mui/material";
 import { BellRing, Check, ChevronLeft, Download, Leaf, Share2 } from "lucide-react";
 import { ErrorState } from "../components/common/Page";
 import AuxiliarNotice from "../components/common/AuxiliarNotice";
 import ActionChecklist from "../components/Diagnosis/ActionChecklist";
 import TalhaoAssign from "../components/Talhao/TalhaoAssign";
 import { RiskChip } from "../components/History/HistoryByTalhao";
-import { getDiagnosisById } from "../services/historyService";
+import { deleteDiagnosis, getDiagnosisById } from "../services/historyService";
 import { addReminder, hasReminder } from "../services/reminders";
 import { useActionPlan } from "../hooks/useActionPlan";
 import { useFeatures } from "../contexts/FeaturesContext";
@@ -80,6 +80,8 @@ export default function DiagnosisDetailPage() {
   const [exporting, setExporting] = useState(false);
   const [reminded, setReminded] = useState(() => hasReminder(id));
   const [toast, setToast] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -125,6 +127,18 @@ export default function DiagnosisDetailPage() {
       }
     } catch {
       // Compartilhamento cancelado: nada a fazer.
+    }
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await deleteDiagnosis(result.id);
+      navigate("/historico", { replace: true });
+    } catch {
+      setToast("A exclusão não foi confirmada. Tente de novo.");
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -277,6 +291,9 @@ export default function DiagnosisDetailPage() {
                   Resultado simulado (demonstração).
                 </Typography>
               )}
+              <Button size="small" color="error" onClick={() => setConfirmDelete(true)} sx={{ ml: "auto" }}>
+                Excluir laudo
+              </Button>
             </Box>
 
             {/* Desktop: ações e aviso no fluxo da página. */}
@@ -300,6 +317,18 @@ export default function DiagnosisDetailPage() {
           </Box>
         </Portal>
       )}
+      <Dialog open={confirmDelete} onClose={() => !deleting && setConfirmDelete(false)} aria-labelledby="excluir-laudo">
+        <DialogTitle id="excluir-laudo">Excluir este laudo?</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning">Esta ação não pode ser desfeita. O laudo sai do histórico.</Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={deleting} onClick={() => setConfirmDelete(false)}>Manter</Button>
+          <Button color="error" variant="contained" disabled={deleting} onClick={remove}>
+            {deleting ? "Excluindo…" : "Confirmar exclusão"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast("")} message={toast} />
     </Box>
   );
