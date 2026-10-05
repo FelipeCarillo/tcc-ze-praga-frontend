@@ -5,7 +5,6 @@ import InputBase from '@mui/material/InputBase';
 import Typography from '@mui/material/Typography';
 import { motion } from 'framer-motion';
 import { ArrowUp, HelpCircle } from 'lucide-react';
-import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
 
 /**
  * Pergunta que o agente fez via `ask_user` (human-in-the-loop).
@@ -44,100 +43,90 @@ function InterruptPrompt({ interrupt, onAnswer, disabled = false }) {
     return null;
   })();
 
+  // m-Chat: a pergunta num balão branco do Zé e as respostas em pílulas com
+  // contorno verde-lavoura logo abaixo (sem avatar, como as outras mensagens).
   return (
     <Box
       component={motion.div}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'flex-start' }}
+      transition={{ duration: 0.3 }}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1.5, alignSelf: 'flex-start', maxWidth: { xs: '88%', md: '78%' } }}
     >
-      <Box sx={{ width: 30, height: 30, borderRadius: '9px', overflow: 'hidden', flexShrink: 0 }}>
-        <Marca style={{ width: 30, height: 30, display: 'block' }} />
-      </Box>
-
       <Box
         sx={{
-          backgroundColor: 'background.paper',
+          bgcolor: 'background.paper',
           border: '1px solid',
-          borderColor: 'secondary.main',
-          borderRadius: '4px 16px 16px 16px',
-          p: 1.75,
-          maxWidth: '82%',
-          flex: 1,
+          borderColor: 'divider',
+          borderRadius: '20px 20px 20px 6px',
+          px: 1.75,
+          py: 1.5,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1, color: 'secondary.main' }}>
-          <HelpCircle size={13} />
-          <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: 0.3 }}>
-            O ZÉ PERGUNTA
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5, color: 'primary.main' }}>
+          <HelpCircle size={13} aria-hidden="true" />
+          <Typography sx={{ fontSize: '0.6875rem', fontWeight: 800, letterSpacing: '0.06em' }}>O ZÉ PERGUNTA</Typography>
         </Box>
-
-        <Typography variant="body2" sx={{ lineHeight: 1.6, fontSize: '0.9rem', mb: 1.5 }}>
-          {question}
-        </Typography>
-
-        {quickOptions ? (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {quickOptions.map((opt) => (
-              <Button
-                key={opt}
-                onClick={() => answer(opt)}
-                disabled={disabled}
-                size="small"
-                variant="outlined"
-                sx={{
-                  borderRadius: 999,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.8rem',
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                  '&:hover': { borderColor: 'secondary.main', color: 'secondary.main' },
-                }}
-              >
-                {opt}
-              </Button>
-            ))}
-          </Box>
-        ) : (
-          <Box
-            component="form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              answer(text.trim());
-            }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              backgroundColor: 'surface.sunken',
-              borderRadius: 999,
-              px: 1.5,
-              py: 0.5,
-            }}
-          >
-            <InputBase
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Responder…"
-              disabled={disabled}
-              autoFocus
-              inputProps={{ 'aria-label': question }}
-              sx={{ flex: 1, fontSize: '0.88rem' }}
-            />
-            <Button
-              type="submit"
-              disabled={disabled || !text.trim()}
-              aria-label="Enviar resposta"
-              sx={{ minWidth: 34, width: 34, height: 34, borderRadius: '50%', p: 0 }}
-            >
-              <ArrowUp size={17} />
-            </Button>
-          </Box>
-        )}
+        <Typography sx={{ lineHeight: 1.45, fontSize: '0.9375rem' }}>{question}</Typography>
       </Box>
+
+      {quickOptions ? (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+          {quickOptions.map((opt) => (
+            <Box
+              key={opt}
+              component="button"
+              type="button"
+              onClick={() => answer(opt)}
+              disabled={disabled}
+              sx={{
+                height: 40,
+                px: 1.75,
+                border: '1.5px solid',
+                borderColor: 'primary.main',
+                borderRadius: 999,
+                bgcolor: 'background.paper',
+                color: 'primary.main',
+                fontFamily: 'inherit',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'action.hover' },
+                '&:disabled': { opacity: 0.5, cursor: 'default' },
+              }}
+            >
+              {opt}
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            answer(text.trim());
+          }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: 'background.paper', border: '1.5px solid', borderColor: 'primary.main', borderRadius: 999, pl: 2, pr: 0.5, height: 44 }}
+        >
+          <InputBase
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Responder…"
+            disabled={disabled}
+            autoFocus
+            inputProps={{ 'aria-label': question }}
+            sx={{ flex: 1, fontSize: '0.9375rem' }}
+          />
+          <Button
+            type="submit"
+            disabled={disabled || !text.trim()}
+            aria-label="Enviar resposta"
+            sx={{ minWidth: 36, width: 36, height: 36, borderRadius: '50%', p: 0, bgcolor: 'primary.main', color: 'primary.contrastText', '&:hover': { bgcolor: 'primary.dark' } }}
+          >
+            <ArrowUp size={17} />
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }

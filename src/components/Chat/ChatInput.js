@@ -1,22 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
   Button,
-  Collapse,
   IconButton,
-  MenuItem,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { ArrowUp, Camera, ImageIcon, Mic, Square, X } from "lucide-react";
-import { useFeatures } from "../../contexts/FeaturesContext";
-import {
-  MODELS,
-  allowedModelIds,
-  defaultModelId,
-} from "../../data/diagnosisModels";
+import { ArrowUp, Camera, Mic, Square, X } from "lucide-react";
+import usePreferredModel from "../../hooks/usePreferredModel";
 import { IMAGE_ACCEPT, validateImage } from "../../utils/imageUpload";
 
 export default function ChatInput({
@@ -24,15 +17,16 @@ export default function ChatInput({
   disabled = false,
   pendingFile,
   onFileHandled,
+  autoRecord = false,
+  onOpenCamera,
 }) {
-  const features = useFeatures(),
-    allowed = useMemo(() => allowedModelIds(features), [features]);
-  const [model, setModel] = useState(() => defaultModelId(features));
+  // O modelo vem da preferência (Perfil / cabeçalho do desktop), não mais de
+  // um seletor no composer — como no canvas (m-Chat).
+  const { model } = usePreferredModel();
   const [text, setText] = useState(""),
     [file, setFile] = useState(null),
     [preview, setPreview] = useState(""),
-    [error, setError] = useState(""),
-    [settings, setSettings] = useState(false);
+    [error, setError] = useState("");
   const [recording, setRecording] = useState(false),
     [audio, setAudio] = useState(null),
     [audioUrl, setAudioUrl] = useState("");
@@ -46,16 +40,12 @@ export default function ChatInput({
     return () => URL.revokeObjectURL(url);
   }, [audio]);
   const gallery = useRef(null),
-    camera = useRef(null),
     recorder = useRef(null),
     stream = useRef(null),
     timer = useRef(null),
     cancelled = useRef(false),
     mounted = useRef(true),
     sending = useRef(false);
-  useEffect(() => {
-    if (allowed && !allowed.has(model)) setModel(defaultModelId(features));
-  }, [allowed, model, features]);
   useEffect(() => {
     if (!file) {
       setPreview("");
@@ -171,12 +161,23 @@ export default function ChatInput({
       );
     }
   };
+  // Atalho "Perguntar por áudio" do Início: abre o chat já gravando.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoRecord && !autoStarted.current && !disabled) {
+      autoStarted.current = true;
+      startRecording();
+    }
+    // startRecording é recriada a cada render; o atalho dispara uma vez só.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRecord, disabled]);
+
   return (
     <Box
       sx={{
-        px: { xs: 1.5, md: 3 },
-        pt: 1.5,
-        pb: "max(12px, env(safe-area-inset-bottom))",
+        px: { xs: 1.5, md: 3.5 },
+        pt: 1.25,
+        pb: "max(18px, env(safe-area-inset-bottom))",
         bgcolor: "background.paper",
         borderTop: "1px solid",
         borderColor: "divider",
@@ -186,7 +187,7 @@ export default function ChatInput({
       <Box
         component="form"
         onSubmit={submit}
-        sx={{ maxWidth: 850, mx: "auto" }}
+        sx={{ maxWidth: 760, mx: "auto" }}
       >
         {error && (
           <Alert severity="error" onClose={() => setError("")} sx={{ mb: 1 }}>
@@ -284,20 +285,22 @@ export default function ChatInput({
             </Button>
           </Stack>
         ) : (
-          <Stack direction="row" gap={0.5} alignItems="flex-end">
+          <Stack direction="row" gap={1} alignItems="flex-end">
             <IconButton
-              aria-label="Escolher foto da galeria"
+              aria-label="Fotografar folha"
               disabled={disabled}
-              onClick={() => gallery.current.click()}
+              onClick={() => (onOpenCamera ? onOpenCamera() : gallery.current.click())}
+              sx={{
+                width: 48,
+                height: 48,
+                flexShrink: 0,
+                borderRadius: "14px",
+                bgcolor: "background.default",
+                color: "text.primary",
+                "&:hover": { bgcolor: "surface.muted" },
+              }}
             >
-              <ImageIcon size={21} />
-            </IconButton>
-            <IconButton
-              aria-label="Tirar foto"
-              disabled={disabled}
-              onClick={() => camera.current.click()}
-            >
-              <Camera size={21} />
+              <Camera size={22} strokeWidth={2.2} />
             </IconButton>
             <TextField
               fullWidth
@@ -315,6 +318,7 @@ export default function ChatInput({
                   minHeight: 48,
                   fontSize: "1rem",
                   bgcolor: "background.default",
+                  "& fieldset": { borderWidth: "1.5px", borderColor: "divider" },
                 },
               }}
               value={text}
@@ -352,7 +356,7 @@ export default function ChatInput({
                   "&:hover": { bgcolor: "cta.hover" },
                 }}
               >
-                <Mic size={21} />
+                <Mic size={22} strokeWidth={2.2} />
               </IconButton>
             ) : (
               <IconButton
@@ -373,43 +377,6 @@ export default function ChatInput({
             )}
           </Stack>
         )}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          gap={1}
-          mt={0.5}
-        >
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ minWidth: 0 }}>
-            JPG, PNG ou WebP · até 10 MB
-          </Typography>
-          <Button
-            size="small"
-            onClick={() => setSettings((v) => !v)}
-            aria-expanded={settings}
-            sx={{ whiteSpace: "nowrap", minHeight: 36, flexShrink: 0 }}
-          >
-            Modelo: {MODELS.find((m) => m.id === model)?.name}
-          </Button>
-        </Stack>
-        <Collapse in={settings}>
-          <TextField
-            select
-            fullWidth
-            label="Modelo de análise"
-            value={model}
-            disabled={disabled}
-            onChange={(e) => setModel(e.target.value)}
-            sx={{ mt: 1, mb: 1 }}
-            helperText="Disponibilidade definida pelo seu plano."
-          >
-            {MODELS.filter((m) => !allowed || allowed.has(m.id)).map((m) => (
-              <MenuItem key={m.id} value={m.id}>
-                {m.name} · {m.detail}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Collapse>
         <input
           ref={gallery}
           type="file"
@@ -417,14 +384,7 @@ export default function ChatInput({
           hidden
           onChange={selectFile}
         />
-        <input
-          ref={camera}
-          type="file"
-          accept={IMAGE_ACCEPT}
-          capture="environment"
-          hidden
-          onChange={selectFile}
-        />
+
       </Box>
     </Box>
   );

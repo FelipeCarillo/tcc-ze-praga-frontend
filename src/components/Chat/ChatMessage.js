@@ -1,172 +1,133 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import { Mic } from 'lucide-react';
-import { ReactComponent as Marca } from '../../assets/brand/marca.svg';
+import { Check, Mic } from 'lucide-react';
 import DiagnosisCard from './DiagnosisCard';
 import Markdown from '../common/Markdown';
 import AuxiliarNotice from '../common/AuxiliarNotice';
 import { copy } from '../../copy/ze';
 
-function ChatMessage({ message, onSaveDiagnosis }) {
-  const theme = useTheme();
-  const isUser = message.role === 'user';
-  const isDark = theme.palette.mode === 'dark';
+/**
+ * Passos do agente (m-Chat): o que já foi feito com ✓ e o passo atual girando.
+ * Os rótulos vêm de `copy.chat.tools` (em andamento) e `copy.chat.toolsDone`.
+ */
+export function StepsList({ steps }) {
+  if (!steps || !steps.length) return null;
+  return (
+    <Box
+      component="ul"
+      aria-label="O que o Zé fez"
+      sx={{ listStyle: 'none', m: 0, p: 0, display: 'flex', flexDirection: 'column', gap: 0.75 }}
+    >
+      {steps.map((s, i) => {
+        const label = s.done
+          ? copy.chat.toolsDone[s.name] || copy.chat.toolsDone._fallback
+          : copy.chat.tools[s.name] || copy.chat.tools._fallback;
+        return (
+          <Box
+            key={`${s.name}-${i}`}
+            component={motion.li}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.875rem', color: 'text.secondary' }}
+          >
+            {s.done ? (
+              <Box component="span" sx={{ display: 'flex', color: 'primary.main' }} aria-label="feito">
+                <Check size={16} strokeWidth={3} />
+              </Box>
+            ) : (
+              <Box
+                component={motion.span}
+                aria-label="em andamento"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                sx={{ width: 14, height: 14, borderRadius: '50%', border: '2.5px solid', borderColor: 'primary.main', borderTopColor: 'transparent', flexShrink: 0 }}
+              />
+            )}
+            <Box component="span" sx={{ color: s.done ? 'text.secondary' : 'text.primary' }}>
+              {label}
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
 
-  // Placeholder de streaming ainda sem conteúdo: não renderiza um balão vazio —
-  // quem cobre o estado "pensando" é o TypingIndicator do ChatWindow.
-  if (!isUser && message.isStreaming && !message.content) {
+function ChatMessage({ message }) {
+  const isUser = message.role === 'user';
+  const steps = !isUser ? message.steps || [] : [];
+
+  // Antes do primeiro token não há balão: os passos do agente mostram o
+  // progresso. Sem passos ainda, quem cobre é o TypingIndicator do ChatWindow.
+  if (!isUser && message.isStreaming && !message.content && !steps.length) {
     return null;
   }
-
-  // Tool chamada DEPOIS que o balão já tem texto: o TypingIndicator do
-  // ChatWindow some assim que o stream começa, então sem isto o usuário fica
-  // sem sinal enquanto o agente busca plano de ação ou pesquisa na web. Antes
-  // do primeiro token quem mostra o estado é o TypingIndicator — renderizar
-  // aqui também duplicaria o spinner.
-  const activeTool =
-    message.isStreaming && message.content ? message.toolCall : null;
-
-  const renderToolBadge = () => {
-    if (!activeTool) return null;
-    const label = copy.chat.tools[activeTool] || copy.chat.tools._fallback;
-    return (
-      <Box
-        component={motion.div}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.75,
-          mt: message.content ? 1 : 0,
-        }}
-      >
-        <Box
-          component={motion.div}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          sx={{
-            width: 11,
-            height: 11,
-            borderRadius: '50%',
-            border: '2px solid',
-            borderColor: 'secondary.main',
-            borderTopColor: 'transparent',
-            flexShrink: 0,
-          }}
-        />
-        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: 'secondary.main' }}>
-          {label}
-        </Typography>
-      </Box>
-    );
-  };
-
-  const renderAssistantContent = () => {
-    if (!message.content) return null;
-    // Renderiza Markdown também durante o streaming — o react-markdown lida bem
-    // com conteúdo parcial, então o texto formata ao vivo em vez de só no fim.
-    return (
-      <Box sx={{ lineHeight: 1.55, fontSize: '1rem' }}>
-        <Markdown>{message.content}</Markdown>
-      </Box>
-    );
-  };
 
   return (
     <Box
       component={motion.div}
-      initial={message.isStreaming ? { opacity: 0, y: 16, scale: 0.985 } : { opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 12, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: message.isStreaming ? 0.34 : 0.3,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      sx={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', mb: 2 }}
+      transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', gap: 1.25, mb: 1.25 }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 1,
-          maxWidth: { xs: '100%', md: '82%' },
-          flexDirection: isUser ? 'row-reverse' : 'row',
-        }}
-      >
-        {!isUser && (
-          <Box sx={{ width: 30, height: 30, borderRadius: '9px', overflow: 'hidden', flexShrink: 0 }}>
-            <Marca style={{ width: 30, height: 30, display: 'block' }} />
-          </Box>
-        )}
+      {!isUser && <StepsList steps={steps} />}
 
+      {(isUser || message.content) && (
         <Box
           sx={{
-            px: 2,
-            py: 1.25,
+            maxWidth: isUser ? { xs: '78%', md: '60%' } : { xs: '88%', md: '78%' },
             borderRadius: isUser ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
-            backgroundColor: isUser ? 'primary.main' : 'background.paper',
+            bgcolor: isUser ? 'primary.main' : 'background.paper',
             color: isUser ? '#FFFFFF' : 'text.primary',
             border: isUser ? 'none' : '1px solid',
             borderColor: 'divider',
-            boxShadow: isUser ? 'none' : (t) => `0 1px 8px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(15,26,19,0.06)'}`,
+            p: isUser && message.imageUrl ? 0.75 : 0,
+            overflow: 'hidden',
           }}
         >
           {message.imageUrl && (
             <Box
               component="img"
               src={message.imageUrl}
-              alt="Imagem enviada"
-              sx={{ maxWidth: '100%', maxHeight: 220, borderRadius: '15px', display: 'block', mb: message.content ? 1 : 0, objectFit: 'cover' }}
+              alt="Foto enviada"
+              sx={{ width: '100%', maxHeight: 220, borderRadius: '15px', display: 'block', objectFit: 'cover' }}
             />
           )}
           {isUser ? (
             message.content && (
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
-                {/* Marca que o texto veio do áudio, não do teclado — sem isso a
-                    transcrição parece algo que o usuário digitou. */}
-                {message.isTranscript && (
-                  <Mic size={13} style={{ flexShrink: 0, marginTop: 4, opacity: 0.75 }} />
-                )}
-                <Typography
-                  variant="body2"
-                  component="div"
-                  sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '1rem' }}
-                >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, px: message.imageUrl ? 1 : 2, pt: message.imageUrl ? 0.75 : 1.5, pb: message.imageUrl ? 0.75 : 1.5 }}>
+                {/* Marca que o texto veio do áudio, não do teclado. */}
+                {message.isTranscript && <Mic size={13} style={{ flexShrink: 0, marginTop: 4, opacity: 0.75 }} />}
+                <Typography component="div" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.4, fontSize: '1rem' }}>
                   {message.content}
                 </Typography>
               </Box>
             )
           ) : (
-            <>
-              {renderAssistantContent()}
-              {renderToolBadge()}
-            </>
+            // Markdown também durante o streaming: formata o texto ao vivo.
+            <Box sx={{ px: 1.75, py: 1.5, lineHeight: 1.45, fontSize: '0.9375rem', '& p': { m: 0 }, '& p + p': { mt: 1 } }}>
+              <Markdown>{message.content}</Markdown>
+            </Box>
           )}
         </Box>
-      </Box>
+      )}
 
       {/* Toda resposta concluída do Zé carrega o aviso de auxiliar. */}
-      {!isUser && !message.isStreaming && message.content && (
-        <Box sx={{ maxWidth: { xs: '100%', md: '82%' }, pl: '38px', mt: 0.75 }}>
+      {!isUser && !message.isStreaming && message.content && !message.diagnosis && (
+        <Box sx={{ maxWidth: { xs: '88%', md: '78%' } }}>
           <AuxiliarNotice compact />
         </Box>
       )}
 
       {!isUser && message.diagnosis && (
-        <Box sx={{ maxWidth: { xs: '100%', md: '82%' }, width: '100%', pl: { xs: 0, md: '38px' } }}>
-          <DiagnosisCard diagnosis={message.diagnosis} onSave={onSaveDiagnosis} />
+        <Box sx={{ width: { xs: '88%', md: '78%' } }}>
+          <DiagnosisCard diagnosis={message.diagnosis} />
         </Box>
       )}
-
-      <Typography
-        variant="caption"
-        sx={{ color: 'text.disabled', fontSize: '0.66rem', mt: 0.5, px: isUser ? 0.5 : '38px' }}
-      >
-        {new Date(message.timestamp || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-      </Typography>
     </Box>
   );
 }

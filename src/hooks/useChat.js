@@ -47,6 +47,9 @@ function describe(error) {
  * system prompt fixa a ordem com foto: inspect_image → analyze_image → plano
  * de ação). São rótulos de `copy.chat.tools`; os tempos são estimativas.
  */
+function doneSteps(steps) {
+  return (steps || []).map((s) => ({ ...s, done: true }));
+}
 export function progressSteps({ hasImage = false, hasAudio = false } = {}) {
   const offset = hasAudio ? 2500 : 0;
   const steps = hasAudio ? [["_listening", 0]] : [];
@@ -144,10 +147,21 @@ export default function useChat() {
             ),
           );
       };
+      const step = (name) =>
+        update((m) => {
+          const steps = doneSteps(m.steps);
+          const last = steps[steps.length - 1];
+          if (last && last.name === name) last.done = false;
+          else steps.push({ name, done: false });
+          return { steps, toolCall: name };
+        });
       const callbacks = {
         onToken: (chunk) => update((m) => ({ content: m.content + chunk })),
-        onToolCall: (name) => update({ toolCall: name }),
-        onToolResult: () => update({ toolCall: null }),
+        // Passos do agente (m-Chat): cada ferramenta entra como passo em
+        // andamento e vira "feito" quando a próxima começa ou o resultado chega.
+        onToolCall: (name) => step(name),
+        onToolResult: () =>
+          update((m) => ({ toolCall: null, steps: doneSteps(m.steps) })),
         onDiagnosis: (diagnosis) =>
           update({ diagnosis, diagnosisId: diagnosis?.id }),
         onTranscript: (content) => {
@@ -181,7 +195,7 @@ export default function useChat() {
             hasImage: Boolean(imageFile),
             hasAudio: Boolean(audioFile),
           }).map(([toolCall, ms]) =>
-            setTimeout(() => update({ toolCall }), ms),
+            setTimeout(() => (toolCall ? step(toolCall) : null), ms),
           );
       // Aplica a resposta completa de POST /chat ou /chat/resume.
       const apply = (result) => {
@@ -192,6 +206,10 @@ export default function useChat() {
           content: result.content || "",
           diagnosis: result.diagnosis || null,
           diagnosisId: result.diagnosis?.id,
+          // Sem streaming, os passos exibidos na espera eram estimativas de
+          // tempo. No fim só fica o que dá para afirmar: se veio laudo, o
+          // diagnóstico rodou.
+          steps: result.diagnosis ? [{ name: "analyze_image", done: true }] : [],
         });
         callbacks.onDone(result.sessionId);
       };
@@ -224,7 +242,11 @@ export default function useChat() {
             callbacks,
             { signal: ctrl.signal, ...talhaoOptions() },
           );
-        update({ isStreaming: false, toolCall: null });
+        update((m) => ({
+          isStreaming: false,
+          toolCall: null,
+          steps: doneSteps(m.steps),
+        }));
         return valid();
       } catch (error) {
         if (valid()) {

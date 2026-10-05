@@ -4,20 +4,25 @@ import {
   Box,
   Button,
   IconButton,
+  MenuItem,
+  Select,
   Snackbar,
   Stack,
   Typography,
 } from "@mui/material";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, History, MessagesSquare, SquarePen } from "lucide-react";
+import { ChevronLeft, MessagesSquare, Plus } from "lucide-react";
 import { ReactComponent as Marca } from "../assets/brand/marca.svg";
 import ChatWindow from "../components/Chat/ChatWindow";
 import ChatInput from "../components/Chat/ChatInput";
 import SessionsDrawer from "../components/Chat/SessionsDrawer";
+import SessionsList, { useSessions } from "../components/Chat/SessionsList";
+import LaudoPanel from "../components/Chat/LaudoPanel";
+import BrandLockup from "../components/Brand/BrandLockup";
 import RuntimeNotice from "../components/common/RuntimeNotice";
-import QuotaDisplay from "../components/Layout/QuotaDisplay";
 import useChat from "../hooks/useChat";
-import { saveDiagnosis } from "../services/historyService";
+import usePreferredModel from "../hooks/usePreferredModel";
+import { getUsageSummary } from "../services/usageService";
 import { validateImage } from "../utils/imageUpload";
 import TalhaoPicker from "../components/Talhao/TalhaoPicker";
 export default function ChatPage() {
@@ -60,11 +65,13 @@ export default function ChatPage() {
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location, stage, navigate]);
-  const saved = async (diagnosis) => {
-    await saveDiagnosis(diagnosis);
-    setNotice("Resultado guardado no seu histórico.");
-    window.dispatchEvent(new CustomEvent("diagnosis-saved"));
-  };
+  // Título da conversa no desktop: a primeira mensagem do produtor.
+  const firstUser = messages.find((m) => m.role === "user" && m.content);
+  const title = firstUser
+    ? firstUser.content.length > 60
+      ? firstUser.content.slice(0, 57) + "…"
+      : firstUser.content
+    : "Nova conversa";
   const reset = () => {
     setFile(null);
     clearChat();
@@ -75,9 +82,10 @@ export default function ChatPage() {
       sx={{
         height: "100dvh",
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         position: "relative",
         overflow: "hidden",
+        bgcolor: "background.default",
       }}
       onDragEnter={(e) => {
         e.preventDefault();
@@ -98,107 +106,69 @@ export default function ChatPage() {
         if (next) stage(next);
       }}
     >
-      <Box
-        component="header"
-        sx={{
-          bgcolor: "background.paper",
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          px: { xs: 1, md: 3 },
-          py: 1,
+      {/* ── Lateral escura do desktop (d-Chat) ── */}
+      <Sidebar
+        sessionId={sessionId}
+        onNew={reset}
+        onSelect={(id) => {
+          setFile(null);
+          loadSession(id);
         }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          gap={1}
-          sx={{ maxWidth: 1200, mx: "auto" }}
-        >
-          <IconButton component={Link} to="/" aria-label="Voltar ao início">
-            <ChevronLeft size={22} />
-          </IconButton>
-          <Marca style={{ width: 40, height: 40, flexShrink: 0 }} />
-          <Box flex={1} minWidth={0}>
-            <Typography fontWeight={800} sx={{ fontSize: "1.0625rem", lineHeight: 1.2 }}>
-              Zé
-            </Typography>
-            <Stack direction="row" alignItems="center" gap={0.75}>
-              <Box
-                aria-hidden="true"
-                sx={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  flexShrink: 0,
-                  bgcolor: isLoading ? "warning.main" : "success.main",
-                  animation: isLoading ? "zpBlink 1.4s ease-in-out infinite" : "none",
-                  "@keyframes zpBlink": { "0%,100%": { opacity: 1 }, "50%": { opacity: 0.3 } },
-                }}
-              />
-              <Typography variant="caption" color="text.secondary" noWrap component="div" sx={{ fontSize: ".8125rem" }}>
-                {isLoading
-                  ? "Analisando…"
-                  : pendingInterrupt
-                    ? "Aguardando sua resposta"
-                    : "Foto, hipótese e próximos cuidados"}
+      />
+
+      <Box sx={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", height: "100%" }}>
+        {/* Celular (m-Chat): voltar, marca, "Zé" com o talhão como status e
+            as conversas. Desktop: título da conversa e o modelo. */}
+        <Box component="header" sx={{ bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider", flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" gap={1.25} sx={{ display: { xs: "flex", md: "none" }, px: 1.5, py: 1.25 }}>
+            <IconButton component={Link} to="/" aria-label="Voltar ao início" sx={{ ml: -0.5 }}>
+              <ChevronLeft size={24} strokeWidth={2.2} />
+            </IconButton>
+            <Marca style={{ width: 40, height: 40, flexShrink: 0 }} aria-hidden="true" />
+            <Box flex={1} minWidth={0}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.0625rem", lineHeight: 1.2 }}>Zé</Typography>
+              <TalhaoPicker variant="inline" busy={isLoading} disabled={isLoading} />
+            </Box>
+            <IconButton aria-label="Conversas anteriores" onClick={() => setSessions(true)}>
+              <MessagesSquare size={22} />
+            </IconButton>
+          </Stack>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5} flexWrap="wrap" sx={{ display: { xs: "none", md: "flex" }, px: 3.5, py: 2 }}>
+            <Box minWidth={0}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.125rem" }} noWrap>
+                {title}
               </Typography>
-            </Stack>
-          </Box>
-          <Box sx={{ display: { xs: "none", md: "block" }, flexShrink: 0 }}>
-            <QuotaDisplay />
-          </Box>
-          <IconButton
-            aria-label="Conversas anteriores"
-            onClick={() => setSessions(true)}
-          >
-            <MessagesSquare size={21} />
-          </IconButton>
-          <IconButton
-            component={Link}
-            to="/historico"
-            aria-label="Histórico de análises"
-          >
-            <History size={21} />
-          </IconButton>
-          <IconButton aria-label="Nova conversa" onClick={reset}>
-            <SquarePen size={21} />
-          </IconButton>
-        </Stack>
-        {/* TCC-093: o laudo nasce no talhão escolhido aqui. */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={1}
-          sx={{ maxWidth: 1200, mx: "auto", pt: 0.75, px: { xs: 0.5, md: 0 } }}
-        >
-          <TalhaoPicker disabled={isLoading} />
-          <Box sx={{ display: { xs: "block", md: "none" } }}>
-            <QuotaDisplay />
-          </Box>
-        </Stack>
-      </Box>
-      <RuntimeNotice />
-      <ChatWindow
-        messages={messages}
-        isLoading={isLoading}
-        onSelectFile={stage}
-        onSaveDiagnosis={saved}
-        pendingInterrupt={pendingInterrupt}
-        onAnswerInterrupt={answerInterrupt}
-      />
-      {isLoading && (
-        <Box sx={{ textAlign: "center", bgcolor: "background.paper", borderTop: "1px solid", borderColor: "divider" }}>
-          <Button onClick={stop} color="inherit">Interromper resposta</Button>
+              <TalhaoPicker variant="inline" busy={isLoading} disabled={isLoading} />
+            </Box>
+            <ModelSelect disabled={isLoading} />
+          </Stack>
         </Box>
-      )}
-      <ChatInput
-        onSend={send}
-        disabled={isLoading || !!pendingInterrupt}
-        pendingFile={file}
-        onFileHandled={fileHandled}
-      />
+        <RuntimeNotice />
+        <ChatWindow
+          messages={messages}
+          isLoading={isLoading}
+          onSelectFile={stage}
+          pendingInterrupt={pendingInterrupt}
+          onAnswerInterrupt={answerInterrupt}
+        />
+        {isLoading && (
+          <Box sx={{ textAlign: "center", bgcolor: "background.paper", borderTop: "1px solid", borderColor: "divider" }}>
+            <Button onClick={stop} color="inherit">Interromper resposta</Button>
+          </Box>
+        )}
+        <ChatInput
+          onSend={send}
+          disabled={isLoading || !!pendingInterrupt}
+          pendingFile={file}
+          onFileHandled={fileHandled}
+          autoRecord={Boolean(location.state?.startAudio)}
+          onOpenCamera={() => navigate("/camera")}
+        />
+      </Box>
+
+      {/* ── Laudo à direita no desktop largo (d-Chat) ── */}
+      <LaudoPanel messages={messages} />
+
       <SessionsDrawer
         open={sessions}
         onClose={() => setSessions(false)}
@@ -236,6 +206,81 @@ export default function ChatPage() {
           {notice}
         </Alert>
       </Snackbar>
+    </Box>
+  );
+}
+
+/** Seletor de modelo do cabeçalho no desktop — mesma preferência do Perfil. */
+function ModelSelect({ disabled }) {
+  const { model, options, choose } = usePreferredModel();
+  return (
+    <Stack direction="row" alignItems="center" gap={1}>
+      <Typography component="label" htmlFor="chat-modelo" sx={{ fontSize: "0.875rem", fontWeight: 600 }}>
+        Modelo
+      </Typography>
+      <Select
+        id="chat-modelo"
+        size="small"
+        value={model}
+        disabled={disabled}
+        onChange={(e) => choose(e.target.value)}
+        sx={{ height: 40, borderRadius: "10px", bgcolor: "background.default", fontFamily: (t) => t.typography.fontFamilyMono, fontSize: "0.8125rem" }}
+      >
+        {options.map((m) => (
+          <MenuItem key={m.id} value={m.id}>
+            {m.name}
+          </MenuItem>
+        ))}
+      </Select>
+    </Stack>
+  );
+}
+
+/** Lateral escura do d-Chat: marca, nova análise, conversas e o uso do dia. */
+function Sidebar({ sessionId, onNew, onSelect }) {
+  const { sessions, loading, error, reload } = useSessions(true);
+  const [usage, setUsage] = useState(null);
+  useEffect(() => {
+    // Uma conversa nova (ou que avançou) aparece na lista e mexe na cota.
+    reload();
+    getUsageSummary()
+      .then(setUsage)
+      .catch(() => {});
+  }, [sessionId, reload]);
+  const inf = usage?.inference;
+  const limited = inf && inf.limit !== null && inf.limit !== undefined;
+  return (
+    <Box
+      component="aside"
+      aria-label="Conversas"
+      sx={{ display: { xs: "none", md: "flex" }, flexDirection: "column", gap: 2.25, flex: "1 1 260px", maxWidth: 300, minWidth: 240, height: "100%", bgcolor: "#0B1510", color: "#EEF2E8", p: 2.5, pt: 2.5, boxSizing: "border-box", overflowY: "auto" }}
+    >
+      <BrandLockup size={32} tone="light" sx={{ px: 0.5 }} />
+      <Button
+        onClick={onNew}
+        startIcon={<Plus size={18} strokeWidth={2.4} />}
+        sx={{ height: 48, borderRadius: "14px", bgcolor: "#C8F169", color: "#0F1A13", fontWeight: 800, "&:hover": { bgcolor: "#B6E04F" } }}
+      >
+        Nova análise
+      </Button>
+      <Box sx={{ flex: 1, minHeight: 0 }}>
+        <SessionsList sessions={sessions} loading={loading} error={error} currentSessionId={sessionId} onSelect={onSelect} tone="dark" />
+      </Box>
+      {inf && (
+        <Box component={Link} to="/planos" sx={{ display: "flex", flexDirection: "column", gap: 1.25, bgcolor: "#14251B", borderRadius: "14px", p: 1.5, color: "#EEF2E8", textDecoration: "none" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: "0.8125rem" }}>
+            <span>Análises hoje</span>
+            <Box component="span" sx={{ fontFamily: (t) => t.typography.fontFamilyMono }}>
+              {limited ? `${inf.used}/${inf.limit}` : `${inf.used} · sem limite`}
+            </Box>
+          </Box>
+          {limited && (
+            <Box sx={{ height: 6, bgcolor: "#22362A", borderRadius: 999 }}>
+              <Box sx={{ width: `${Math.min(100, (inf.used / Math.max(1, inf.limit)) * 100)}%`, height: "100%", bgcolor: "#C8F169", borderRadius: 999 }} />
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }

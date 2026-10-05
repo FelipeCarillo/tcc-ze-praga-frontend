@@ -10,6 +10,15 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 
 const COLOR_MODE_STORAGE_KEY = 'zepraga-color-mode';
+const FIELD_MODE_STORAGE_KEY = 'zepraga-modo-campo';
+
+function getInitialFieldMode() {
+  try {
+    return localStorage.getItem(FIELD_MODE_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function getInitialColorMode() {
   try {
@@ -31,6 +40,8 @@ function getInitialColorMode() {
 
 function Root() {
   const [mode, setMode] = useState(getInitialColorMode);
+  // "Modo campo" (Perfil): letra maior e contraste máximo, para o sol.
+  const [field, setField] = useState(getInitialFieldMode);
 
   const colorMode = useMemo(
     () => ({
@@ -45,11 +56,21 @@ function Root() {
           return nextMode;
         }),
       mode,
+      field,
+      toggleFieldMode: () =>
+        setField((prev) => {
+          try {
+            localStorage.setItem(FIELD_MODE_STORAGE_KEY, prev ? '0' : '1');
+          } catch {
+            // Ignore storage errors and keep runtime mode.
+          }
+          return !prev;
+        }),
     }),
-    [mode]
+    [mode, field]
   );
 
-  const theme = useMemo(() => createAppTheme(mode), [mode]);
+  const theme = useMemo(() => createAppTheme(mode, { field }), [mode, field]);
 
   return (
     <ColorModeContext.Provider value={colorMode}>

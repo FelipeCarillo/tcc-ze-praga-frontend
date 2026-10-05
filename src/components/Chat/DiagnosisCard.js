@@ -1,166 +1,169 @@
-import React, { useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Collapse,
-  LinearProgress,
-  Stack,
-  Typography,
-} from "@mui/material";
+import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronDown, Leaf } from "lucide-react";
-import ActionPlan from "../Diagnosis/ActionPlan";
-import { useActionPlan } from "../../hooks/useActionPlan";
-import { IS_DEMO } from "../../config/runtime";
+import { Box, Typography } from "@mui/material";
+import { ArrowRight } from "lucide-react";
 import AuxiliarNotice from "../common/AuxiliarNotice";
+import { RiskChip } from "../History/HistoryByTalhao";
+import { IS_DEMO } from "../../config/runtime";
 
-export default function DiagnosisCard({ diagnosis, onSave }) {
-  const [expanded, setExpanded] = useState(false),
-    [saving, setSaving] = useState(false),
-    [saved, setSaved] = useState(false),
-    [error, setError] = useState("");
-  const {
-    actionPlan,
-    loading,
-    error: planError,
-    retry,
-  } = useActionPlan(diagnosis.diseaseId, expanded);
+/**
+ * Card do laudo dentro da conversa — compacto, como no m-Chat: risco, modelo,
+ * nome da doença, confiança com barra animada, resumo, o aviso de auxiliar e
+ * o rodapé "Ver plano de ação" que abre o laudo completo.
+ *
+ * O laudo já é salvo sozinho (backend no modo API, o próprio demo no modo
+ * demonstração), então o card não tem mais botão de "guardar".
+ */
+export default function DiagnosisCard({ diagnosis }) {
   const confidence = Number.isFinite(diagnosis.confidence)
     ? Math.max(0, Math.min(1, diagnosis.confidence)) * 100
     : null;
   return (
     <Box
       sx={{
-        mt: 2,
+        bgcolor: "background.paper",
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 1,
+        borderRadius: "20px 20px 20px 6px",
         overflow: "hidden",
-        bgcolor: "background.paper",
-        width: "100%",
+        "@keyframes zpFill": { from: { width: 0 } },
+        "@media (prefers-reduced-motion: reduce)": {
+          "& *": { animation: "none !important" },
+        },
       }}
     >
-      <Box sx={{ p: { xs: 2, md: 3 }, borderLeft: '4px solid', borderColor: 'primary.main' }}>
-        <Stack direction="row" gap={1} mb={2} flexWrap="wrap">
-          <Chip
-            size="small"
-            icon={<Leaf size={15} />}
-            label={IS_DEMO ? "Resultado simulado" : "Hipótese da análise"}
-            variant="outlined"
-          />
-          <Chip
-            size="small"
-            label={diagnosis.modelUsed || "Modelo não informado"}
-            variant="outlined"
-          />
-        </Stack>
-        <Typography variant="overline" color="primary.main" sx={{ fontWeight: 800, letterSpacing: 1.2 }}>Hipótese da análise</Typography>
-        <Typography component="h2" variant="h4" sx={{ mb: 0.5 }}>
+      <Box
+        sx={{
+          px: 2,
+          py: 1.75,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.25,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <RiskChip severity={diagnosis.severity} />
+          <Typography
+            sx={{
+              fontFamily: (t) => t.typography.fontFamilyMono,
+              fontSize: "0.75rem",
+              color: "text.secondary",
+            }}
+            noWrap
+          >
+            {IS_DEMO ? "simulado · " : ""}
+            {diagnosis.modelUsed || "modelo não informado"}
+          </Typography>
+        </Box>
+        <Typography
+          component="h2"
+          sx={{
+            m: 0,
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            fontStretch: "112%",
+            letterSpacing: "-0.01em",
+            lineHeight: 1.05,
+          }}
+        >
           {diagnosis.disease}
         </Typography>
-        <Typography color="text.secondary" fontStyle="italic" variant="body2">
-          {diagnosis.scientificName}
-        </Typography>
         {confidence !== null && (
-          <Box sx={{ mt: 2 }}>
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography variant="body2">Confiança do modelo</Typography>
-              <Typography fontWeight={700}>
+          <Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "0.8125rem",
+                color: "text.secondary",
+                mb: 0.75,
+              }}
+            >
+              <span>Confiança do modelo</span>
+              <Box
+                component="span"
+                sx={{
+                  fontFamily: (t) => t.typography.fontFamilyMono,
+                  color: "text.primary",
+                  fontWeight: 600,
+                }}
+              >
                 {confidence.toLocaleString("pt-BR", {
                   maximumFractionDigits: 1,
                 })}
                 %
-              </Typography>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={confidence}
+              </Box>
+            </Box>
+            <Box
+              role="progressbar"
               aria-label="Confiança do modelo"
-              sx={{ height: 6, borderRadius: 3 }}
-            />
-            <Typography
-              color="text.secondary"
-              variant="caption"
-              display="block"
-              mt={1}
-            >
-              Este valor expressa a saída do modelo. Não é a probabilidade de um
-              diagnóstico confirmado em campo.
-            </Typography>
-          </Box>
-        )}
-        <AuxiliarNotice sx={{ mt: 2 }} />
-        {error && (
-          <Alert severity="error" sx={{ mt: 1 }}>
-            {error}
-          </Alert>
-        )}
-        <Stack gap={1} sx={{ mt: 2 }}>
-          <Button
-            variant="contained"
-            onClick={() => setExpanded((v) => !v)}
-            endIcon={<ChevronDown size={18} />}
-            aria-expanded={expanded}
-          >
-            {expanded ? "Recolher orientações" : "Ver próximos cuidados"}
-          </Button>
-          {diagnosis.id && (
-            <Button
-              component={Link}
-              to={"/historico/" + diagnosis.id}
-              endIcon={<ArrowRight size={17} />}
-            >
-              Abrir resultado completo
-            </Button>
-          )}
-          {onSave && (
-            <Button
-              disabled={saving || saved}
-              onClick={async () => {
-                setSaving(true);
-                try {
-                  await onSave(diagnosis);
-                  setSaved(true);
-                } catch {
-                  setError(
-                    "Não foi possível guardar o resultado. Tente novamente.",
-                  );
-                } finally {
-                  setSaving(false);
-                }
+              aria-valuenow={Math.round(confidence)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              sx={{
+                height: 10,
+                bgcolor: "surface.muted",
+                borderRadius: 999,
+                overflow: "hidden",
               }}
             >
-              {saved
-                ? "Resultado guardado"
-                : saving
-                  ? "Guardando…"
-                  : "Guardar no histórico"}
-            </Button>
-          )}
-        </Stack>
+              <Box
+                sx={{
+                  width: `${confidence}%`,
+                  height: "100%",
+                  bgcolor: "primary.main",
+                  borderRadius: 999,
+                  animation: "zpFill 1.2s .3s cubic-bezier(.2,.7,.2,1) both",
+                }}
+              />
+            </Box>
+          </Box>
+        )}
+        {diagnosis.description && (
+          <Typography
+            sx={{
+              fontSize: "0.9375rem",
+              lineHeight: 1.45,
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {diagnosis.description}
+          </Typography>
+        )}
+        <AuxiliarNotice compact />
       </Box>
-      <Collapse in={expanded}>
-        <Box sx={{ p: { xs: 2, md: 3 }, pt: 0 }}>
-          {loading ? (
-            <Typography role="status">Buscando orientações…</Typography>
-          ) : planError ? (
-            <Alert
-              severity="error"
-              action={<Button onClick={retry}>Tentar novamente</Button>}
-            >
-              Não foi possível carregar as orientações.
-            </Alert>
-          ) : actionPlan ? (
-            <ActionPlan actions={actionPlan} />
-          ) : (
-            <Alert severity="info">
-              Ainda não há orientações cadastradas para esta hipótese.
-            </Alert>
-          )}
+      {diagnosis.id && (
+        <Box
+          component={Link}
+          to={"/historico/" + diagnosis.id}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 2,
+            py: 1.75,
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            fontWeight: 800,
+            fontSize: "0.9375rem",
+            textDecoration: "none",
+            "&:hover": { bgcolor: "primary.dark" },
+          }}
+        >
+          Ver plano de ação
+          <ArrowRight size={18} strokeWidth={2.6} aria-hidden="true" />
         </Box>
-      </Collapse>
+      )}
     </Box>
   );
 }

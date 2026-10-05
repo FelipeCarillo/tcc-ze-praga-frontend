@@ -4,8 +4,9 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
+import InputBase from "@mui/material/InputBase";
 import Typography from "@mui/material/Typography";
+import { ChevronLeft } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { resendVerification, forgotPassword } from "../services/authService";
 import { ReactComponent as Marca } from "../assets/brand/marca.svg";
@@ -27,7 +28,7 @@ function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from || "/perfil";
+  const redirectTo = location.state?.from || "/";
 
   // O backend redireciona pra cá depois do clique no link do e-mail
   // (GET /api/v1/auth/verify → 303 /login?verificado=1|erro).
@@ -107,252 +108,126 @@ function LoginPage() {
     }
   };
 
+  const enterDemo = async () => {
+    setSubmitting(true);
+    try {
+      await login({ email: "demo@example.test", password: "demo" });
+      navigate(redirectTo, { replace: true, state: location.state?.fromState });
+    } catch {
+      setError("Não foi possível abrir a demonstração.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const titulo = pendingEmail
+    ? "Confirme seu e-mail"
+    : forgotMode
+      ? "Esqueceu a senha?"
+      : isRegistering
+        ? "Crie seu caderno de campo."
+        : "Bom te ver de novo.";
+  const subtitulo = pendingEmail
+    ? "Falta só um passo pra tua conta ficar de pé."
+    : forgotMode
+      ? "Informe seu e-mail para receber o link de recuperação."
+      : isRegistering
+        ? "Preencha os dados para guardar seus laudos por talhão."
+        : "Entre para guardar seus laudos por talhão.";
+
   return (
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-        minHeight: { md: "calc(100vh - 65px)" },
+        gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "1fr 1fr" },
+        minHeight: { xs: "100dvh", md: "calc(100vh - 73px)" },
+        bgcolor: "background.default",
       }}
     >
-      {/* Contexto do caderno (desktop) */}
+      {/* Desktop: foto da lavoura ao lado do formulário. */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
           flexDirection: "column",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           p: 6,
           backgroundColor: "#0B1510",
-          backgroundImage: `linear-gradient(180deg, rgba(11,21,16,.55), rgba(11,21,16,.9)), url(${lavoura})`,
+          backgroundImage: `linear-gradient(180deg, rgba(11,21,16,.35), rgba(11,21,16,.92)), url(${lavoura})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          color: (t) => t.palette.brand.creme,
+          color: "#EEF2E8",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-          <Marca style={{ width: 36, height: 36, display: "block" }} />
-          <Typography
-            sx={{
-              fontFamily: (t) => t.typography.fontFamilyDisplay,
-              fontWeight: 800,
-              fontSize: "1.3rem",
-              color: (t) => t.palette.brand.milho,
-            }}
-          >
-            Zé Praga
-          </Typography>
-        </Box>
-        <Box>
-          <Typography
-            sx={{
-              fontFamily: (t) => t.typography.fontFamilyMono,
-              color: (t) => t.palette.brand.milho,
-              fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
-              mb: 1,
-            }}
-          >
-            {copy.login.kicker}
-          </Typography>
-          <Typography variant="h2" sx={{ color: (t) => t.palette.brand.creme, maxWidth: 460 }}>
-            Entre para continuar o registro da lavoura.
-          </Typography>
-        </Box>
-        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          Uma conta é necessária para iniciar análises, guardar registros e usar
-          os recursos disponíveis para seu perfil.
+        <Typography sx={{ fontFamily: (t) => t.typography.fontFamilyMono, color: "#C8F169", fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", mb: 1 }}>
+          {copy.login.kicker}
+        </Typography>
+        <Typography sx={{ color: "#FFFFFF", fontSize: "2.75rem", fontWeight: 800, fontStretch: "112%", letterSpacing: "-0.02em", lineHeight: 1.05, maxWidth: 480 }}>
+          Cada laudo no talhão certo, no dia certo.
         </Typography>
       </Box>
 
-      {/* Form */}
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          p: { xs: 3, md: 6 },
-          maxWidth: 440,
-          mx: "auto",
-          width: "100%",
-        }}
-      >
-        <Box
-          sx={{
-            display: { xs: "flex", md: "none" },
-            alignItems: "center",
-            gap: 1,
-            mb: 2,
-          }}
-        >
-          <Marca style={{ width: 30, height: 30, display: "block" }} />
-          <Typography
-            sx={{
-              fontFamily: (t) => t.typography.fontFamilyDisplay,
-              fontWeight: 800,
-              color: "primary.main",
-            }}
-          >
-            Zé Praga
-          </Typography>
-        </Box>
-        <Typography
-          sx={{
-            fontFamily: (t) => t.typography.fontFamilyMono,
-            color: "secondary.main",
-            fontSize: "0.8125rem", fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase",
-          }}
-        >
-          {copy.login.kicker}
-        </Typography>
-        <Typography component="h1" variant="h3" sx={{ mb: 1 }}>
-          {pendingEmail
-            ? "Confirme seu e-mail"
-            : forgotMode
-              ? "Esqueceu a senha?"
-              : isRegistering
-                ? "Criar conta"
-                : copy.login.title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {pendingEmail
-            ? "Falta só um passo pra tua conta ficar de pé."
-            : forgotMode
-              ? "Informe seu e-mail para receber o link de recuperação."
-              : isRegistering
-                ? "Preencha os dados para criar seu caderno de campo."
-                : copy.login.subtitle}
-        </Typography>
-
-        {IS_DEMO && !pendingEmail && !forgotMode && (
+      <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        {/* m-Login: cabeçalho verde-lavoura. */}
+        <Box sx={{ bgcolor: "primary.main", color: "#FFFFFF", px: { xs: 2.5, md: 6 }, pt: 2, pb: 4, display: "flex", flexDirection: "column", gap: 3.5 }}>
           <Box
-            sx={{
-              mb: 2.5,
-              p: 1.5,
-              borderLeft: "3px solid",
-              borderColor: "secondary.main",
-              bgcolor: "surface.sunken",
-            }}
+            component={Link}
+            to="/"
+            aria-label="Voltar ao início"
+            sx={{ width: 44, height: 44, ml: -1.25, display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}
           >
-            <Typography
-              variant="caption"
-              sx={{ display: "block", fontWeight: 800, letterSpacing: ".08em", mb: 0.5 }}
-            >
-              AMBIENTE DE DEMONSTRAÇÃO LOCAL
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
-              Esta entrada usa dados simulados; análises e respostas não são inferência real.
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              disabled={submitting}
-              onClick={async () => {
-                setSubmitting(true);
-                try {
-                  await login({ email: "demo@example.test", password: "demo" });
-                  navigate(redirectTo, {
-                    replace: true,
-                    state: location.state?.fromState,
-                  });
-                } catch {
-                  setError("Não foi possível abrir a demonstração.");
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-            >
-              Entrar na demonstração
-            </Button>
+            <ChevronLeft size={24} strokeWidth={2.2} />
           </Box>
-        )}
-
-        {verificado === "1" && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            E-mail confirmado! Agora é só entrar.
-          </Alert>
-        )}
-        {verificado === "erro" && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Esse link não vale mais — ou já foi usado, ou passou da validade.
-            Cria a conta de novo ou pede um link novo.
-          </Alert>
-        )}
-        {senhaRedefinida && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Senha redefinida! Entra com a nova.
-          </Alert>
-        )}
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {pendingEmail ? (
+          <Marca style={{ width: 56, height: 56, display: "block" }} aria-hidden="true" />
           <Box>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Mandei um link de confirmação pra <strong>{pendingEmail}</strong>.
-              Clica nele pra ativar a conta — vale por 24 horas. Se não achar,
-              olha no spam.
-            </Alert>
-            {resendMsg && (
-              <Alert severity={resendFailed ? "error" : "success"} sx={{ mb: 2 }}>
-                {resendMsg}
-              </Alert>
-            )}
-            <Button
-              fullWidth
-              variant="outlined"
-              color="primary"
-              onClick={handleResend}
-              sx={{ mb: 1.5, py: 1.25 }}
-            >
-              Reenviar o link
-            </Button>
-            <Button
-              fullWidth
-              variant="text"
-              onClick={() => {
-                setPendingEmail("");
-                setIsRegistering(false);
-                setResendMsg("");
-                setResendFailed(false);
-              }}
-              sx={{ color: "primary.main" }}
-            >
-              Já confirmei — quero entrar
-            </Button>
+            <Typography component="h1" sx={{ m: 0, fontSize: "2rem", fontWeight: 800, fontStretch: "112%", letterSpacing: "-0.02em", lineHeight: 1.05, color: "#FFFFFF" }}>
+              {titulo}
+            </Typography>
+            <Typography sx={{ mt: 1, fontSize: "1rem", lineHeight: 1.5, color: "#D6E4D3" }}>
+              {subtitulo}
+            </Typography>
           </Box>
-        ) : forgotMode ? (
-          <Box component="form" onSubmit={handleForgot}>
-            {forgotMsg && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {forgotMsg}
+        </Box>
+
+        <Box sx={{ px: { xs: 2.5, md: 6 }, py: 3, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, maxWidth: { md: 520 }, width: "100%" }}>
+          {verificado === "1" && <Alert severity="success">E-mail confirmado! Agora é só entrar.</Alert>}
+          {verificado === "erro" && (
+            <Alert severity="warning">
+              Esse link não vale mais — ou já foi usado, ou passou da validade. Cria a conta de novo ou pede um link novo.
+            </Alert>
+          )}
+          {senhaRedefinida && <Alert severity="success">Senha redefinida! Entra com a nova.</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
+
+          {pendingEmail ? (
+            <>
+              <Alert severity="info">
+                Mandei um link de confirmação pra <strong>{pendingEmail}</strong>. Clica nele pra ativar a conta — vale por 24 horas. Se não achar, olha no spam.
               </Alert>
-            )}
-            <TextField
-              fullWidth
-              required
-              label="E-mail"
-              name="email"
-              autoComplete="email"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              sx={{ mb: 2.5 }}
-            />
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              color="secondary"
-              disabled={submitting}
-              sx={{ py: 1.25 }}
-            >
-              {submitting ? "Enviando…" : "Mandar o link"}
-            </Button>
-            <Box sx={{ mt: 3, textAlign: "center" }}>
+              {resendMsg && <Alert severity={resendFailed ? "error" : "success"}>{resendMsg}</Alert>}
+              <Button fullWidth variant="outlined" onClick={handleResend} sx={outlineBtn}>
+                Reenviar o link
+              </Button>
               <Button
-                variant="text"
+                fullWidth
+                onClick={() => {
+                  setPendingEmail("");
+                  setIsRegistering(false);
+                  setResendMsg("");
+                  setResendFailed(false);
+                }}
+                sx={{ color: "primary.main" }}
+              >
+                Já confirmei — quero entrar
+              </Button>
+            </>
+          ) : forgotMode ? (
+            <Box component="form" onSubmit={handleForgot} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {forgotMsg && <Alert severity="success">{forgotMsg}</Alert>}
+              <Field label="E-mail" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="voce@fazenda.com.br" required />
+              <Button fullWidth type="submit" variant="contained" disabled={submitting} sx={primaryBtn}>
+                {submitting ? "Enviando…" : "Mandar o link"}
+              </Button>
+              <Button
                 onClick={() => {
                   setForgotMode(false);
                   setForgotMsg("");
@@ -363,108 +238,137 @@ function LoginPage() {
                 Voltar pro login
               </Button>
             </Box>
-          </Box>
-        ) : (
-          <>
-            <Box component="form" onSubmit={handleSubmit}>
-              {isRegistering && (
-                <TextField
-                  fullWidth
-                  label="Nome"
-                  name="full_name"
-                  value={form.full_name}
+          ) : (
+            <>
+              <Box role="tablist" aria-label="Entrar ou criar conta" sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", bgcolor: "surface.muted", borderRadius: "14px", p: 0.5 }}>
+                {[
+                  { id: false, label: "Entrar" },
+                  { id: true, label: "Criar conta" },
+                ].map((tab) => {
+                  const on = isRegistering === tab.id;
+                  return (
+                    <Box
+                      key={tab.label}
+                      component="button"
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => {
+                        setIsRegistering(tab.id);
+                        setError("");
+                      }}
+                      sx={{ height: 44, border: 0, borderRadius: "11px", fontFamily: "inherit", fontSize: "0.9375rem", cursor: "pointer", bgcolor: on ? "background.paper" : "transparent", color: on ? "text.primary" : "text.secondary", fontWeight: on ? 800 : 600 }}
+                    >
+                      {tab.label}
+                    </Box>
+                  );
+                })}
+              </Box>
+              <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {isRegistering && (
+                  <Field label="Nome" name="full_name" autoComplete="name" value={form.full_name} onChange={handleChange} placeholder="Como o Zé te chama" />
+                )}
+                <Field label="E-mail" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="voce@fazenda.com.br" required />
+                <Field
+                  label="Senha"
+                  name="password"
+                  type="password"
+                  autoComplete={isRegistering ? "new-password" : "current-password"}
+                  value={form.password}
                   onChange={handleChange}
-                  sx={{ mb: 2 }}
+                  inputProps={{ minLength: 6 }}
+                  required
+                  aside={
+                    !isRegistering && (
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => {
+                          setForgotMode(true);
+                          setError("");
+                        }}
+                        sx={{ border: 0, bgcolor: "transparent", p: 0, fontFamily: "inherit", fontSize: "0.875rem", fontWeight: 600, color: "primary.main", cursor: "pointer" }}
+                      >
+                        Esqueci a senha
+                      </Box>
+                    )
+                  }
                 />
-              )}
-              <TextField
-                fullWidth
-                required
-                label="E-mail"
-                name="email"
-                autoComplete="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                required
-                label="Senha"
-                name="password"
-                autoComplete={
-                  isRegistering ? "new-password" : "current-password"
-                }
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                inputProps={{ minLength: 6 }}
-                sx={{ mb: 2.5 }}
-              />
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                color="secondary"
-                disabled={submitting}
-                sx={{ py: 1.25 }}
-              >
-                {submitting
-                  ? "Entrando…"
-                  : isRegistering
-                    ? "Criar conta"
-                    : "Entrar"}
-              </Button>
-            </Box>
-
-            <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Button
-                variant="text"
-                onClick={() => setIsRegistering((p) => !p)}
-                sx={{ color: "primary.main" }}
-              >
-                {isRegistering ? "Já tenho conta" : "Criar uma conta"}
-              </Button>
-              {!isRegistering && (
-                <Button
-                  variant="text"
-                  onClick={() => {
-                    setForgotMode(true);
-                    setError("");
-                  }}
-                  sx={{
-                    display: "block",
-                    mx: "auto",
-                    color: "text.secondary",
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  Esqueci minha senha
+                <Button fullWidth type="submit" variant="contained" disabled={submitting} sx={{ ...primaryBtn, mt: 0.5 }}>
+                  {submitting ? "Entrando…" : isRegistering ? "Criar conta" : "Entrar"}
                 </Button>
+              </Box>
+              {IS_DEMO && (
+                <>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, color: "text.secondary", fontSize: "0.8125rem" }}>
+                    <Box sx={{ flexGrow: 1, height: "1px", bgcolor: "divider" }} />
+                    ou
+                    <Box sx={{ flexGrow: 1, height: "1px", bgcolor: "divider" }} />
+                  </Box>
+                  <Button fullWidth variant="outlined" disabled={submitting} onClick={enterDemo} sx={outlineBtn}>
+                    Testar sem conta (demo)
+                  </Button>
+                </>
               )}
-            </Box>
-          </>
-        )}
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ textAlign: "center", mt: 1 }}
-        >
-          {copy.login.optionalNote}{" "}
-          <Box
-            component={Link}
-            to="/"
-            sx={{
-              color: "primary.main",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Voltar ao início
-          </Box>
-        </Typography>
+            </>
+          )}
+          <Typography sx={{ mt: "auto", pt: 2, fontSize: "0.8125rem", lineHeight: 1.5, color: "text.secondary", textAlign: "center" }}>
+            O Zé dá uma hipótese de diagnóstico. Para decisões de aplicação, confirme com um engenheiro-agrônomo.
+          </Typography>
+        </Box>
       </Box>
+    </Box>
+  );
+}
+
+const primaryBtn = {
+  height: 56,
+  borderRadius: "16px",
+  fontWeight: 800,
+  fontSize: "1.0625rem",
+  bgcolor: "primary.main",
+  color: "primary.contrastText",
+  boxShadow: "none",
+  "&:hover": { bgcolor: "primary.dark", boxShadow: "none" },
+};
+const outlineBtn = {
+  height: 52,
+  borderRadius: "16px",
+  fontWeight: 700,
+  fontSize: "1rem",
+  border: "1.5px solid",
+  borderColor: "text.primary",
+  color: "text.primary",
+  "&:hover": { border: "1.5px solid", borderColor: "text.primary", bgcolor: "action.hover" },
+};
+
+/** Campo do m-Login: rótulo em cima, 52 px, cantos 14 e foco verde-broto. */
+function Field({ label, name, aside, inputProps, ...rest }) {
+  const id = "campo-" + name;
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <Box component="label" htmlFor={id} sx={{ fontSize: "0.875rem", fontWeight: 700 }}>
+          {label}
+        </Box>
+        {aside}
+      </Box>
+      <InputBase
+        id={id}
+        name={name}
+        inputProps={inputProps}
+        {...rest}
+        sx={{
+          height: 52,
+          px: 2,
+          border: "1.5px solid",
+          borderColor: (t) => (t.palette.mode === "dark" ? "#3A5243" : "#B9C4B3"),
+          borderRadius: "14px",
+          bgcolor: "background.paper",
+          fontSize: "1.0625rem",
+          "&.Mui-focused": { borderColor: "primary.main", outline: "3px solid #C8F169", outlineOffset: "1px" },
+        }}
+      />
     </Box>
   );
 }
