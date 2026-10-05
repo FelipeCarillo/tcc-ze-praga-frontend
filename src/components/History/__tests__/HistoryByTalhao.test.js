@@ -88,8 +88,8 @@ test("ver todos abre a lista filtrada pelo grupo", () => {
 test("analisar neste talhão já deixa o talhão ativo para a foto", () => {
   render(<HistoryByTalhao groups={groups} onShowAll={jest.fn()} />);
   fireEvent.click(
-    screen.getAllByRole("button", { name: "Analisar neste talhão" })[1],
+    screen.getByRole("button", { name: "Analisar neste talhão" }),
   );
   expect(mockSetActive).toHaveBeenCalledWith({ id: "t-2", nome: "Baixada" });
-  expect(mockNavigate).toHaveBeenCalledWith("/chat");
+  expect(mockNavigate).toHaveBeenCalledWith("/camera");
 });

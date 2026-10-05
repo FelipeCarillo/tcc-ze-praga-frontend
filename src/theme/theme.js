@@ -91,7 +91,13 @@ export function brandCssVariables(mode) {
   };
 }
 
-export function createAppTheme(mode) {
+/**
+ * @param {'light'|'dark'} mode
+ * @param {{ field?: boolean }} options `field` = "Modo campo" do Perfil (m-Perfil):
+ *   letra 12,5% maior (todo tamanho em rem acompanha) e contraste máximo no
+ *   texto secundário e nas bordas, para ler no sol.
+ */
+export function createAppTheme(mode, { field = false } = {}) {
   const isDark = mode === 'dark';
 
   return createTheme({
@@ -130,9 +136,13 @@ export function createAppTheme(mode) {
       },
       text: {
         primary: isDark ? brand.creme : brand.solo,
-        secondary: isDark ? 'rgba(238,242,232,0.72)' : 'rgba(15,26,19,0.70)',
+        secondary: field
+          ? isDark ? 'rgba(238,242,232,0.92)' : 'rgba(15,26,19,0.88)'
+          : isDark ? 'rgba(238,242,232,0.72)' : 'rgba(15,26,19,0.70)',
       },
-      divider: isDark ? brand.noite3 : 'rgba(15,26,19,0.12)',
+      divider: field
+        ? isDark ? '#5A7263' : 'rgba(15,26,19,0.42)'
+        : isDark ? brand.noite3 : 'rgba(15,26,19,0.12)',
       // —— chaves customizadas: VALORES atualizados, chaves preservadas ——
       severity: {
         alta: brand.severa,
@@ -228,7 +238,7 @@ export function createAppTheme(mode) {
       borderRadius: 14,
     },
     components: {
-      MuiCssBaseline: { styleOverrides: { html: { scrollBehavior: 'auto' }, body: { overflowWrap: 'break-word' }, '*:focus-visible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 }, '@media (prefers-reduced-motion: reduce)': { '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important', scrollBehavior: 'auto !important' } } } },
+      MuiCssBaseline: { styleOverrides: { html: { scrollBehavior: 'auto', ...(field ? { fontSize: '112.5%' } : {}) }, body: { overflowWrap: 'break-word' }, '*:focus-visible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 }, '@media (prefers-reduced-motion: reduce)': { '*, *::before, *::after': { animationDuration: '0.01ms !important', transitionDuration: '0.01ms !important', scrollBehavior: 'auto !important' } } } },
         MuiButtonBase: { styleOverrides: { root: { '&.Mui-focusVisible': { outline: '3px solid ' + (isDark ? brand.milho : brand.mata), outlineOffset: 3 } } } },
         MuiIconButton: { styleOverrides: { root: { minWidth: 44, minHeight: 44 } } },
       MuiMenuItem: { styleOverrides: { root: { minHeight: 44 } } },

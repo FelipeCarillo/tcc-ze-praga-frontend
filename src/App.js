@@ -217,7 +217,7 @@ function App() {
                   <Route
                     path="/historico/:id"
                     element={
-                      <Layout>
+                      <Layout bottomNav={false}>
                         <RequireAuth>
                           <DiagnosisDetailPage />
                         </RequireAuth>
