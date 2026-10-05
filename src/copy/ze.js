@@ -62,6 +62,9 @@ export const copy = {
       search_web: 'Dando uma pesquisada…',
       search_scientific: 'Vendo o que dizem os artigos…',
       identify_crop: 'Vendo que cultura é essa…',
+      // Etapas sem tool própria, usadas no chat síncrono (useChat.progressSteps).
+      _listening: 'Ouvindo seu áudio…',
+      _writing: 'Escrevendo a resposta…',
       _fallback: 'Análise em andamento…',
     },
   },

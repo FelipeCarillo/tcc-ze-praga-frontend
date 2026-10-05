@@ -3,8 +3,10 @@ import { v4 as uuid } from "uuid";
 import {
   sendMessage,
   sendMessageStream,
+  resumeMessage,
   resumeMessageStream,
 } from "../services/chatService";
+import { CHAT_STREAMING } from "../config/runtime";
 import {
   getSessionMessages,
   closeSession,
@@ -33,6 +35,27 @@ function describe(error) {
     return "O servidor está com instabilidade. Tente novamente em instantes.";
   return "Não foi possível processar sua mensagem. Confira a conexão e tente novamente.";
 }
+/**
+ * Sem streaming o servidor só responde no fim do turno. Para a espera não
+ * parecer travada, o indicador avança pelas etapas que o agente percorre (o
+ * system prompt fixa a ordem com foto: inspect_image → analyze_image → plano
+ * de ação). São rótulos de `copy.chat.tools`; os tempos são estimativas.
+ */
+export function progressSteps({ hasImage = false, hasAudio = false } = {}) {
+  const offset = hasAudio ? 2500 : 0;
+  const steps = hasAudio ? [["_listening", 0]] : [];
+  if (hasImage)
+    return steps.concat([
+      ["inspect_image", offset],
+      ["analyze_image", offset + 3500],
+      ["get_action_plan", offset + 9000],
+      ["_writing", offset + 15000],
+    ]);
+  return steps.concat([
+    [null, offset],
+    ["_writing", offset + 6000],
+  ]);
+}
 export default function useChat() {
   const [messages, setMessages] = useState(initial),
     [isLoading, setLoading] = useState(false),
@@ -41,9 +64,7 @@ export default function useChat() {
   const generation = useRef(0),
     controller = useRef(null),
     busy = useRef(false),
-    urls = useRef([]),
-    messagesRef = useRef(messages);
-  messagesRef.current = messages;
+    urls = useRef([]);
   const cancel = useCallback(() => {
     generation.current++;
     controller.current?.abort();
@@ -75,6 +96,9 @@ export default function useChat() {
       const ctrl = new AbortController();
       controller.current = ctrl;
       const valid = () => generation.current === gen && !ctrl.signal.aborted;
+      // Resposta a uma pergunta segue o transporte do turno que a fez.
+      const streaming =
+        mode === "resume" ? currentInterrupt?.via !== "sync" : mode === "stream";
       const imageUrl = imageFile ? URL.createObjectURL(imageFile) : null;
       if (imageUrl) urls.current.push(imageUrl);
       const user = {
@@ -129,10 +153,13 @@ export default function useChat() {
             );
         },
         onInterrupt: (info) => {
+          // `via` guarda o transporte do turno: a resposta à pergunta segue
+          // pelo mesmo caminho (SSE ou síncrono).
           if (valid() && info)
             setInterrupt({
               ...info,
               sessionId: currentInterrupt?.sessionId || sessionId,
+              via: streaming ? "stream" : "sync",
             });
         },
         onDone: (sid) => {
@@ -142,29 +169,46 @@ export default function useChat() {
           }
         },
       };
+      const timers = streaming
+        ? []
+        : progressSteps({
+            hasImage: Boolean(imageFile),
+            hasAudio: Boolean(audioFile),
+          }).map(([toolCall, ms]) =>
+            setTimeout(() => update({ toolCall }), ms),
+          );
+      // Aplica a resposta completa de POST /chat ou /chat/resume.
+      const apply = (result) => {
+        if (!valid()) return;
+        if (result.transcript) callbacks.onTranscript(result.transcript);
+        if (result.interrupt) callbacks.onInterrupt(result.interrupt);
+        update({
+          content: result.content || "",
+          diagnosis: result.diagnosis || null,
+          diagnosisId: result.diagnosis?.id,
+        });
+        callbacks.onDone(result.sessionId);
+      };
+      const threadId = currentInterrupt?.sessionId || sessionId;
       try {
-        if (mode === "resume")
-          await resumeMessageStream(
-            currentInterrupt.sessionId || sessionId,
-            text,
-            callbacks,
-            { signal: ctrl.signal },
-          );
-        else if (mode === "sync") {
-          const result = await sendMessage(
-            [...messagesRef.current, user].map(({ role, content }) => ({
-              role,
-              content,
-            })),
-            imageFile,
-            modelId,
-            audioFile,
-          );
-          update({
-            content: result.content,
-            diagnosis: result.diagnosis || null,
+        if (mode === "resume" && streaming)
+          await resumeMessageStream(threadId, text, callbacks, {
+            signal: ctrl.signal,
           });
-        } else
+        else if (mode === "resume")
+          apply(await resumeMessage(threadId, text, { signal: ctrl.signal }));
+        else if (mode === "sync")
+          apply(
+            await sendMessage(
+              [{ role: "user", content: user.content }],
+              imageFile,
+              modelId,
+              audioFile,
+              sessionId,
+              { signal: ctrl.signal },
+            ),
+          );
+        else
           await sendMessageStream(
             [{ role: "user", content: user.content }],
             imageFile,
@@ -188,6 +232,7 @@ export default function useChat() {
         }
         return false;
       } finally {
+        timers.forEach(clearTimeout);
         if (valid()) {
           busy.current = false;
           setLoading(false);
@@ -202,9 +247,10 @@ export default function useChat() {
       run(text, file, model, audio, "stream"),
     [run],
   );
+  // Transporte padrão da UI: síncrono, a menos que REACT_APP_CHAT_STREAMING=true.
   const send = useCallback(
     (text, file = null, model = "ensemble", audio = null) =>
-      run(text, file, model, audio, "sync"),
+      run(text, file, model, audio, CHAT_STREAMING ? "stream" : "sync"),
     [run],
   );
   const answerInterrupt = useCallback(
@@ -245,7 +291,15 @@ export default function useChat() {
         if (generation.current !== gen) return;
         setSessionId(id);
         setMessages(hydrated.length ? hydrated : initial());
-        setInterrupt(interrupt ? { ...interrupt, sessionId: id } : null);
+        setInterrupt(
+          interrupt
+            ? {
+                ...interrupt,
+                sessionId: id,
+                via: CHAT_STREAMING ? "stream" : "sync",
+              }
+            : null,
+        );
       } catch {
         if (generation.current === gen)
           setMessages((prev) => [

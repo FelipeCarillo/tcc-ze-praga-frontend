@@ -43,6 +43,8 @@ npm start              # http://localhost:3000
 | `REACT_APP_API_URL` | URL base da API do backend | `http://localhost:8000/api/v1` |
 | `REACT_APP_AUTH_MODE` | Modo de autenticação | `real` |
 | `REACT_APP_USE_MOCK` | `true` usa dados mockados (sem backend); `false` chama a API real | `false` |
+| `REACT_APP_CHAT_STREAMING` | `true` usa SSE (`/chat/stream`); `false` usa `POST /chat` síncrono, o modo da nuvem | `false` |
+| `REACT_APP_DIAGNOSIS_MODELS` | Modelos carregados no backend (`efficientnet`, `vit`, `resnet50`, `ensemble`); vazio = todos | vazio |
 
 > Em desenvolvimento sem backend, `REACT_APP_USE_MOCK=true` permite navegar a UI
 > com respostas simuladas.
@@ -60,8 +62,12 @@ npm start              # http://localhost:3000
 - **Autenticação**: login/registro contra `/auth` (JWT).
 - **Diagnóstico**: upload de foto da folha → `POST /inference` → card com top-3
   doenças, confiança, severidade e plano de ação.
-- **Chat multimodal**: agente LangGraph via SSE (streaming), com suporte a imagem
-  (gate de visão) e áudio (transcrição); Markdown ao vivo.
+- **Chat multimodal**: agente LangGraph com imagem (gate de visão) e áudio
+  (transcrição). Na nuvem a resposta é síncrona (`POST /chat`) e o indicador
+  avança pelas etapas do agente enquanto ela não chega; o SSE continua
+  disponível com `REACT_APP_CHAT_STREAMING=true`.
+- **Fotos leves**: a imagem é reduzida no aparelho (1600 px, JPEG) antes do
+  upload — mais rápido no 4G e dentro do limite de payload do AWS Lambda.
 - **Histórico**: lista de diagnósticos anteriores (resposta paginada).
 - **Cotas & planos**: indicador de uso restante; modal de upgrade no 429.
 - **API keys**: página de gestão de chaves (tier Enterprise).
@@ -72,7 +78,7 @@ npm start              # http://localhost:3000
 src/
 ├── pages/          # telas (Chat, DiagnosisDetail, History, ApiKeys, ...)
 ├── components/     # Chat/, Layout/, common/ (Markdown), ...
-├── hooks/          # useChat (streaming + interrupt), ...
+├── hooks/          # useChat (síncrono ou SSE + interrupt), ...
 ├── services/       # chatService, inferenceService, historyService, authService
 └── contexts/       # FeaturesContext, auth, ...
 ```

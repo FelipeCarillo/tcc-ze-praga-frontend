@@ -24,7 +24,7 @@ export default function ChatPage() {
     messages,
     isLoading,
     pendingInterrupt,
-    sendStreaming,
+    send,
     answerInterrupt,
     loadSession,
     clearChat,
@@ -184,7 +184,7 @@ export default function ChatPage() {
         </Box>
       )}
       <ChatInput
-        onSend={sendStreaming}
+        onSend={send}
         disabled={isLoading || !!pendingInterrupt}
         pendingFile={file}
         onFileHandled={fileHandled}

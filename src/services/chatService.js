@@ -1,8 +1,8 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import api from "./api";
-import { IS_DEMO, API_ORIGIN } from "../config/runtime";
-import { mockSendMessage } from "./mock/mockChat";
+import { IS_DEMO, API_ORIGIN, CHAT_TIMEOUT_MS } from "../config/runtime";
 import { mockSendMessageStream } from "./mock/mockChatStream";
+import { compressImage } from "../utils/compressImage";
 import { mapDiagnosis, saveDiagnosis } from "./historyService";
 import { getAuthToken, getCurrentUserId } from "./authService";
 import { appendDemoTurn } from "./mock/mockSessions";
@@ -145,24 +145,78 @@ function streamRequest(path, body, callbacks, options = {}, json = false) {
     }).catch((error) => finish(error));
   });
 }
+function mapChatResponse(data) {
+  return {
+    content: data?.content || "",
+    diagnosis: mapDiagnosis(data?.diagnosis),
+    sessionId: data?.session_id || null,
+    transcript: data?.transcript || null,
+    interrupt: data?.interrupt ? mapInterrupt(data.interrupt) : null,
+  };
+}
+/**
+ * Turno síncrono do chat (POST /chat): uma requisição, uma resposta completa.
+ * É o transporte padrão na nuvem — veja CHAT_STREAMING em config/runtime.
+ * Devolve { content, diagnosis, sessionId, transcript, interrupt }.
+ */
 export async function sendMessage(
   messages,
   imageFile = null,
   modelId = "ensemble",
   audioFile = null,
+  sessionId = null,
+  options = {},
 ) {
-  if (IS_DEMO) return mockSendMessage(messages, imageFile, modelId);
+  if (IS_DEMO) {
+    // O modo demonstração reaproveita o roteiro simulado do streaming e só
+    // entrega o resultado no fim, como o backend síncrono faria.
+    let content = "",
+      diagnosis = null,
+      sid = sessionId;
+    await sendMessageStream(
+      messages,
+      imageFile,
+      modelId,
+      sessionId,
+      audioFile,
+      {
+        onToken: (chunk) => {
+          content += chunk;
+        },
+        onDiagnosis: (value) => {
+          diagnosis = value;
+        },
+        onDone: (value) => {
+          sid = value || sid;
+        },
+      },
+      options,
+    );
+    return { content, diagnosis, sessionId: sid, transcript: null, interrupt: null };
+  }
   const body = new FormData();
   body.append("messages", JSON.stringify(messages));
   body.append("model", modelId);
-  if (imageFile) body.append("image", imageFile);
+  if (imageFile) body.append("image", await compressImage(imageFile));
   if (audioFile)
     body.append("audio", audioFile, audioFile.name || "voice.webm");
+  if (sessionId) body.append("session_id", sessionId);
   const { data } = await api.post("/api/v1/chat", body, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: CHAT_TIMEOUT_MS,
+    signal: options.signal,
   });
   window.dispatchEvent(new CustomEvent("quota-updated"));
-  return { ...data, diagnosis: mapDiagnosis(data.diagnosis) };
+  return mapChatResponse(data);
+}
+/** Retoma uma pergunta do agente (ask_user) pelo endpoint síncrono. */
+export async function resumeMessage(threadId, response, options = {}) {
+  const { data } = await api.post(
+    "/api/v1/chat/resume",
+    { thread_id: threadId, response },
+    { timeout: CHAT_TIMEOUT_MS, signal: options.signal },
+  );
+  return mapChatResponse(data);
 }
 export async function sendMessageStream(
   messages,
@@ -212,7 +266,7 @@ export async function sendMessageStream(
   const body = new FormData();
   body.append("messages", JSON.stringify(messages));
   body.append("model", modelId);
-  if (imageFile) body.append("image", imageFile);
+  if (imageFile) body.append("image", await compressImage(imageFile));
   if (audioFile)
     body.append("audio", audioFile, audioFile.name || "voice.webm");
   if (sessionId) body.append("session_id", sessionId);
