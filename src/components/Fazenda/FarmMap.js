@@ -42,6 +42,12 @@ const FILL = {
 };
 const GAP = 4;
 
+/** Corta o rótulo para caber no bloco (largura média de um caractere ≈ 0,56 em). */
+export function fit(text, width, size) {
+  const max = Math.max(1, Math.floor(width / (size * 0.56)));
+  return text.length <= max ? text : text.slice(0, Math.max(1, max - 1)).trimEnd() + "…";
+}
+
 /**
  * Mapa esquemático da fazenda (m-Talhoes): um bloco por talhão, com o
  * tamanho pela área informada e a cor pelo risco do último laudo. Não é um
@@ -94,12 +100,12 @@ export default function FarmMap({ talhoes, width = 324, height = 168 }) {
             />
             {bw > 34 && (
               <text x={x + 10} y={y + 22} fill={c ? c.fg : "currentColor"} fontFamily="Archivo, sans-serif" fontWeight="800" fontSize={roomy ? 14 : 12}>
-                {roomy ? t.nome : t.nome.slice(0, 6)}
+                {fit(t.nome, bw - 18, roomy ? 14 : 12)}
               </text>
             )}
             {roomy && t.apelido && (
               <text x={x + 10} y={y + 40} fill={c ? c.sub : "#8A9B86"} fontFamily="Archivo, sans-serif" fontSize="12">
-                {t.apelido}
+                {fit(t.apelido, bw - 18, 12)}
               </text>
             )}
             {bh > 40 && bw > 50 && t.hectares ? (

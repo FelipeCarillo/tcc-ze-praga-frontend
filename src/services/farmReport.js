@@ -51,6 +51,41 @@ export async function loadImage(url) {
   }
 }
 
+/**
+ * Recorte central na proporção do quadro (como `object-fit: cover`), para a
+ * foto não sair esticada no PDF. Sem canvas (testes), devolve a original.
+ */
+export async function cover(dataUrl, ratio, maxW = 1200) {
+  // jsdom (testes) não carrega imagens: o onload nunca viria.
+  if (!dataUrl || typeof document === "undefined" || /jsdom/i.test(navigator.userAgent)) return dataUrl;
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (!w || !h) return dataUrl;
+    let sw = w;
+    let sh = w / ratio;
+    if (sh > h) {
+      sh = h;
+      sw = h * ratio;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(maxW, Math.round(sw));
+    canvas.height = Math.round(canvas.width / ratio);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return dataUrl;
+    ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function fmt(img) {
   return /^data:image\/png/.test(img) ? "PNG" : "JPEG";
 }
@@ -447,8 +482,8 @@ export async function exportFarmReport({ fazenda, laudos, produtor, planoDe, sav
     author: "Zé Praga - IMT",
   });
   const [capaImg, fotos] = await Promise.all([
-    loadImage(capa),
-    Promise.all(data.laudos.map((d) => loadImage(d.imageUrl))),
+    loadImage(capa).then((img) => cover(img, W / 106)),
+    Promise.all(data.laudos.map((d) => loadImage(d.imageUrl).then((img) => cover(img, 78 / 62, 900)))),
   ]);
   const planos = new Map();
   for (const id of new Set(data.laudos.map((d) => d.diseaseId).filter(Boolean))) {

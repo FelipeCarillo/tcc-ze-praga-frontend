@@ -64,22 +64,27 @@ export default function ChatPage() {
   // para a análise (m-Chat-Analisando). Foto da galeria: abre a conferência
   // em tela cheia (m-Chat-Foto). Do Histórico chegam `sessionId` (reabrir a
   // conversa) ou `newChat` (começar outra).
+  // A ação roda depois da montagem (setTimeout): no StrictMode o React
+  // desmonta e remonta a página, e a limpeza do useChat cancelaria uma
+  // conversa iniciada na primeira montagem.
   const handled = useRef(null);
   useEffect(() => {
-    if (location.key === handled.current) return;
-    handled.current = location.key;
+    if (location.key === handled.current) return undefined;
     const st = location.state;
-    if (!st) return;
-    if (st.sessionId) loadSession(st.sessionId);
-    else if (st.newChat) clearChat();
-    if (st.pendingFile) {
-      const error = validateImage(st.pendingFile);
-      if (error) setNotice(error);
-      else if (st.source === "camera") send("", st.pendingFile, model);
-      else setFile(st.pendingFile);
-    }
-    if (st.sessionId || st.newChat || st.pendingFile)
+    if (!st || !(st.sessionId || st.newChat || st.pendingFile)) return undefined;
+    const timer = setTimeout(() => {
+      handled.current = location.key;
+      if (st.sessionId) loadSession(st.sessionId);
+      else if (st.newChat) clearChat();
+      if (st.pendingFile) {
+        const error = validateImage(st.pendingFile);
+        if (error) setNotice(error);
+        else if (st.source === "camera") send("", st.pendingFile, model);
+        else setFile(st.pendingFile);
+      }
       navigate(location.pathname, { replace: true, state: null });
+    }, 0);
+    return () => clearTimeout(timer);
   }, [location, navigate, loadSession, clearChat, send, model]);
   // Título da conversa no desktop: a primeira mensagem do produtor.
   const firstUser = messages.find((m) => m.role === "user" && m.content);

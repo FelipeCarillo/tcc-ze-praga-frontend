@@ -173,7 +173,7 @@ export default function ProfilePage() {
       }}
     >
       <Stack direction="row" alignItems="center" gap={1.75}>
-        <Box sx={{ width: 60, height: 60, borderRadius: "18px", bgcolor: "primary.main", color: "#C8F169", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontStretch: "115%", fontSize: "1.375rem", flexShrink: 0 }}>
+        <Box sx={{ width: 60, height: 60, borderRadius: "18px", bgcolor: "#1B4D2E", color: "#C8F169", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontStretch: "115%", fontSize: "1.375rem", flexShrink: 0 }}>
           {iniciais}
         </Box>
         <Box flex={1} minWidth={0}>

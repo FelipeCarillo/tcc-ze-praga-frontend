@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import FarmMap, { layoutBlocks } from "../FarmMap";
+import FarmMap, { fit, layoutBlocks } from "../FarmMap";
 
 // Os blocos são <rect> de SVG, sem papel acessível próprio.
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
@@ -32,4 +32,9 @@ test("mapa tem rótulo acessível e um bloco por talhão", () => {
   expect(screen.getByRole("img", { name: /Mapa esquemático/ })).toBeInTheDocument();
   expect(container.querySelectorAll("rect")).toHaveLength(2);
   expect(container.querySelector("rect").getAttribute("fill")).toBe("#8A1C12");
+});
+
+test("rótulo longo é cortado para caber no bloco", () => {
+  expect(fit("Talhão 3 · Sede", 200, 14)).toBe("Talhão 3 · Sede");
+  expect(fit("Talhão 3 · Sede", 60, 14)).toBe("Talhão…");
 });
