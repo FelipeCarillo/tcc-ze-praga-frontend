@@ -1,11 +1,13 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // O CRA/Jest não resolve o react-router-dom v7: mock virtual, como nos demais.
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }), { virtual: true });
 jest.mock('../ChatMessage', () => ({ message }) => <div>{message.content}</div>);
 jest.mock('../TypingIndicator', () => () => <div data-testid="typing-indicator" />);
+const mockAddReminder = jest.fn();
+jest.mock('../../../services/reminders', () => ({ addReminder: (...a) => mockAddReminder(...a), hasReminder: () => false }));
 jest.mock('../InterruptPrompt', () => ({ interrupt }) => (
   <div data-testid="interrupt-prompt">{interrupt.question}</div>
 ));
@@ -70,5 +72,39 @@ describe('ChatWindow durante o streaming', () => {
     expect(screen.getByTestId('interrupt-prompt')).toHaveTextContent(
       'As manchas aparecem também nas folhas novas?',
     );
+  });
+});
+
+describe('ChatWindow — conversa vazia e sugestões', () => {
+  it('conversa vazia: foto em destaque e perguntas prontas', () => {
+    const onAsk = jest.fn();
+    render(<ChatWindow messages={[]} isLoading={false} onSelectFile={jest.fn()} onAnswerInterrupt={jest.fn()} onAsk={onAsk} />);
+    expect(screen.getByText(/Me manda a foto de/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Fotografar folha/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('/camera');
+    fireEvent.click(screen.getByRole('button', { name: 'O que é mancha-alvo?' }));
+    expect(onAsk).toHaveBeenCalledWith(expect.stringMatching(/mancha-alvo/));
+    expect(screen.getByText(/não fonte da verdade/)).toBeInTheDocument();
+  });
+
+  it('depois do laudo, as sugestões continuam a conversa e criam o lembrete', () => {
+    const onAsk = jest.fn();
+    const diagnosis = { id: 'd1', disease: 'Ferrugem-asiática', severity: 'alta', talhaoId: 't3', talhaoNome: 'Talhão 3' };
+    render(
+      <ChatWindow
+        messages={[firstMessage, { id: 'u', role: 'user', content: '', imageUrl: 'blob:x' }, { id: 'a', role: 'assistant', content: 'Ferrugem.', diagnosis }]}
+        isLoading={false}
+        onSelectFile={jest.fn()}
+        onAnswerInterrupt={jest.fn()}
+        onAsk={onAsk}
+        talhoes={[{ id: 't3', nome: 'Talhão 3' }, { id: 't7', nome: 'Talhão 7' }]}
+      />,
+    );
+    expect(screen.getByText('CONTINUE A CONVERSA')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Pode passar pro Talhão 7?' }));
+    expect(onAsk).toHaveBeenCalledWith(expect.stringMatching(/Talhão 7/));
+    fireEvent.click(screen.getByRole('button', { name: /Lembrar em 7 dias/ }));
+    expect(mockAddReminder).toHaveBeenCalledWith(diagnosis);
+    expect(screen.queryByRole('button', { name: /Lembrar em 7 dias/ })).not.toBeInTheDocument();
   });
 });

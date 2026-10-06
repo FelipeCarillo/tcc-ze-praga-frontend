@@ -4,6 +4,7 @@ import {
   Box,
   Divider,
   ListItemIcon,
+  ListSubheader,
   MenuItem,
   Select,
   Typography,
@@ -17,18 +18,20 @@ const NEW = "__novo_talhao__";
 /**
  * Escolha do talhão antes da foto (TCC-093) — o "Talhão 3 · Sede ▾" do design.
  * Cada laudo do chat nasce no talhão escolhido aqui. Sem talhão cadastrado,
- * vira um convite para cadastrar no Perfil.
+ * vira um convite para cadastrar em Fazendas e talhões.
  *
  * `variant="inline"`: sem contorno, com a bolinha verde — a linha de status
  * do cabeçalho da conversa no m-Chat ("● Talhão 3 · Sede").
  */
 export default function TalhaoPicker({ disabled = false, sx, variant = "pill", busy = false }) {
-  const { talhoes, loading, active, choose } = useTalhoes();
+  const { talhoes, fazendas, loading, active, choose } = useTalhoes();
+  // Com mais de uma fazenda, o menu agrupa os talhões por fazenda (TCC-096).
+  const grouped = fazendas.length > 1;
   const inline = variant === "inline";
 
   if (!loading && !talhoes.length && inline)
     return (
-      <Box component={Link} to="/perfil" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.8125rem", color: "text.secondary", textDecoration: "none", ...sx }}>
+      <Box component={Link} to="/fazendas" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.8125rem", color: "text.secondary", textDecoration: "none", ...sx }}>
         <Dot busy={busy} />
         Sem talhão · cadastrar
       </Box>
@@ -37,7 +40,7 @@ export default function TalhaoPicker({ disabled = false, sx, variant = "pill", b
     return (
       <Box
         component={Link}
-        to="/perfil"
+        to="/fazendas"
         sx={{
           display: "inline-flex",
           alignItems: "center",
@@ -79,9 +82,13 @@ export default function TalhaoPicker({ disabled = false, sx, variant = "pill", b
             sx={{ fontSize: inline ? "0.8125rem" : "0.875rem", fontWeight: inline ? 500 : 700, color: inline ? "text.secondary" : "inherit" }}
             noWrap
           >
+            {inline && busy ? "Analisando · " : ""}
             {value === NONE
-              ? "Sem talhão"
-              : talhoes.find((t) => t.id === value)?.nome || "Talhão"}
+              ? inline ? "Sem talhão escolhido" : "Sem talhão"
+              : (() => {
+                  const t = talhoes.find((x) => x.id === value);
+                  return t ? `${t.nome}${t.apelido ? " · " + t.apelido : ""}` : "Talhão";
+                })()}
           </Typography>
         </Box>
       )}
@@ -101,8 +108,12 @@ export default function TalhaoPicker({ disabled = false, sx, variant = "pill", b
         ...sx,
       }}
     >
-      {talhoes.map((t) => (
-        <MenuItem key={t.id} value={t.id}>
+      {(grouped ? fazendas : [{ id: "_", nome: null, talhoes }]).flatMap((f) => [
+        ...(grouped && f.talhoes.length
+          ? [<ListSubheader key={"h-" + f.id} sx={{ lineHeight: "32px", fontWeight: 800 }}>{f.nome}</ListSubheader>]
+          : []),
+        ...f.talhoes.map((t) => (
+        <MenuItem key={t.id} value={t.id} sx={grouped ? { pl: 3 } : undefined}>
           {t.nome}
           {t.apelido ? (
             <Typography
@@ -114,10 +125,11 @@ export default function TalhaoPicker({ disabled = false, sx, variant = "pill", b
             </Typography>
           ) : null}
         </MenuItem>
-      ))}
+        )),
+      ])}
       <MenuItem value={NONE}>Sem talhão</MenuItem>
       <Divider />
-      <MenuItem value={NEW} component={Link} to="/perfil">
+      <MenuItem value={NEW} component={Link} to="/fazendas">
         <ListItemIcon>
           <Plus size={16} />
         </ListItemIcon>

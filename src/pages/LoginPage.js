@@ -168,7 +168,7 @@ function LoginPage() {
 
       <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* m-Login: cabeçalho verde-lavoura. */}
-        <Box sx={{ bgcolor: "primary.main", color: "#FFFFFF", px: { xs: 2.5, md: 6 }, pt: 2, pb: 4, display: "flex", flexDirection: "column", gap: 3.5 }}>
+        <Box sx={{ bgcolor: "#1B4D2E", color: "#FFFFFF", px: { xs: 2.5, md: 6 }, pt: 2, pb: 4, display: "flex", flexDirection: "column", gap: 3.5 }}>
           <Box
             component={Link}
             to="/"

@@ -13,22 +13,16 @@ import {
   getPendingInterrupt,
 } from "../services/sessionsService";
 import { getDiagnosisById } from "../services/historyService";
-import { getActiveTalhao } from "../services/activeTalhao";
+import { getActiveTalhao, setActiveTalhao } from "../services/activeTalhao";
+import { setActiveFazendaId } from "../services/activeFazenda";
 // TCC-093: o laudo nasce no talhão escolhido na tela do chat.
 function talhaoOptions() {
   const talhao = getActiveTalhao();
   return talhao ? { talhaoId: talhao.id, talhaoNome: talhao.nome } : {};
 }
-const initial = () => [
-  {
-    id: uuid(),
-    role: "assistant",
-    content:
-      "Oi! Envie uma foto da folha de soja ou conte o que você observou. Vamos olhar os sinais juntos.",
-    diagnosis: null,
-    timestamp: new Date().toISOString(),
-  },
-];
+// A conversa começa vazia: a saudação do Zé é a tela vazia do chat
+// (m-Chat-Vazio), não uma mensagem que fica no topo da conversa.
+const initial = () => [];
 function describe(error) {
   const status = error?.response?.status;
   if (status === 401)
@@ -110,16 +104,13 @@ export default function useChat() {
         mode === "resume" ? currentInterrupt?.via !== "sync" : mode === "stream";
       const imageUrl = imageFile ? URL.createObjectURL(imageFile) : null;
       if (imageUrl) urls.current.push(imageUrl);
+      // A foto sozinha já é a mensagem (m-Chat-Analisando): sem texto de
+      // preenchimento no balão.
       const user = {
         id: uuid(),
         role: "user",
-        content:
-          text ||
-          (imageFile
-            ? "Imagem enviada para análise"
-            : audioFile
-              ? "🎤 Mensagem de voz"
-              : ""),
+        content: text || (audioFile ? "Mensagem de voz" : ""),
+        isVoice: Boolean(audioFile && !text),
         imageUrl,
         timestamp: new Date().toISOString(),
       };
@@ -130,6 +121,8 @@ export default function useChat() {
         content: "",
         diagnosis: null,
         isStreaming: true,
+        // Turno com foto: a UI mostra a varredura e os passos da análise.
+        hasImage: Boolean(imageFile),
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, user, placeholder]);
@@ -164,6 +157,14 @@ export default function useChat() {
           update((m) => ({ toolCall: null, steps: doneSteps(m.steps) })),
         onDiagnosis: (diagnosis) =>
           update({ diagnosis, diagnosisId: diagnosis?.id }),
+        // TCC-098: o Zé escolheu ou cadastrou o talhão — vira o ativo, e o
+        // cartão "Talhão criado" aparece na resposta.
+        onTalhao: (talhao) => {
+          if (!valid() || !talhao) return;
+          update({ talhao });
+          setActiveTalhao({ id: talhao.id, nome: talhao.nome });
+          if (talhao.fazendaId) setActiveFazendaId(talhao.fazendaId);
+        },
         onTranscript: (content) => {
           if (valid() && content)
             setMessages((prev) =>
@@ -175,6 +176,8 @@ export default function useChat() {
         onInterrupt: (info) => {
           // `via` guarda o transporte do turno: a resposta à pergunta segue
           // pelo mesmo caminho (SSE ou síncrono).
+          // A pergunta fica na conversa como fala do Zé depois de respondida.
+          if (valid() && info?.question) update({ question: info.question });
           if (valid() && info)
             setInterrupt({
               ...info,
@@ -202,6 +205,7 @@ export default function useChat() {
         if (!valid()) return;
         if (result.transcript) callbacks.onTranscript(result.transcript);
         if (result.interrupt) callbacks.onInterrupt(result.interrupt);
+        if (result.talhao) callbacks.onTalhao(result.talhao);
         update({
           content: result.content || "",
           diagnosis: result.diagnosis || null,
@@ -209,7 +213,10 @@ export default function useChat() {
           // Sem streaming, os passos exibidos na espera eram estimativas de
           // tempo. No fim só fica o que dá para afirmar: se veio laudo, o
           // diagnóstico rodou.
-          steps: result.diagnosis ? [{ name: "analyze_image", done: true }] : [],
+          steps: [
+            ...(result.talhao ? [{ name: result.talhao.created ? "register_talhao" : "use_talhao", done: true }] : []),
+            ...(result.diagnosis ? [{ name: "analyze_image", done: true }] : []),
+          ],
         });
         callbacks.onDone(result.sessionId);
       };

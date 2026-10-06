@@ -96,6 +96,8 @@ function mapGroup(g) {
   return {
     talhaoId: g.talhao_id ?? null,
     talhaoNome: g.talhao_nome ?? null,
+    fazendaId: g.fazenda_id ?? null,
+    fazendaNome: g.fazenda_nome ?? null,
     total: g.total ?? 0,
     lastAt: g.last_at ?? null,
     severityTrend: g.severity_trend || [],
@@ -111,13 +113,11 @@ function mapGroup(g) {
  */
 export async function getDiagnosesByTalhao({ perGroup = 3 } = {}) {
   if (IS_DEMO) {
-    // Import tardio: o talhoesService puxa o uuid (ESM), que só o modo demo
-    // precisa — e que o Jest do CRA não consegue carregar.
-    const { listTalhoes } = await import("./talhoesService");
-    const [items, talhoes] = await Promise.all([
-      mockHistory.getAll(getCurrentUserId()),
-      listTalhoes(),
-    ]);
+    // Import tardio: só o modo demo precisa do armazenamento local.
+    const { readFazendas, readTalhoes } = await import("./localFarmStore");
+    const items = await mockHistory.getAll(getCurrentUserId());
+    const talhoes = readTalhoes();
+    const fazendaNome = new Map(readFazendas().map((f) => [f.id, f.nome]));
     const known = new Set(talhoes.map((t) => t.id));
     const byGroup = new Map();
     for (const d of items) {
@@ -126,12 +126,14 @@ export async function getDiagnosesByTalhao({ perGroup = 3 } = {}) {
       if (!byGroup.has(gid)) byGroup.set(gid, []);
       byGroup.get(gid).push(d);
     }
-    const group = (id, nome) => {
+    const group = (id, nome, fazendaId = null) => {
       const list = byGroup.get(id) || [];
       const recent = list.slice(0, perGroup);
       return {
         talhaoId: id,
         talhaoNome: nome,
+        fazendaId,
+        fazendaNome: fazendaNome.get(fazendaId) ?? null,
         total: list.length,
         lastAt: list[0]?.timestamp ?? null,
         severityTrend: recent.map((d) => d.severity).reverse(),
@@ -139,7 +141,7 @@ export async function getDiagnosesByTalhao({ perGroup = 3 } = {}) {
       };
     };
     const groups = talhoes
-      .map((t) => group(t.id, t.nome))
+      .map((t) => group(t.id, t.nome, t.fazendaId))
       .sort(
         (a, b) =>
           (a.lastAt ? 0 : 1) - (b.lastAt ? 0 : 1) ||

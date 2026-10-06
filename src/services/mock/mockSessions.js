@@ -21,7 +21,7 @@ export function appendDemoTurn(userId, id, user, assistant) {
   if (!session) {
     session = {
       id,
-      title: user?.content || "Análise de uma folha",
+      title: user?.content || (user?.hasImage ? "Foto de folha" : "Conversa com o Zé"),
       preview: user?.content || "",
       createdAt: now,
       messages: [],
@@ -37,5 +37,14 @@ export function appendDemoTurn(userId, id, user, assistant) {
   );
   session.messageCount = session.messages.length;
   session.updatedAt = now;
+  // TCC-097: o card de "Conversas" — última resposta, laudos, foto e talhão.
+  if (assistant?.content) session.lastReply = assistant.content.replace(/[*#]/g, "").replace(/\s+/g, " ").trim().slice(0, 160);
+  const laudos = session.messages.filter((m) => m.diagnosis);
+  session.diagnosisCount = laudos.length;
+  const ultimo = laudos[laudos.length - 1]?.diagnosis;
+  if (ultimo) {
+    session.imageUrl = ultimo.imageUrl || session.imageUrl || null;
+    session.talhaoNome = ultimo.talhaoNome || null;
+  }
   localStorage.setItem(key(userId), JSON.stringify(sessions));
 }

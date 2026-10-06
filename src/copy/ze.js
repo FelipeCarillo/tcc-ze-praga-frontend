@@ -52,16 +52,19 @@ export const copy = {
     // técnico (`analyze_image`); aqui ele vira a voz do Zé. Nome desconhecido
     // cai no fallback e a UI não quebra quando o backend ganhar tools novas.
     tools: {
-      inspect_image: 'Olhando a foto…',
-      analyze_image: 'Rodando o diagnóstico…',
+      inspect_image: 'Conferindo a foto…',
+      analyze_image: 'Rodando o diagnóstico',
       deep_diagnose: 'Analisando as fotos…',
       get_disease_info: 'Consultando o caderno de doenças…',
-      get_action_plan: 'Consultando próximos cuidados…',
+      get_action_plan: 'Montando o plano de ação…',
       search_my_diagnoses: 'Procurando no seu histórico…',
       compare_diagnoses: 'Comparando os modelos…',
       search_web: 'Dando uma pesquisada…',
       search_scientific: 'Vendo o que dizem os artigos…',
       identify_crop: 'Vendo que cultura é essa…',
+      list_my_talhoes: 'Conferindo seus talhões…',
+      use_talhao: 'Ligando a foto ao talhão…',
+      register_talhao: 'Cadastrando o talhão…',
       // Etapas sem tool própria, usadas no chat síncrono (useChat.progressSteps).
       _listening: 'Ouvindo seu áudio…',
       _writing: 'Escrevendo a resposta…',
@@ -70,20 +73,29 @@ export const copy = {
     // Passos concluídos, no passado (m-Chat: "Olhei a foto", "Rodei o
     // diagnóstico"). Nome desconhecido cai em _fallback.
     toolsDone: {
-      inspect_image: 'Olhei a foto',
-      analyze_image: 'Rodei o diagnóstico',
+      inspect_image: 'Foto conferida',
+      analyze_image: 'Diagnóstico pronto',
       deep_diagnose: 'Analisei as fotos',
       get_disease_info: 'Consultei o caderno de doenças',
-      get_action_plan: 'Montei os próximos cuidados',
+      get_action_plan: 'Plano de ação montado',
       search_my_diagnoses: 'Procurei no seu histórico',
       compare_diagnoses: 'Comparei os laudos',
       search_web: 'Pesquisei na web',
       search_scientific: 'Consultei artigos científicos',
       identify_crop: 'Identifiquei a cultura',
       ask_user: 'Fiz uma pergunta',
+      list_my_talhoes: 'Talhões conferidos',
+      use_talhao: 'Foto ligada ao talhão',
+      register_talhao: 'Talhão cadastrado',
       _listening: 'Ouvi seu áudio',
       _writing: 'Escrevi a resposta',
       _fallback: 'Etapa concluída',
+    },
+    // m-Chat-Analisando: o que ainda vem pela frente numa análise de foto.
+    toolsNext: {
+      inspect_image: 'Conferir a foto',
+      analyze_image: 'Rodar o diagnóstico',
+      get_action_plan: 'Montar o plano de ação',
     },
   },
 

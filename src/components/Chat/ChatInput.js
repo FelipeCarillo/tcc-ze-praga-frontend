@@ -12,20 +12,27 @@ import { ArrowUp, Camera, Mic, Square, X } from "lucide-react";
 import usePreferredModel from "../../hooks/usePreferredModel";
 import { IMAGE_ACCEPT, validateImage } from "../../utils/imageUpload";
 
+/**
+ * Composer do chat (m-Chat): câmera, campo em pílula e microfone.
+ *
+ * A foto não fica mais presa aqui (m-Chat-Analisando): a da câmera vai
+ * direto para a análise e a da galeria abre a conferência em tela cheia
+ * (`onPickFile`). Enquanto o Zé analisa (`busy`), o campo fica vazio e
+ * desabilitado e o microfone vira o botão de parar.
+ */
 export default function ChatInput({
   onSend,
   disabled = false,
-  pendingFile,
-  onFileHandled,
+  busy = false,
+  onStop,
   autoRecord = false,
   onOpenCamera,
+  onPickFile,
 }) {
   // O modelo vem da preferência (Perfil / cabeçalho do desktop), não mais de
   // um seletor no composer — como no canvas (m-Chat).
   const { model } = usePreferredModel();
   const [text, setText] = useState(""),
-    [file, setFile] = useState(null),
-    [preview, setPreview] = useState(""),
     [error, setError] = useState("");
   const [recording, setRecording] = useState(false),
     [audio, setAudio] = useState(null),
@@ -33,7 +40,7 @@ export default function ChatInput({
   useEffect(() => {
     if (!audio) {
       setAudioUrl("");
-      return;
+      return undefined;
     }
     const url = URL.createObjectURL(audio);
     setAudioUrl(url);
@@ -46,23 +53,6 @@ export default function ChatInput({
     cancelled = useRef(false),
     mounted = useRef(true),
     sending = useRef(false);
-  useEffect(() => {
-    if (!file) {
-      setPreview("");
-      return undefined;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-  useEffect(() => {
-    if (pendingFile) {
-      const issue = validateImage(pendingFile);
-      setError(issue);
-      if (!issue) setFile(pendingFile);
-      onFileHandled?.();
-    }
-  }, [pendingFile, onFileHandled]);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -79,29 +69,19 @@ export default function ChatInput({
     if (!next) return;
     const issue = validateImage(next);
     setError(issue);
-    if (!issue) setFile(next);
+    if (!issue) onPickFile?.(next);
   };
   const submit = async (e) => {
     e?.preventDefault();
-    if (
-      disabled ||
-      sending.current ||
-      recording ||
-      (!text.trim() && !file && !audio)
-    )
-      return;
+    if (disabled || busy || sending.current || recording || (!text.trim() && !audio)) return;
     sending.current = true;
     setError("");
     try {
-      const ok = await onSend(text.trim(), file, model, audio);
+      const ok = await onSend(text.trim(), null, model, audio);
       if (ok !== false) {
         setText("");
-        setFile(null);
         setAudio(null);
-      } else
-        setError(
-          "O envio não foi concluído. Sua foto e mensagem foram mantidas para tentar novamente.",
-        );
+      } else setError("O envio não foi concluído. Sua mensagem foi mantida para tentar novamente.");
     } catch {
       setError("Não foi possível enviar. Tente novamente.");
     } finally {
@@ -117,13 +97,8 @@ export default function ChatInput({
   };
   const startRecording = async () => {
     setError("");
-    if (
-      !navigator.mediaDevices?.getUserMedia ||
-      typeof MediaRecorder === "undefined"
-    ) {
-      setError(
-        "Este navegador não permite gravar áudio. Você pode escrever sua mensagem.",
-      );
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setError("Este navegador não permite gravar áudio. Você pode escrever sua mensagem.");
       return;
     }
     try {
@@ -144,11 +119,7 @@ export default function ChatInput({
         source.getTracks().forEach((t) => t.stop());
         if (!cancelled.current && mounted.current) {
           const type = r.mimeType || "audio/webm";
-          setAudio(
-            new File(chunks, type.includes("mp4") ? "voz.mp4" : "voz.webm", {
-              type,
-            }),
-          );
+          setAudio(new File(chunks, type.includes("mp4") ? "voz.mp4" : "voz.webm", { type }));
         }
         if (mounted.current) setRecording(false);
       };
@@ -156,9 +127,7 @@ export default function ChatInput({
       setRecording(true);
       timer.current = setTimeout(() => stopRecording(), 60000);
     } catch {
-      setError(
-        "Não foi possível acessar o microfone. Confira a permissão do navegador ou escreva sua mensagem.",
-      );
+      setError("Não foi possível acessar o microfone. Confira a permissão do navegador ou escreva sua mensagem.");
     }
   };
   // Atalho "Perguntar por áudio" do Início: abre o chat já gravando.
@@ -172,6 +141,9 @@ export default function ChatInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRecord, disabled]);
 
+  const round = { width: 48, height: 48, flexShrink: 0 };
+  const off = disabled || busy;
+
   return (
     <Box
       sx={{
@@ -184,85 +156,21 @@ export default function ChatInput({
         flexShrink: 0,
       }}
     >
-      <Box
-        component="form"
-        onSubmit={submit}
-        sx={{ maxWidth: 760, mx: "auto" }}
-      >
+      <Box component="form" onSubmit={submit} sx={{ maxWidth: 760, mx: "auto" }}>
         {error && (
           <Alert severity="error" onClose={() => setError("")} sx={{ mb: 1 }}>
             {error}
           </Alert>
         )}
-        {file && (
-          <Box
-            sx={{
-              p: 1.5,
-              mb: 1.5,
-              bgcolor: "background.default",
-              borderRadius: 3,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Stack direction="row" gap={2} alignItems="center">
-              <Box
-                component="img"
-                src={preview || undefined}
-                alt="Foto selecionada para conferir antes da análise"
-                sx={{
-                  width: 90,
-                  height: 100,
-                  objectFit: "contain",
-                  borderRadius: 2,
-                }}
-              />
-              <Box flex={1} minWidth={0}>
-                <Typography fontWeight={700}>Confira sua foto</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  A folha está nítida e bem iluminada?
-                </Typography>
-                <Typography noWrap variant="caption">
-                  {file.name}
-                </Typography>
-              </Box>
-              <IconButton
-                aria-label="Remover foto"
-                disabled={disabled}
-                onClick={() => setFile(null)}
-              >
-                <X size={20} />
-              </IconButton>
-            </Stack>
-            <Button
-              fullWidth
-              variant="contained"
-              type="submit"
-              disabled={disabled || recording}
-              sx={{ mt: 1.5 }}
-            >
-              {disabled ? "Analisando…" : "Analisar esta folha"}
-            </Button>
-          </Box>
-        )}
         {audio && (
-          <Box
-            component="audio"
-            controls
-            src={audioUrl || undefined}
-            aria-label="Ouvir áudio antes de enviar"
-            sx={{ width: "100%", height: 40, mb: 1 }}
-          />
+          <Box component="audio" controls src={audioUrl || undefined} aria-label="Ouvir áudio antes de enviar" sx={{ width: "100%", height: 40, mb: 1 }} />
         )}
         {audio && (
           <Alert
             severity="info"
+            sx={{ mb: 1 }}
             action={
-              <IconButton
-                aria-label="Descartar áudio"
-                disabled={disabled}
-                onClick={() => setAudio(null)}
-              >
+              <IconButton aria-label="Descartar áudio" disabled={off} onClick={() => setAudio(null)}>
                 <X size={18} />
               </IconButton>
             }
@@ -276,11 +184,7 @@ export default function ChatInput({
               Gravando · até 1 minuto
             </Typography>
             <Button onClick={() => stopRecording(true)}>Descartar</Button>
-            <Button
-              variant="contained"
-              startIcon={<Square size={16} />}
-              onClick={() => stopRecording()}
-            >
+            <Button variant="contained" startIcon={<Square size={16} />} onClick={() => stopRecording()}>
               Concluir
             </Button>
           </Stack>
@@ -288,17 +192,9 @@ export default function ChatInput({
           <Stack direction="row" gap={1} alignItems="flex-end">
             <IconButton
               aria-label="Fotografar folha"
-              disabled={disabled}
+              disabled={off}
               onClick={() => (onOpenCamera ? onOpenCamera() : gallery.current.click())}
-              sx={{
-                width: 48,
-                height: 48,
-                flexShrink: 0,
-                borderRadius: "14px",
-                bgcolor: "background.default",
-                color: "text.primary",
-                "&:hover": { bgcolor: "surface.muted" },
-              }}
+              sx={{ ...round, borderRadius: "14px", bgcolor: "background.default", color: "text.primary", "&:hover": { bgcolor: "surface.muted" } }}
             >
               <Camera size={22} strokeWidth={2.2} />
             </IconButton>
@@ -307,11 +203,7 @@ export default function ChatInput({
               multiline
               maxRows={4}
               size="small"
-              placeholder={
-                file
-                  ? "Acrescente uma observação (opcional)"
-                  : "Pergunte ao Zé…"
-              }
+              placeholder={busy ? "O Zé está analisando…" : "Pergunte ao Zé…"}
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "24px",
@@ -321,40 +213,31 @@ export default function ChatInput({
                   "& fieldset": { borderWidth: "1.5px", borderColor: "divider" },
                 },
               }}
-              value={text}
+              value={busy ? "" : text}
               onChange={(e) => setText(e.target.value)}
-              disabled={disabled}
-              slotProps={{
-                htmlInput: {
-                  "aria-label": "Mensagem para o Zé",
-                  maxLength: 10000,
-                },
-              }}
+              disabled={off}
+              slotProps={{ htmlInput: { "aria-label": "Mensagem para o Zé", maxLength: 10000 } }}
               onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !e.nativeEvent.isComposing &&
-                  window.matchMedia("(min-width: 900px)").matches
-                ) {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia("(min-width: 900px)").matches) {
                   e.preventDefault();
                   submit();
                 }
               }}
             />
-            {!text && !file && !audio ? (
+            {busy ? (
+              <IconButton
+                aria-label="Parar análise"
+                onClick={onStop}
+                sx={{ ...round, border: "1.5px solid", borderColor: "text.primary", bgcolor: "background.paper", color: "text.primary" }}
+              >
+                <Square size={16} fill="currentColor" />
+              </IconButton>
+            ) : !text && !audio ? (
               <IconButton
                 aria-label="Gravar mensagem de voz"
                 disabled={disabled}
                 onClick={startRecording}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  flexShrink: 0,
-                  bgcolor: "cta.main",
-                  color: "cta.contrastText",
-                  "&:hover": { bgcolor: "cta.hover" },
-                }}
+                sx={{ ...round, bgcolor: "cta.main", color: "cta.contrastText", "&:hover": { bgcolor: "cta.hover" } }}
               >
                 <Mic size={22} strokeWidth={2.2} />
               </IconButton>
@@ -363,28 +246,14 @@ export default function ChatInput({
                 type="submit"
                 aria-label="Enviar mensagem"
                 disabled={disabled}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  flexShrink: 0,
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": { bgcolor: "primary.dark" },
-                }}
+                sx={{ ...round, bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}
               >
                 <ArrowUp size={22} />
               </IconButton>
             )}
           </Stack>
         )}
-        <input
-          ref={gallery}
-          type="file"
-          accept={IMAGE_ACCEPT}
-          hidden
-          onChange={selectFile}
-        />
-
+        <input ref={gallery} type="file" accept={IMAGE_ACCEPT} hidden onChange={selectFile} />
       </Box>
     </Box>
   );

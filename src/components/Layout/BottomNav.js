@@ -3,14 +3,16 @@ import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import Portal from "@mui/material/Portal";
-import { Camera, History, Home, Sparkles, UserRound } from "lucide-react";
+import { Camera, History, Home, MessageSquare, UserRound } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
 const items = [
   { label: "Início", path: "/", Icon: Home },
   { label: "Histórico", path: "/historico", Icon: History, requiresAuth: true },
   { camera: true },
-  { label: "Planos", path: "/planos", Icon: Sparkles },
+  // Rebrand: a conversa com o Zé a um toque, sem precisar de foto. Planos
+  // continua no Perfil e no aviso de cota do Início.
+  { label: "Zé", path: "/chat", Icon: MessageSquare, requiresAuth: true },
   { label: "Perfil", path: "/perfil", Icon: UserRound },
 ];
 

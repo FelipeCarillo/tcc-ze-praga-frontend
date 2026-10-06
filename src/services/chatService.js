@@ -1,7 +1,7 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import api from "./api";
 import { IS_DEMO, API_ORIGIN, CHAT_TIMEOUT_MS } from "../config/runtime";
-import { mockSendMessageStream } from "./mock/mockChatStream";
+import { mockResumeStream, mockSendMessageStream } from "./mock/mockChatStream";
 import { compressImage } from "../utils/compressImage";
 import { mapDiagnosis, saveDiagnosis } from "./historyService";
 import { getAuthToken, getCurrentUserId } from "./authService";
@@ -16,12 +16,33 @@ export function mapInterrupt(data) {
     askedAt: data.asked_at || null,
   };
 }
+/** Talhão escolhido/criado pelo agente no turno (TCC-098). */
+export function mapTalhaoSelected(data) {
+  if (!data || typeof data !== "object" || !data.id) return null;
+  return {
+    id: data.id,
+    nome: data.nome,
+    apelido: data.apelido ?? null,
+    hectares: data.hectares ?? null,
+    dataSemeadura: data.data_semeadura ?? data.dataSemeadura ?? null,
+    fazendaId: data.fazenda_id ?? data.fazendaId ?? null,
+    fazendaNome: data.fazenda_nome ?? data.fazendaNome ?? null,
+    created: Boolean(data.created),
+  };
+}
 function parse(raw) {
   try {
     return JSON.parse(raw);
   } catch {
     return raw;
   }
+}
+function demoSessionId() {
+  return "demo-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+}
+function demoUserMessage(messages, imageFile) {
+  const last = messages[messages.length - 1] || { role: "user", content: "" };
+  return { ...last, hasImage: Boolean(imageFile) };
 }
 function abortError() {
   return new DOMException("Envio interrompido.", "AbortError");
@@ -114,6 +135,9 @@ function streamRequest(path, body, callbacks, options = {}, json = false) {
           case "interrupt":
             callbacks.onInterrupt?.(mapInterrupt(data));
             break;
+          case "talhao":
+            callbacks.onTalhao?.(mapTalhaoSelected(data));
+            break;
           case "error":
             finish(
               new Error(
@@ -152,7 +176,57 @@ function mapChatResponse(data) {
     sessionId: data?.session_id || null,
     transcript: data?.transcript || null,
     interrupt: data?.interrupt ? mapInterrupt(data.interrupt) : null,
+    talhao: mapTalhaoSelected(data?.talhao),
   };
+}
+
+/**
+ * Roda um turno do agente simulado (modo demo) com os mesmos callbacks do
+ * SSE e grava o que o backend gravaria: o laudo e a conversa.
+ */
+async function runDemo(start, sid, userMessage, callbacks, options) {
+  if (options.signal?.aborted) throw abortError();
+  let content = "",
+    diagnosis = null,
+    interrupt = null,
+    talhao = null;
+  const guarded = {};
+  for (const [k, fn] of Object.entries(callbacks))
+    guarded[k] = (...args) => {
+      if (!options.signal?.aborted) fn(...args);
+    };
+  await start({
+    ...guarded,
+    onToken: (chunk) => {
+      content += chunk;
+      guarded.onToken?.(chunk);
+    },
+    onDiagnosis: (value) => {
+      diagnosis = value;
+      guarded.onDiagnosis?.(value);
+    },
+    onInterrupt: (value) => {
+      interrupt = mapInterrupt(value);
+      guarded.onInterrupt?.(interrupt);
+    },
+    onTalhao: (value) => {
+      talhao = mapTalhaoSelected(value);
+      guarded.onTalhao?.(talhao);
+    },
+    onDone: () => {},
+  });
+  if (options.signal?.aborted) throw abortError();
+  if (diagnosis) await saveDiagnosis(diagnosis);
+  if (userMessage)
+    appendDemoTurn(getCurrentUserId(), sid, userMessage, {
+      role: "assistant",
+      content: content || interrupt?.question || "",
+      diagnosis,
+      diagnosisId: diagnosis?.id,
+    });
+  guarded.onDone?.(sid);
+  window.dispatchEvent(new CustomEvent("diagnosis-saved"));
+  return { content, diagnosis, sessionId: sid, transcript: null, interrupt, talhao };
 }
 /**
  * Turno síncrono do chat (POST /chat): uma requisição, uma resposta completa.
@@ -170,29 +244,14 @@ export async function sendMessage(
   if (IS_DEMO) {
     // O modo demonstração reaproveita o roteiro simulado do streaming e só
     // entrega o resultado no fim, como o backend síncrono faria.
-    let content = "",
-      diagnosis = null,
-      sid = sessionId;
-    await sendMessageStream(
-      messages,
-      imageFile,
-      modelId,
-      sessionId,
-      audioFile,
-      {
-        onToken: (chunk) => {
-          content += chunk;
-        },
-        onDiagnosis: (value) => {
-          diagnosis = value;
-        },
-        onDone: (value) => {
-          sid = value || sid;
-        },
-      },
+    const sid = sessionId || demoSessionId();
+    return runDemo(
+      (cb) => mockSendMessageStream(messages, imageFile, modelId, audioFile, cb, { ...options, sessionId: sid }),
+      sid,
+      demoUserMessage(messages, imageFile),
+      {},
       options,
     );
-    return { content, diagnosis, sessionId: sid, transcript: null, interrupt: null };
   }
   const body = new FormData();
   body.append("messages", JSON.stringify(messages));
@@ -212,6 +271,8 @@ export async function sendMessage(
 }
 /** Retoma uma pergunta do agente (ask_user) pelo endpoint síncrono. */
 export async function resumeMessage(threadId, response, options = {}) {
+  if (IS_DEMO)
+    return runDemo((cb) => mockResumeStream(threadId, response, cb), threadId, { role: "user", content: response }, {}, options);
   const { data } = await api.post(
     "/api/v1/chat/resume",
     { thread_id: threadId, response },
@@ -229,44 +290,14 @@ export async function sendMessageStream(
   options = {},
 ) {
   if (IS_DEMO) {
-    if (options.signal?.aborted) throw abortError();
-    let content = "",
-      diagnosis = null;
-    const sid =
-      sessionId ||
-      "demo-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-    const guarded = {};
-    for (const [key, fn] of Object.entries(callbacks))
-      guarded[key] = (...args) => {
-        if (!options.signal?.aborted) fn(...args);
-      };
-    await mockSendMessageStream(messages, imageFile, modelId, audioFile, {
-      ...guarded,
-      onToken: (chunk) => {
-        content += chunk;
-        guarded.onToken?.(chunk);
-      },
-      onDiagnosis: (value) => {
-        // Demo: o laudo nasce no talhão ativo, como o backend faria.
-        diagnosis = value && {
-          ...value,
-          talhaoId: options.talhaoId ?? null,
-          talhaoNome: options.talhaoNome ?? null,
-        };
-        guarded.onDiagnosis?.(diagnosis);
-      },
-      onDone: () => {},
-    });
-    if (options.signal?.aborted) throw abortError();
-    if (diagnosis) await saveDiagnosis(diagnosis);
-    appendDemoTurn(getCurrentUserId(), sid, messages[messages.length - 1], {
-      role: "assistant",
-      content,
-      diagnosis,
-      diagnosisId: diagnosis?.id,
-    });
-    guarded.onDone?.(sid);
-    window.dispatchEvent(new CustomEvent("diagnosis-saved"));
+    const sid = sessionId || demoSessionId();
+    await runDemo(
+      (cb) => mockSendMessageStream(messages, imageFile, modelId, audioFile, cb, { ...options, sessionId: sid }),
+      sid,
+      demoUserMessage(messages, imageFile),
+      callbacks,
+      options,
+    );
     return;
   }
   const body = new FormData();
@@ -285,6 +316,8 @@ export function resumeMessageStream(
   callbacks = {},
   options = {},
 ) {
+  if (IS_DEMO)
+    return runDemo((cb) => mockResumeStream(threadId, response, cb), threadId, { role: "user", content: response }, callbacks, options).then(() => undefined);
   return streamRequest(
     "/api/v1/chat/resume/stream",
     JSON.stringify({ thread_id: threadId, response }),

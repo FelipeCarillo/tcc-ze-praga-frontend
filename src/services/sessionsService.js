@@ -18,10 +18,16 @@ function mapSession(data) {
     id: data.id,
     // `title` ainda não é preenchido por nada no backend; a primeira mensagem
     // do usuário é o rótulo natural da conversa.
-    title: data.title || data.preview || 'Conversa sem título',
+    // Conversa que começou só com a foto não tem texto do produtor.
+    title: data.title || data.preview || (data.image_url || data.diagnosis_count ? 'Foto de folha' : 'Conversa com o Zé'),
     preview: data.preview,
     messageCount: data.message_count,
     summary: data.summary_text,
+    // TCC-097: o card de "Conversas" do histórico.
+    lastReply: data.last_reply ?? null,
+    diagnosisCount: data.diagnosis_count ?? 0,
+    imageUrl: data.image_url ?? null,
+    talhaoNome: data.talhao_nome ?? null,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };

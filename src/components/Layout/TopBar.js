@@ -11,6 +11,7 @@ import { useColorMode } from "../../hooks/useColorMode";
 const LINKS_USER = [
   { label: "Conversa", path: "/chat" },
   { label: "Histórico", path: "/historico" },
+  { label: "Fazendas", path: "/fazendas" },
   { label: "Modelos", path: "/modelos" },
   { label: "API", path: "/api-docs" },
   { label: "Planos", path: "/planos" },

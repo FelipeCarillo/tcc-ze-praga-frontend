@@ -57,4 +57,11 @@ describe('BottomNav (rebrand 2026)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fotografar folha' }));
     expect(mockNavigate).toHaveBeenCalledWith('/camera');
   });
+
+  it('a aba "Zé" abre a conversa sem precisar de foto', () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    render(<BottomNav />);
+    expect(screen.getByRole('link', { name: /Zé/ })).toHaveAttribute('href', '/chat');
+    expect(screen.queryByRole('link', { name: /Planos/ })).not.toBeInTheDocument();
+  });
 });

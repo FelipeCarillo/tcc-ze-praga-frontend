@@ -27,49 +27,9 @@ import { IMAGE_ACCEPT } from "../utils/imageUpload";
  * Uma foto por vez: o chat envia uma imagem por mensagem.
  */
 
-const SAMPLE = 96;
+import { analyzeFrame, SAMPLE } from "../utils/frameChecks";
 
-export function analyzeFrame(data, size = SAMPLE) {
-  let lum = 0;
-  let green = 0;
-  const gray = new Float32Array(size * size);
-  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const y = 0.299 * r + 0.587 * g + 0.114 * b;
-    gray[p] = y;
-    lum += y;
-    if (g > r * 1.08 && g > b * 1.08 && g > 40) green++;
-  }
-  const n = size * size;
-  // Variância do laplaciano: borda nítida = variância alta.
-  let sum = 0;
-  let sumSq = 0;
-  let count = 0;
-  for (let yy = 1; yy < size - 1; yy++) {
-    for (let xx = 1; xx < size - 1; xx++) {
-      const p = yy * size + xx;
-      const lap =
-        4 * gray[p] -
-        gray[p - 1] -
-        gray[p + 1] -
-        gray[p - size] -
-        gray[p + size];
-      sum += lap;
-      sumSq += lap * lap;
-      count++;
-    }
-  }
-  const mean = sum / count;
-  const sharpness = sumSq / count - mean * mean;
-  const brightness = lum / n;
-  return {
-    luz: brightness > 70 && brightness < 215,
-    foco: sharpness > 60,
-    folha: green / n > 0.3,
-  };
-}
+export { analyzeFrame };
 
 const CHECKS = [
   { key: "luz", ok: "Luz boa", nok: brightnessHint },
@@ -237,7 +197,8 @@ export default function CameraPage() {
   const analyze = () => {
     if (!photo) return;
     stop();
-    navigate("/chat", { state: { pendingFile: photo.file } });
+    // A câmera já conferiu luz, foco e folha: a foto vai direto para a análise.
+    navigate("/chat", { state: { pendingFile: photo.file, source: "camera" } });
   };
 
   useEffect(() => () => photo && URL.revokeObjectURL(photo.url), [photo]);

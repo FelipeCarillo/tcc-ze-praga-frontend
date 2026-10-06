@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -17,16 +17,16 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Camera, Download, Leaf, MapPin, Search, Trash2, X } from "lucide-react";
+import { Camera, Download, Leaf, MapPin, Plus, Search, Trash2, X } from "lucide-react";
 import { ErrorState } from "../components/common/Page";
 import {
   getDiagnosesPage,
-  getDiagnoses,
   getDiagnosesByTalhao,
   deleteDiagnosis,
   clearAllDiagnoses,
   SEM_TALHAO,
 } from "../services/historyService";
+import ConversationHistory from "../components/History/ConversationHistory";
 import HistoryByTalhao, { historyMotion, LaudoRow, RiskChip, TalhaoTile, Thumb, relativeDay } from "../components/History/HistoryByTalhao";
 import { useFeatures } from "../contexts/FeaturesContext";
 import AuxiliarNotice from "../components/common/AuxiliarNotice";
@@ -121,14 +121,15 @@ function EmptyState() {
  * tabela "Todos os laudos" com os filtros. Exportar, excluir e limpar tudo
  * continuam disponíveis.
  */
-export default function HistoryPage() {
+function LaudosHistory({ tabs, initialTalhao = null }) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const features = useFeatures();
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [risk, setRisk] = useState(null);
-  const [talhaoFilter, setTalhaoFilter] = useState(null);
+  // Da tela da fazenda chega `?talhao=` para abrir os laudos daquele talhão.
+  const [talhaoFilter, setTalhaoFilter] = useState(initialTalhao);
   const [page, setPage] = useState(1);
   const [groups, setGroups] = useState(null); // null = ainda carregando; [] sem talhões
   const [groupsSupported, setGroupsSupported] = useState(true);
@@ -210,9 +211,10 @@ export default function HistoryPage() {
     setExporting(true);
     setError("");
     try {
-      const all = await getDiagnoses({ search: query, severity: risk || undefined, talhaoId: talhaoFilter?.id });
-      const { exportHistoryPdf } = await import("../services/pdfExport");
-      await exportHistoryPdf(all);
+      // TCC-099: o relatório completo da fazenda (capa, talhões, um laudo
+      // por página e o método), no lugar da tabela simples.
+      const { exportReport } = await import("../services/exportReport");
+      await exportReport();
     } catch {
       setError("Não foi possível exportar o PDF. Tente novamente.");
     } finally {
@@ -260,6 +262,7 @@ export default function HistoryPage() {
         </Box>
         <Box sx={{ display: { xs: "none", md: "block" } }}>{exportButton}</Box>
       </Stack>
+      {tabs}
 
       {error && (
         <Box mb={2}>
@@ -437,4 +440,69 @@ export default function HistoryPage() {
       </Dialog>
     </Box>
   );
+}
+
+/** Laudos | Conversas — o seletor do m-Historico / m-Historico-Conversas. */
+function HistoryTabs({ value, onChange }) {
+  const tab = (id, label) => {
+    const on = value === id;
+    return (
+      <Box
+        component="button"
+        type="button"
+        role="tab"
+        aria-selected={on}
+        onClick={() => onChange(id)}
+        sx={{ height: 40, border: 0, borderRadius: "11px", fontFamily: "inherit", fontSize: "0.9375rem", cursor: "pointer", bgcolor: on ? "background.paper" : "transparent", color: on ? "text.primary" : "text.secondary", fontWeight: on ? 800 : 600 }}
+      >
+        {label}
+      </Box>
+    );
+  };
+  return (
+    <Box role="tablist" aria-label="O que ver no histórico" sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", bgcolor: "surface.muted", borderRadius: "14px", p: 0.5, mb: { xs: 1.5, md: 3 }, maxWidth: { md: 420 } }}>
+      {tab("laudos", "Laudos")}
+      {tab("conversas", "Conversas")}
+    </Box>
+  );
+}
+
+function ConversasView({ tabs }) {
+  const navigate = useNavigate();
+  return (
+    <Box sx={{ ...historyMotion, maxWidth: 1280, mx: "auto", px: { xs: 2.5, md: 4 }, pt: { xs: 2.25, md: 4 }, pb: 4 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} sx={{ mb: { xs: 1.5, md: 3.5 } }}>
+        <Typography component="h1" sx={{ m: 0, fontSize: { xs: "1.75rem", md: "2.5rem" }, fontWeight: 800, fontStretch: { xs: "112%", md: "115%" }, letterSpacing: "-0.02em", lineHeight: 1 }}>
+          Histórico
+        </Typography>
+        <Box
+          component="button"
+          type="button"
+          onClick={() => navigate("/chat", { state: { newChat: true } })}
+          sx={{ height: 44, px: 1.75, border: 0, borderRadius: 999, bgcolor: "cta.main", color: "cta.contrastText", fontFamily: "inherit", fontWeight: 800, fontSize: "0.875rem", display: "flex", alignItems: "center", gap: 0.75, cursor: "pointer", "&:hover": { bgcolor: "cta.hover" } }}
+        >
+          <Plus size={16} strokeWidth={3} aria-hidden="true" />
+          Nova conversa
+        </Box>
+      </Stack>
+      {tabs}
+      <Box sx={{ maxWidth: 760 }}>
+        <ConversationHistory />
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * Histórico — laudos por talhão (m-Historico / d-Historico) e as conversas
+ * com o Zé (m-Historico-Conversas, TCC-097), em duas abas. `?aba=conversas`
+ * abre direto nas conversas; `?talhao=` abre os laudos de um talhão.
+ */
+export default function HistoryPage() {
+  const [params, setParams] = useSearchParams();
+  const aba = params.get("aba") === "conversas" ? "conversas" : "laudos";
+  const talhaoId = params.get("talhao");
+  const initialTalhao = talhaoId ? { id: talhaoId, nome: params.get("nome") || "Talhão" } : null;
+  const tabs = <HistoryTabs value={aba} onChange={(v) => setParams(v === "conversas" ? { aba: v } : {})} />;
+  return aba === "conversas" ? <ConversasView tabs={tabs} /> : <LaudosHistory key={talhaoId || "todos"} tabs={tabs} initialTalhao={initialTalhao} />;
 }

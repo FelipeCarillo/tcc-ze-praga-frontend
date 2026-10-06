@@ -40,6 +40,9 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ModelsPage = lazy(() => import("./pages/ModelsPage"));
+const FazendasPage = lazy(() => import("./pages/FazendasPage"));
+const FazendaPage = lazy(() => import("./pages/FazendaPage"));
+const FazendaFormPage = lazy(() => import("./pages/FazendaFormPage"));
 
 function PageLoader() {
   return (
@@ -278,6 +281,46 @@ function App() {
                       <Layout>
                         <RequireAuth>
                           <PaymentPage />
+                        </RequireAuth>
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/fazendas"
+                    element={
+                      <Layout>
+                        <RequireAuth>
+                          <FazendasPage />
+                        </RequireAuth>
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/fazendas/nova"
+                    element={
+                      <Layout bottomNav={false} showFooter={false}>
+                        <RequireAuth>
+                          <FazendaFormPage />
+                        </RequireAuth>
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/fazendas/:id/editar"
+                    element={
+                      <Layout bottomNav={false} showFooter={false}>
+                        <RequireAuth>
+                          <FazendaFormPage />
+                        </RequireAuth>
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/fazendas/:id"
+                    element={
+                      <Layout>
+                        <RequireAuth>
+                          <FazendaPage />
                         </RequireAuth>
                       </Layout>
                     }
