@@ -304,8 +304,8 @@ describe("useChat — isolamento de operações", () => {
       await request;
     });
     expect(result.current.sessionId).toBeNull();
-    expect(result.current.messages).toHaveLength(1);
-    expect(result.current.messages[0].content).not.toContain("resposta antiga");
+    // A conversa recomeça vazia, sem a resposta antiga.
+    expect(result.current.messages).toHaveLength(0);
     expect(result.current.isLoading).toBe(false);
   });
 
@@ -372,7 +372,7 @@ describe("useChat — transcrição de voz", () => {
     const userMsg = () =>
       result.current.messages.filter((m) => m.role === "user").pop();
 
-    expect(userMsg().content).toBe("🎤 Mensagem de voz");
+    expect(userMsg().content).toBe("Mensagem de voz");
 
     await act(async () => {
       captured.callbacks.onTranscript("a folha tá com manchas amareladas");
@@ -412,7 +412,7 @@ describe("useChat — transcrição de voz", () => {
     const userMsg = result.current.messages
       .filter((m) => m.role === "user")
       .pop();
-    expect(userMsg.content).toBe("🎤 Mensagem de voz");
+    expect(userMsg.content).toBe("Mensagem de voz");
 
     await act(async () => {
       captured.callbacks.onDone("s-1");
@@ -625,8 +625,7 @@ describe("useChat — conversas persistidas", () => {
       await result.current.loadSession("sess-vazia");
     });
 
-    expect(result.current.messages).toHaveLength(1);
-    expect(result.current.messages[0].role).toBe("assistant");
+    expect(result.current.messages).toHaveLength(0);
   });
 
   it("clearChat fecha a sessão anterior para gerar o resumo", async () => {

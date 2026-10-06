@@ -5,13 +5,15 @@ const titles = {
   '/': 'Início', '/camera': 'Câmera', '/chat': 'Analisar uma folha', '/historico': 'Histórico',
   '/perfil': 'Meu perfil', '/login': 'Entrar', '/modelos': 'Modelos e métricas',
   '/api-docs': 'API', '/sobre': 'O projeto', '/planos': 'Planos',
-  '/redefinir-senha': 'Redefinir senha',
+  '/redefinir-senha': 'Redefinir senha', '/fazendas': 'Fazendas e talhões',
+  '/fazendas/nova': 'Cadastrar fazenda',
 };
 
 export default function NavigationEffects() {
   const { pathname } = useLocation();
   useEffect(() => {
-    const title = titles[pathname] || (pathname.startsWith('/historico/')
+    const title = titles[pathname] || (pathname.endsWith('/editar') ? 'Editar fazenda'
+      : pathname.startsWith('/fazendas/') ? 'Fazenda' : pathname.startsWith('/historico/')
       ? 'Resultado da análise' : pathname.startsWith('/planos/pagamento/')
         ? 'Experimentar um plano' : 'Página não encontrada');
     document.title = title + ' · Zé Praga';

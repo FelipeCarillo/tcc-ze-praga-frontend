@@ -18,6 +18,7 @@ import ChatInput from "../components/Chat/ChatInput";
 import SessionsDrawer from "../components/Chat/SessionsDrawer";
 import SessionsList, { useSessions } from "../components/Chat/SessionsList";
 import LaudoPanel from "../components/Chat/LaudoPanel";
+import PhotoConfirm from "../components/Chat/PhotoConfirm";
 import BrandLockup from "../components/Brand/BrandLockup";
 import RuntimeNotice from "../components/common/RuntimeNotice";
 import useChat from "../hooks/useChat";
@@ -25,6 +26,7 @@ import usePreferredModel from "../hooks/usePreferredModel";
 import { getUsageSummary } from "../services/usageService";
 import { validateImage } from "../utils/imageUpload";
 import TalhaoPicker from "../components/Talhao/TalhaoPicker";
+import useTalhoes from "../hooks/useTalhoes";
 export default function ChatPage() {
   const {
     messages,
@@ -39,6 +41,8 @@ export default function ChatPage() {
   } = useChat();
   const location = useLocation(),
     navigate = useNavigate();
+  const { model } = usePreferredModel();
+  const { talhoes } = useTalhoes();
   const [file, setFile] = useState(null),
     [notice, setNotice] = useState(""),
     [sessions, setSessions] = useState(false),
@@ -56,15 +60,27 @@ export default function ChatPage() {
     },
     [isLoading, pendingInterrupt],
   );
+  // Foto da câmera: a câmera já conferiu luz, foco e folha, então vai direto
+  // para a análise (m-Chat-Analisando). Foto da galeria: abre a conferência
+  // em tela cheia (m-Chat-Foto). Do Histórico chegam `sessionId` (reabrir a
+  // conversa) ou `newChat` (começar outra).
   const handled = useRef(null);
   useEffect(() => {
     if (location.key === handled.current) return;
     handled.current = location.key;
-    if (location.state?.pendingFile) {
-      stage(location.state.pendingFile);
-      navigate(location.pathname, { replace: true, state: null });
+    const st = location.state;
+    if (!st) return;
+    if (st.sessionId) loadSession(st.sessionId);
+    else if (st.newChat) clearChat();
+    if (st.pendingFile) {
+      const error = validateImage(st.pendingFile);
+      if (error) setNotice(error);
+      else if (st.source === "camera") send("", st.pendingFile, model);
+      else setFile(st.pendingFile);
     }
-  }, [location, stage, navigate]);
+    if (st.sessionId || st.newChat || st.pendingFile)
+      navigate(location.pathname, { replace: true, state: null });
+  }, [location, navigate, loadSession, clearChat, send, model]);
   // Título da conversa no desktop: a primeira mensagem do produtor.
   const firstUser = messages.find((m) => m.role === "user" && m.content);
   const title = firstUser
@@ -76,7 +92,11 @@ export default function ChatPage() {
     setFile(null);
     clearChat();
   };
-  const fileHandled = useCallback(() => setFile(null), []);
+  const analyzeStaged = async (note, staged) => {
+    setFile(null);
+    const ok = await send(note, staged, model);
+    return ok;
+  };
   return (
     <Box
       sx={{
@@ -144,26 +164,30 @@ export default function ChatPage() {
           </Stack>
         </Box>
         <RuntimeNotice />
-        <ChatWindow
-          messages={messages}
-          isLoading={isLoading}
-          onSelectFile={stage}
-          pendingInterrupt={pendingInterrupt}
-          onAnswerInterrupt={answerInterrupt}
-        />
-        {isLoading && (
-          <Box sx={{ textAlign: "center", bgcolor: "background.paper", borderTop: "1px solid", borderColor: "divider" }}>
-            <Button onClick={stop} color="inherit">Interromper resposta</Button>
-          </Box>
+        {file ? (
+          <PhotoConfirm file={file} onCancel={() => setFile(null)} onReplace={stage} onAnalyze={analyzeStaged} />
+        ) : (
+          <>
+            <ChatWindow
+              messages={messages}
+              isLoading={isLoading}
+              onSelectFile={stage}
+              pendingInterrupt={pendingInterrupt}
+              onAnswerInterrupt={answerInterrupt}
+              onAsk={(text) => send(text, null, model)}
+              talhoes={talhoes}
+            />
+            <ChatInput
+              onSend={send}
+              disabled={!!pendingInterrupt && !isLoading}
+              busy={isLoading}
+              onStop={stop}
+              autoRecord={Boolean(location.state?.startAudio)}
+              onOpenCamera={() => navigate("/camera")}
+              onPickFile={stage}
+            />
+          </>
         )}
-        <ChatInput
-          onSend={send}
-          disabled={isLoading || !!pendingInterrupt}
-          pendingFile={file}
-          onFileHandled={fileHandled}
-          autoRecord={Boolean(location.state?.startAudio)}
-          onOpenCamera={() => navigate("/camera")}
-        />
       </Box>
 
       {/* ── Laudo à direita no desktop largo (d-Chat) ── */}

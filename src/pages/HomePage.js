@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Box, Skeleton, Stack, Typography } from "@mui/material";
-import { Camera, ImageIcon, Mic, Plus, Sun } from "lucide-react";
+import { Camera, ChevronDown, ImageIcon, Mic, Plus, Sun } from "lucide-react";
 import BrandLockup from "../components/Brand/BrandLockup";
 import { useAuth } from "../hooks/useAuth";
+import useFazendas from "../hooks/useFazendas";
 import { getUsageSummary } from "../services/usageService";
 import { getDiagnosesByTalhao } from "../services/historyService";
 import {
@@ -106,7 +107,7 @@ function CameraCard() {
   const pick = (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = "";
-    if (file) navigate("/chat", { state: { pendingFile: file } });
+    if (file) navigate("/chat", { state: { pendingFile: file, source: "gallery" } });
   };
   const dark = {
     bgcolor: "#14251B",
@@ -352,7 +353,7 @@ function TalhaoCard({ group, due }) {
   );
 }
 
-function Talhoes() {
+function Talhoes({ fazenda }) {
   const [groups, setGroups] = useState(null);
   const [due, setDue] = useState(dueReminders);
   useEffect(() => {
@@ -368,6 +369,9 @@ function Talhoes() {
     };
   }, []);
   const dueTalhoes = new Set(due.map((r) => r.talhaoId).filter(Boolean));
+  // TCC-096: o Início mostra os talhões da fazenda ativa.
+  const shown =
+    groups && fazenda ? groups.filter((g) => g.fazendaId === fazenda.id || !g.fazendaId) : groups;
 
   return (
     <Box>
@@ -385,7 +389,7 @@ function Talhoes() {
         </Typography>
         <Box
           component={Link}
-          to="/historico"
+          to={fazenda ? `/fazendas/${fazenda.id}` : "/fazendas"}
           sx={{
             fontSize: "0.875rem",
             fontWeight: 700,
@@ -409,7 +413,7 @@ function Talhoes() {
           "&::-webkit-scrollbar": { display: "none" },
         }}
       >
-        {groups === null ? (
+        {shown === null ? (
           [0, 1].map((i) => (
             <Skeleton
               key={i}
@@ -419,8 +423,8 @@ function Talhoes() {
               sx={{ borderRadius: "18px", flexShrink: 0 }}
             />
           ))
-        ) : groups.length ? (
-          groups.map((g) => (
+        ) : shown.length ? (
+          shown.map((g) => (
             <TalhaoCard
               key={g.talhaoId}
               group={g}
@@ -430,7 +434,7 @@ function Talhoes() {
         ) : (
           <Box
             component={Link}
-            to="/perfil"
+            to={fazenda ? `/fazendas/${fazenda.id}` : "/fazendas"}
             sx={{
               width: "100%",
               border: "1.5px dashed",
@@ -520,6 +524,7 @@ function Lembrete() {
  */
 export default function HomePage() {
   const { user } = useAuth();
+  const { active: fazenda } = useFazendas();
   const nome = (user?.full_name || "").trim().split(/\s+/)[0] || "produtor";
   return (
     <Box
@@ -549,9 +554,22 @@ export default function HomePage() {
           gap={2}
         >
           <Box>
-            <Typography sx={{ fontSize: "0.9375rem", color: "text.secondary" }}>
-              {saudacao()}, {nome}
-            </Typography>
+            {fazenda ? (
+              <Box
+                component={Link}
+                to="/fazendas"
+                aria-label={`${fazenda.nome}. Trocar de fazenda`}
+                sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, minHeight: 28, fontSize: "0.9375rem", color: "text.secondary", textDecoration: "none" }}
+              >
+                {saudacao()} ·
+                <Box component="b" sx={{ color: "primary.main" }}>{fazenda.nome}</Box>
+                <ChevronDown size={14} strokeWidth={2.6} aria-hidden="true" />
+              </Box>
+            ) : (
+              <Typography sx={{ fontSize: "0.9375rem", color: "text.secondary" }}>
+                {saudacao()}, {nome}
+              </Typography>
+            )}
             <Typography
               component="h1"
               sx={{
@@ -588,7 +606,7 @@ export default function HomePage() {
           <CameraCard />
         </Box>
         <Stack gap={2} sx={up(2)}>
-          <Talhoes />
+          <Talhoes fazenda={fazenda} />
           <Lembrete />
         </Stack>
       </Box>

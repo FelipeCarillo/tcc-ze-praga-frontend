@@ -12,207 +12,14 @@ import {
   Stack,
   TextField,
   Typography,
-  useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { ChevronRight, Cpu, KeyRound, MapPin, Moon, Pencil, Plus, Sun, Trash2, X } from "lucide-react";
-import { ErrorState, LoadingState } from "../components/common/Page";
+import { ChevronRight, Cpu, KeyRound, Moon, Pencil, Sun, Warehouse } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useColorMode } from "../hooks/useColorMode";
 import { useFeatures } from "../contexts/FeaturesContext";
 import usePreferredModel from "../hooks/usePreferredModel";
 import { getUsageSummary } from "../services/usageService";
-import {
-  listTalhoes,
-  createTalhao,
-  deleteTalhao,
-} from "../services/talhoesService";
-function Fields({ onChange }) {
-  const [items, setItems] = useState([]),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
-    [open, setOpen] = useState(false),
-    [busy, setBusy] = useState(false),
-    [remove, setRemove] = useState(null),
-    [form, setForm] = useState({ nome: "", hectares: "", cultura: "soja" }),
-    [version, setVersion] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    listTalhoes()
-      .then((list) => {
-        if (active) {
-          setItems(list);
-          onChange?.(list.length);
-        }
-      })
-      .catch(() => {
-        if (active) setError("Não foi possível carregar os talhões.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-    // onChange é só um callback de contagem; recarregar por ele daria laço.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [version]);
-  const save = async (e) => {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      await createTalhao(form);
-      setForm({ nome: "", hectares: "", cultura: "soja" });
-      setOpen(false);
-      setVersion((v) => v + 1);
-    } catch {
-      setError("Não foi possível salvar. Confira os dados e tente novamente.");
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <Box>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={1}
-      >
-        <Typography component="h2" variant="h6">
-          Meus talhões
-        </Typography>
-        <Button startIcon={<Plus size={18} />} onClick={() => setOpen(true)}>
-          Adicionar
-        </Button>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" mb={2}>
-        Cadastre as áreas da sua lavoura. Cada laudo fica no talhão escolhido
-        na hora da foto, e o histórico agrupa por talhão.
-      </Typography>
-      {error && (
-        <ErrorState
-          message={error}
-          onRetry={() => {
-            setError("");
-            setVersion((v) => v + 1);
-          }}
-        />
-      )}
-      {loading ? (
-        <LoadingState label="Carregando talhões…" />
-      ) : !items.length ? (
-        <Typography color="text.secondary">
-          Nenhum talhão cadastrado.
-        </Typography>
-      ) : (
-        items.map((item) => (
-          <Stack
-            key={item.id}
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ py: 1.5, borderBottom: "1px solid", borderColor: "divider" }}
-          >
-            <Box>
-              <Typography fontWeight={700}>{item.nome}</Typography>
-              <Typography color="text.secondary" variant="body2">
-                {item.hectares ? item.hectares + " ha · " : ""}
-                {item.cultura}
-              </Typography>
-            </Box>
-            <IconButton
-              aria-label={"Excluir talhão " + item.nome}
-              onClick={() => setRemove(item)}
-            >
-              <Trash2 size={19} />
-            </IconButton>
-          </Stack>
-        ))
-      )}
-      <Dialog
-        open={open}
-        onClose={() => {
-          if (!busy) setOpen(false);
-        }}
-        fullWidth
-        maxWidth="xs"
-      >
-        <Box component="form" onSubmit={save}>
-          <DialogTitle>Novo talhão</DialogTitle>
-          <DialogContent>
-            <Stack gap={2} mt={1}>
-              <TextField
-                autoFocus
-                required
-                label="Nome do talhão"
-                value={form.nome}
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                slotProps={{ htmlInput: { maxLength: 100 } }}
-              />
-              <TextField
-                label="Área em hectares (opcional)"
-                type="number"
-                value={form.hectares}
-                onChange={(e) => setForm({ ...form, hectares: e.target.value })}
-                slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }}
-              />
-            </Stack>
-            {error && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button disabled={busy} onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="contained" disabled={busy}>
-              {busy ? "Salvando…" : "Salvar talhão"}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
-      <Dialog
-        open={!!remove}
-        onClose={() => {
-          if (!busy) setRemove(null);
-        }}
-      >
-        <DialogTitle>Excluir {remove?.nome}?</DialogTitle>
-        <DialogContent>
-          Este cadastro será removido. A ação não pode ser desfeita.
-        </DialogContent>
-        <DialogActions>
-          <Button disabled={busy} onClick={() => setRemove(null)}>
-            Manter
-          </Button>
-          <Button
-            color="error"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await deleteTalhao(remove.id);
-                setRemove(null);
-                setVersion((v) => v + 1);
-              } catch {
-                setError("Não foi possível excluir o talhão.");
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Excluir
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-}
+import { listFazendas } from "../services/fazendasService";
 function UsageBar({ label, feature }) {
   if (!feature) return null;
   const limited = feature.limit !== null && feature.limit !== undefined;
@@ -301,9 +108,9 @@ function SwitchRow({ icon: Icon, label, hint, checked, onToggle, first = false }
 const card = { bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "18px", overflow: "hidden" };
 
 /**
- * Perfil — m-Perfil do canvas: quem é, o uso de hoje, atalhos (talhões,
+ * Perfil — m-Perfil do canvas: quem é, o uso de hoje, atalhos (fazendas,
  * modelo, chaves de API), "Modo campo" e tema escuro, sobre e sair. Edição
- * do nome, talhões e modelo abrem em janelas sobre a tela.
+ * do nome e do modelo abrem em janelas sobre a tela.
  */
 export default function ProfilePage() {
   const { user, updateProfile, logout } = useAuth();
@@ -311,11 +118,9 @@ export default function ProfilePage() {
   const features = useFeatures();
   const { model, name: modelName, options, choose } = usePreferredModel();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [usage, setUsage] = useState(null);
-  const [talhoesCount, setTalhoesCount] = useState(null);
-  const [dialog, setDialog] = useState(null); // "nome" | "talhoes" | "modelo"
+  const [farm, setFarm] = useState(null); // {fazendas, talhoes}
+  const [dialog, setDialog] = useState(null); // "nome" | "modelo"
   const [name, setName] = useState(user?.full_name || "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -323,7 +128,9 @@ export default function ProfilePage() {
   useEffect(() => {
     let alive = true;
     getUsageSummary().then((u) => alive && setUsage(u)).catch(() => {});
-    listTalhoes().then((l) => alive && setTalhoesCount(l.length)).catch(() => {});
+    listFazendas()
+      .then((l) => alive && setFarm({ fazendas: l.length, talhoes: l.reduce((n, f) => n + f.talhoes.length, 0) }))
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -374,7 +181,10 @@ export default function ProfilePage() {
             {nome}
           </Typography>
           <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
-            {talhoesCount === null ? "" : `${talhoesCount} ${talhoesCount === 1 ? "talhão" : "talhões"} · `}plano {plano}
+            {farm
+              ? `${farm.fazendas} ${farm.fazendas === 1 ? "fazenda" : "fazendas"} · ${farm.talhoes} ${farm.talhoes === 1 ? "talhão" : "talhões"} · `
+              : ""}
+            plano {plano}
           </Typography>
         </Box>
         <IconButton aria-label="Editar nome" onClick={() => { setName(user?.full_name || ""); setDialog("nome"); }}>
@@ -399,7 +209,7 @@ export default function ProfilePage() {
       )}
 
       <Box sx={card}>
-        <Row first icon={MapPin} label="Meus talhões" onClick={() => setDialog("talhoes")} />
+        <Row first icon={Warehouse} label="Fazendas e talhões" to="/fazendas" />
         <Row
           icon={Cpu}
           label="Modelo de análise"
@@ -449,17 +259,6 @@ export default function ProfilePage() {
             <Button type="submit" variant="contained" disabled={busy || !name.trim()}>{busy ? "Salvando…" : "Salvar"}</Button>
           </DialogActions>
         </Box>
-      </Dialog>
-
-      {/* Talhões */}
-      <Dialog open={dialog === "talhoes"} onClose={() => setDialog(null)} fullWidth maxWidth="sm" fullScreen={fullScreen}>
-        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          Meus talhões
-          <IconButton aria-label="Fechar" onClick={() => setDialog(null)}><X size={20} /></IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Fields onChange={setTalhoesCount} />
-        </DialogContent>
       </Dialog>
 
       {/* Modelo */}
