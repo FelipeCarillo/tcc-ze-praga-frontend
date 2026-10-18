@@ -7,10 +7,10 @@ export const API_ORIGIN = (
 )
   .replace(/\/+$/, "")
   .replace(/\/api\/v1$/, "");
-// Chat por SSE (token a token). Desligado por padrão: a nuvem responde o chat
-// de forma síncrona (POST /chat), que custa os mesmos tokens sem prender uma
-// conexão aberta por resposta. Ligue com REACT_APP_CHAT_STREAMING=true quando o
-// backend tiver CHAT_STREAMING_ENABLED=true.
+// Chat por SSE (token a token), ligado com REACT_APP_CHAT_STREAMING=true. O
+// primeiro texto aparece em ~1,5-2 s em vez de esperar a resposta inteira
+// (teste de 17/10/2026). Se o backend estiver sem SSE (404), o useChat cai no
+// POST /chat síncrono (TCC-100).
 export const CHAT_STREAMING = process.env.REACT_APP_CHAT_STREAMING === "true";
 // Teto do chat síncrono no cliente. Um turno com foto passa por gate de visão,
 // classificador e plano de ação — bem mais que os 30 s padrão do axios.

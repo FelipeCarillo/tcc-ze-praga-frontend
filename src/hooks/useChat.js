@@ -67,7 +67,10 @@ export default function useChat() {
   const generation = useRef(0),
     controller = useRef(null),
     busy = useRef(false),
-    urls = useRef([]);
+    urls = useRef([]),
+    // TCC-100: o servidor respondeu 404 no SSE (CHAT_STREAMING_ENABLED=false)
+    // — daqui em diante esta conversa segue pelo POST síncrono.
+    noStreaming = useRef(false);
   const cancel = useCallback(() => {
     generation.current++;
     controller.current?.abort();
@@ -100,8 +103,11 @@ export default function useChat() {
       controller.current = ctrl;
       const valid = () => generation.current === gen && !ctrl.signal.aborted;
       // Resposta a uma pergunta segue o transporte do turno que a fez.
-      const streaming =
-        mode === "resume" ? currentInterrupt?.via !== "sync" : mode === "stream";
+      let streaming =
+        !noStreaming.current &&
+        (mode === "resume"
+          ? currentInterrupt?.via !== "sync"
+          : mode === "stream");
       const imageUrl = imageFile ? URL.createObjectURL(imageFile) : null;
       if (imageUrl) urls.current.push(imageUrl);
       // A foto sozinha já é a mensagem (m-Chat-Analisando): sem texto de
@@ -221,34 +227,46 @@ export default function useChat() {
         callbacks.onDone(result.sessionId);
       };
       const threadId = currentInterrupt?.sessionId || sessionId;
-      try {
-        if (mode === "resume" && streaming)
-          await resumeMessageStream(threadId, text, callbacks, {
-            signal: ctrl.signal,
-          });
-        else if (mode === "resume")
-          apply(await resumeMessage(threadId, text, { signal: ctrl.signal }));
-        else if (mode === "sync")
-          apply(
-            await sendMessage(
+      const viaSync = async () =>
+        apply(
+          mode === "resume"
+            ? await resumeMessage(threadId, text, { signal: ctrl.signal })
+            : await sendMessage(
+                [{ role: "user", content: user.content }],
+                imageFile,
+                modelId,
+                audioFile,
+                sessionId,
+                { signal: ctrl.signal, ...talhaoOptions() },
+              ),
+        );
+      const viaStream = () =>
+        mode === "resume"
+          ? resumeMessageStream(threadId, text, callbacks, {
+              signal: ctrl.signal,
+            })
+          : sendMessageStream(
               [{ role: "user", content: user.content }],
               imageFile,
               modelId,
-              audioFile,
               sessionId,
+              audioFile,
+              callbacks,
               { signal: ctrl.signal, ...talhaoOptions() },
-            ),
-          );
+            );
+      try {
+        if (!streaming) await viaSync();
         else
-          await sendMessageStream(
-            [{ role: "user", content: user.content }],
-            imageFile,
-            modelId,
-            sessionId,
-            audioFile,
-            callbacks,
-            { signal: ctrl.signal, ...talhaoOptions() },
-          );
+          try {
+            await viaStream();
+          } catch (error) {
+            // TCC-100: 404 é o servidor sem SSE — nada foi processado, então
+            // repete o mesmo pedido pelo caminho síncrono.
+            if (error?.response?.status !== 404 || !valid()) throw error;
+            noStreaming.current = true;
+            streaming = false;
+            await viaSync();
+          }
         update((m) => ({
           isStreaming: false,
           toolCall: null,

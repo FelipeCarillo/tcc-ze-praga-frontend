@@ -808,3 +808,50 @@ describe("progressSteps", () => {
     expect(steps[1][1]).toBeGreaterThan(0);
   });
 });
+
+describe("useChat — servidor sem SSE (TCC-100)", () => {
+  beforeEach(() => {
+    sendMessage.mockReset();
+    sendMessageStream.mockReset();
+  });
+
+  it("cai no POST síncrono quando o /chat/stream responde 404", async () => {
+    sendMessageStream.mockRejectedValue({ response: { status: 404 } });
+    sendMessage.mockResolvedValue({
+      content: "Resposta síncrona",
+      diagnosis: null,
+      sessionId: "sess-404",
+      transcript: null,
+      interrupt: null,
+      talhao: null,
+    });
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.sendStreaming("oi");
+    });
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.content).toBe("Resposta síncrona");
+    expect(last.isError).toBeFalsy();
+    expect(sendMessageStream).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+
+    // Próximo turno já vai direto pelo síncrono, sem tentar o SSE de novo.
+    await act(async () => {
+      await result.current.sendStreaming("de novo");
+    });
+    expect(sendMessageStream).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it("outros erros do stream continuam aparecendo como erro", async () => {
+    sendMessageStream.mockRejectedValue({ response: { status: 500 } });
+    const { result } = renderHook(() => useChat());
+    await act(async () => {
+      await result.current.sendStreaming("oi");
+    });
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.isError).toBe(true);
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+});
