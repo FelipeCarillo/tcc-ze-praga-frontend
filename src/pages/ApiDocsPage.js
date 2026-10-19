@@ -17,7 +17,7 @@ export default function ApiDocsPage() {
     [
       "POST",
       "/diagnoses/analyze",
-      "Analisar um lote: multipart com images, crop_id e model. Aceita JWT ou X-API-Key (Enterprise).",
+      "Analisar um lote: multipart com images, crop_id, model e talhao_id opcional. Aceita JWT ou X-API-Key (Enterprise). Cada laudo traz a imagem, as fontes e o plano de ação do seu plano. Os headers X-Model-Used e X-Model-Downgraded indicam o modelo que rodou; X-Images-Failed conta as fotos que não puderam ser lidas.",
     ],
     [
       "POST",
